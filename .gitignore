@@ -1,1 +1,3 @@
 /target
+# contains sensitive info for public repo
+/assets/logo*
