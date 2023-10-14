@@ -1,19 +1,22 @@
+mod errors;
+mod auth;
+
+use crate::auth::is_authenticated;
+use errors::name_too_long::NameTooLongErr;
 use uuid::Uuid;
 use actix_web::http::header::LOCATION;
 use std::{
     collections::HashSet,
-    fmt,
     sync::{RwLock},
 };
 
 use actix_files as fs;
 use actix_session::{storage::CookieSessionStore, Session, SessionMiddleware};
 use actix_web::{
-    body::{ BoxBody },
     cookie,
     get,
     http::header::{ContentDisposition, DispositionParam, DispositionType},
-    web, App, HttpResponse, HttpServer, Responder, ResponseError,
+    web, App, HttpResponse, HttpServer, Responder,
 };
 use const_format::formatcp;
 use maud::html;
@@ -31,27 +34,6 @@ const MAX_NAME_LEN: usize = 64;
 #[derive(Deserialize)]
 pub struct UserProfileOptional {
     name: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-struct NameTooLongErr;
-
-impl fmt::Display for NameTooLongErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Name too long error")
-    }
-}
-
-impl ResponseError for NameTooLongErr {
-    fn status_code(&self) -> actix_web::http::StatusCode {
-        actix_web::http::StatusCode::BAD_REQUEST
-    }
-
-    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        let res = HttpResponse::new(self.status_code());
-
-        res.set_body(BoxBody::new("Name too long"))
-    }
 }
 
 fn get_qr_url(name: &str) -> Result<String, NameTooLongErr> {
@@ -161,15 +143,6 @@ async fn login(session: Session, data: web::Data<AppState>) -> impl Responder {
     data.authenticated_keys.write().unwrap().insert(uuid.to_string());
 
     HttpResponse::Ok().body("authenticated now")
-}
-
-fn is_authenticated(session: &Session, authenticated_keys: &RwLock<HashSet<String>>) -> bool {
-    let key = session.get::<String>("session_key").unwrap();
-
-    match key {
-        Some(key) => return authenticated_keys.read().unwrap().contains(&key),
-        None => return false,
-    }
 }
 
 struct AppState {
