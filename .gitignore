@@ -1,3 +1,4 @@
 /target
 # contains sensitive info for public repo
 /public/assets/logo*
+.env

@@ -2,9 +2,11 @@ mod auth;
 mod errors;
 
 use crate::auth::is_authenticated;
-use actix_web::http::header::LOCATION;
+use actix_web::{http::header::LOCATION, post, HttpRequest};
+use dotenv::dotenv;
 use errors::name_too_long::NameTooLongErr;
-use std::{collections::HashSet, sync::RwLock};
+use std::{collections::HashSet, env, sync::RwLock};
+use urlencoding::encode;
 use uuid::Uuid;
 
 use actix_files as fs;
@@ -30,6 +32,12 @@ const MAX_NAME_LEN: usize = 64;
 #[derive(Deserialize)]
 pub struct UserProfileOptional {
     name: Option<String>,
+}
+
+fn get_redirect_response(url: &str) -> HttpResponse {
+    return HttpResponse::Found()
+        .append_header((LOCATION, url))
+        .finish();
 }
 
 fn get_qr_url(name: &str) -> Result<String, NameTooLongErr> {
@@ -63,7 +71,7 @@ async fn generate_qr(info: web::Query<UserProfileOptional>) -> impl Responder {
                     script src="/index.js" {}
 
                     (maud::PreEscaped(qr_svg))
-                    form onsubmit="redirect(event)" method="get" {
+                    form onsubmit="displayQR(event)" method="GET" {
                         input id="nameInput" autofocus {}
                     }
 
@@ -75,7 +83,7 @@ async fn generate_qr(info: web::Query<UserProfileOptional>) -> impl Responder {
             html {
                 script src="/index.js" {}
 
-                form onsubmit="redirect(event)" method="get" {
+                form onsubmit="displayQR(event)" method="GET" {
                     input id="nameInput" autofocus {}
                 }
             }
@@ -117,23 +125,43 @@ async fn register_attendance(
     info: web::Query<UserProfile>,
     data: web::Data<AppState>,
     session: Session,
+    req: HttpRequest,
 ) -> impl Responder {
     if !is_authenticated(&session, &data.authenticated_keys) {
-        return HttpResponse::Found()
-            .append_header((LOCATION, format!("{BASE_URL}/login")))
-            .finish();
+        // Login and redirect back here
+        return get_redirect_response(&format!(
+            "{BASE_URL}/login?redirect={}",
+            encode(&req.uri().path_and_query().unwrap().to_string()),
+        ));
     }
 
     HttpResponse::Ok().body(info.name.clone())
 }
 
-// TODO: take redirect url - take them back to the page they were on before
-#[get("/login")]
-async fn login(session: Session, data: web::Data<AppState>) -> impl Responder {
+#[derive(Debug, Clone, Deserialize)]
+pub struct AuthBody {
+    password: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RedirectURL {
+    redirect: String,
+}
+
+#[post("/auth")]
+async fn authenticate(
+    session: Session,
+    data: web::Data<AppState>,
+    body: web::Form<AuthBody>,
+    info: web::Query<RedirectURL>,
+) -> impl Responder {
     if is_authenticated(&session, &data.authenticated_keys) {
         return HttpResponse::Ok().body("already authenticated");
     }
-    // TODO: Get and check password
+
+    if body.password != data.admin_password {
+        return HttpResponse::Unauthorized().body("Invalid admin password");
+    }
 
     let uuid = Uuid::new_v4();
 
@@ -145,27 +173,55 @@ async fn login(session: Session, data: web::Data<AppState>) -> impl Responder {
         .unwrap()
         .insert(uuid.to_string());
 
-    HttpResponse::Ok().body("authenticated now")
+    return get_redirect_response(&info.redirect);
+}
+
+#[get("/login")]
+async fn login(
+    session: Session,
+    data: web::Data<AppState>,
+    info: web::Query<RedirectURL>,
+) -> impl Responder {
+    if is_authenticated(&session, &data.authenticated_keys) {
+        return HttpResponse::Ok().body("already authenticated");
+    }
+
+    let html = html! {
+        html {
+            form action=(format!("{BASE_URL}/auth?redirect={}", info.redirect)) method="POST" {
+                input name="password" id="password" type="password" autofocus {}
+            }
+        }
+    };
+
+    return HttpResponse::Ok().body(html.into_string());
 }
 
 struct AppState {
     authenticated_keys: RwLock<HashSet<String>>,
+    admin_password: String,
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
+        dotenv().ok();
+
         let key = cookie::Key::generate();
+        let admin_password =
+            env::var("ADMIN_PASSWORD").expect("No admin password provided in environment");
 
         App::new()
             .app_data(web::Data::new(AppState {
                 authenticated_keys: RwLock::new(HashSet::new()),
+                admin_password,
             }))
             .wrap(SessionMiddleware::new(CookieSessionStore::default(), key))
             .service(generate_qr)
             .service(download_qr)
             .service(register_attendance)
             .service(login)
+            .service(authenticate)
             .service(fs::Files::new("/", "public").show_files_listing())
     })
     .bind((IP, PORT))?
