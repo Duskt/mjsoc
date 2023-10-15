@@ -2,12 +2,13 @@ mod auth;
 mod errors;
 
 use crate::auth::is_authenticated;
+use crate::auth::new_session;
 use actix_web::{http::header::LOCATION, post, HttpRequest};
+use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
 use errors::name_too_long::NameTooLongErr;
-use std::{collections::HashSet, env, sync::RwLock};
+use std::{env, sync::RwLock};
 use urlencoding::encode;
-use uuid::Uuid;
 
 use actix_files as fs;
 use actix_session::{storage::CookieSessionStore, Session, SessionMiddleware};
@@ -21,6 +22,7 @@ use maud::html;
 use qrcode_generator::QrCodeEcc;
 use serde::Deserialize;
 
+// TODO: Use .env?
 const IP: &str = "0.0.0.0";
 const PORT: u16 = 5654;
 
@@ -28,6 +30,8 @@ const QR_SIZE: usize = 256;
 const BASE_URL: &str = formatcp!("http://localhost:{PORT}");
 
 const MAX_NAME_LEN: usize = 64;
+
+pub const MAX_AUTHENTICATED_USERS: usize = 64;
 
 #[derive(Deserialize)]
 pub struct UserProfileOptional {
@@ -135,6 +139,7 @@ async fn register_attendance(
         ));
     }
 
+    // TODO: add to google sheet here
     HttpResponse::Ok().body(info.name.clone())
 }
 
@@ -163,16 +168,8 @@ async fn authenticate(
         return HttpResponse::Unauthorized().body("Invalid admin password");
     }
 
-    let uuid = Uuid::new_v4();
-
-    session.insert("session_key", uuid.to_string()).unwrap();
-
-    // TODO: remove oldest if exceeds certain number of keys - maybe best to use Vec?
-    data.authenticated_keys
-        .write()
-        .unwrap()
-        .insert(uuid.to_string());
-
+    // Create session for user
+    new_session(&session, &data.authenticated_keys);
     return get_redirect_response(&info.redirect);
 }
 
@@ -198,7 +195,9 @@ async fn login(
 }
 
 struct AppState {
-    authenticated_keys: RwLock<HashSet<String>>,
+    // Circular buffer allows us to have a fixed capacity and remove oldest
+    // key when inserting a new one - this is to prevent using up too much memory
+    authenticated_keys: RwLock<CircularBuffer<MAX_AUTHENTICATED_USERS, String>>,
     admin_password: String,
 }
 
@@ -213,7 +212,7 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .app_data(web::Data::new(AppState {
-                authenticated_keys: RwLock::new(HashSet::new()),
+                authenticated_keys: RwLock::new(CircularBuffer::new()),
                 admin_password,
             }))
             .wrap(SessionMiddleware::new(CookieSessionStore::default(), key))
