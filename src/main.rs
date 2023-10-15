@@ -1,20 +1,16 @@
-mod errors;
 mod auth;
+mod errors;
 
 use crate::auth::is_authenticated;
-use errors::name_too_long::NameTooLongErr;
-use uuid::Uuid;
 use actix_web::http::header::LOCATION;
-use std::{
-    collections::HashSet,
-    sync::{RwLock},
-};
+use errors::name_too_long::NameTooLongErr;
+use std::{collections::HashSet, sync::RwLock};
+use uuid::Uuid;
 
 use actix_files as fs;
 use actix_session::{storage::CookieSessionStore, Session, SessionMiddleware};
 use actix_web::{
-    cookie,
-    get,
+    cookie, get,
     http::header::{ContentDisposition, DispositionParam, DispositionType},
     web, App, HttpResponse, HttpServer, Responder,
 };
@@ -117,9 +113,15 @@ async fn download_qr(info: web::Query<UserProfile>) -> impl Responder {
 }
 
 #[get("/register_attendance")]
-async fn register_attendance(info: web::Query<UserProfile>, data: web::Data<AppState>, session: Session) -> impl Responder {
+async fn register_attendance(
+    info: web::Query<UserProfile>,
+    data: web::Data<AppState>,
+    session: Session,
+) -> impl Responder {
     if !is_authenticated(&session, &data.authenticated_keys) {
-        return HttpResponse::Found().append_header((LOCATION, format!("{BASE_URL}/login"))).finish()
+        return HttpResponse::Found()
+            .append_header((LOCATION, format!("{BASE_URL}/login")))
+            .finish();
     }
 
     HttpResponse::Ok().body(info.name.clone())
@@ -135,12 +137,13 @@ async fn login(session: Session, data: web::Data<AppState>) -> impl Responder {
 
     let uuid = Uuid::new_v4();
 
-    session
-        .insert("session_key", uuid.to_string())
-        .unwrap();
+    session.insert("session_key", uuid.to_string()).unwrap();
 
     // TODO: remove oldest if exceeds certain number of keys - maybe best to use Vec?
-    data.authenticated_keys.write().unwrap().insert(uuid.to_string());
+    data.authenticated_keys
+        .write()
+        .unwrap()
+        .insert(uuid.to_string());
 
     HttpResponse::Ok().body("authenticated now")
 }
@@ -155,8 +158,8 @@ async fn main() -> std::io::Result<()> {
         let key = cookie::Key::generate();
 
         App::new()
-            .app_data(web::Data::new(AppState { 
-                authenticated_keys: RwLock::new(HashSet::new())
+            .app_data(web::Data::new(AppState {
+                authenticated_keys: RwLock::new(HashSet::new()),
             }))
             .wrap(SessionMiddleware::new(CookieSessionStore::default(), key))
             .service(generate_qr)
