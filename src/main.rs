@@ -1,5 +1,7 @@
 mod auth;
 mod errors;
+mod http_client;
+mod sheets;
 
 use crate::auth::is_authenticated;
 use crate::auth::new_session;
@@ -21,6 +23,8 @@ use const_format::formatcp;
 use maud::html;
 use qrcode_generator::QrCodeEcc;
 use serde::Deserialize;
+
+use google_sheets4::Sheets;
 
 // TODO: Use .env?
 const IP: &str = "0.0.0.0";
@@ -52,7 +56,7 @@ fn get_qr_url(name: &str) -> Result<String, NameTooLongErr> {
     Ok(format!("{BASE_URL}/register_attendance?name={}", name))
 }
 
-#[get("/")]
+#[get("/qr")]
 async fn generate_qr(info: web::Query<UserProfileOptional>) -> impl Responder {
     let html = match info.name.clone() {
         Some(name) => {
@@ -134,12 +138,17 @@ async fn register_attendance(
     if !is_authenticated(&session, &data.authenticated_keys) {
         // Login and redirect back here
         return get_redirect_response(&format!(
-            "{BASE_URL}/login?redirect={}",
+            "{BASE_URL}/?redirect={}",
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
 
     // TODO: add to google sheet here
+    let client = http_client::http_client();
+    let auth = auth::google_auth(client.clone()).await;
+    let mut hub = Sheets::new(client.clone(), auth);
+    let result = sheets::add_member(&hub).await;
+    println!("{:?}", result);
     HttpResponse::Ok().body(info.name.clone())
 }
 
@@ -170,10 +179,10 @@ async fn authenticate(
 
     // Create session for user
     new_session(&session, &data.authenticated_keys);
-    return get_redirect_response(&info.redirect);
+    get_redirect_response(&info.redirect)
 }
 
-#[get("/login")]
+#[get("/")]
 async fn login(
     session: Session,
     data: web::Data<AppState>,
@@ -185,13 +194,14 @@ async fn login(
 
     let html = html! {
         html {
+            p { "Enter admin password to accept member attendance:"}
             form action=(format!("{BASE_URL}/auth?redirect={}", info.redirect)) method="POST" {
                 input name="password" id="password" type="password" autofocus {}
             }
         }
     };
 
-    return HttpResponse::Ok().body(html.into_string());
+    HttpResponse::Ok().body(html.into_string())
 }
 
 struct AppState {

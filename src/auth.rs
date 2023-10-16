@@ -1,10 +1,30 @@
-use std::sync::RwLock;
+use std::{env, sync::RwLock};
 
 use actix_session::Session;
 use circular_buffer::CircularBuffer;
 use uuid::Uuid;
 
 use crate::MAX_AUTHENTICATED_USERS;
+use dotenv::dotenv;
+use google_sheets4::oauth2::{self, authenticator::Authenticator};
+use google_sheets4::{hyper, hyper_rustls};
+
+pub async fn google_auth(
+    client: hyper::Client<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>,
+) -> Authenticator<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>> {
+    dotenv().ok();
+    println!("{}", &env::var("PRIVATE_KEY").unwrap());
+    let secret: oauth2::ServiceAccountKey = oauth2::read_service_account_key(
+        env::var("PRIVATE_KEY").expect("No private key listed in dotenv."),
+    )
+    .await
+    .expect("Secret not found!");
+
+    oauth2::ServiceAccountAuthenticator::with_client(secret, client.clone())
+        .build()
+        .await
+        .expect("could not create an authenticator")
+}
 
 fn circular_buffer_contains(
     buffer: &CircularBuffer<MAX_AUTHENTICATED_USERS, String>,
