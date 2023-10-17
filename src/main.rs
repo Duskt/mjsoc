@@ -97,7 +97,7 @@ async fn generate_qr(info: web::Query<UserProfileOptional>, req: HttpRequest) ->
         None => html! {
             html {
                 script src="/index.js" {}
-
+                p { "Please enter a user ID. For proper formatting, use lowercase with a period (.) to separate names (e.g. John Smith would be john.smith)."}
                 form onsubmit="displayQR(event)" method="GET" {
                     input id="nameInput" autofocus {}
                 }
@@ -145,7 +145,7 @@ async fn register_attendance(
     if !is_authenticated(&session, &data.authenticated_keys) {
         // Login and redirect back here
         return get_redirect_response(&format!(
-            "/?redirect={}",
+            "/login?redirect={}",
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
@@ -202,7 +202,7 @@ async fn authenticate(
     get_redirect_response(&info.redirect.clone().unwrap_or("/".to_string()))
 }
 
-#[get("/")]
+#[get("/login")]
 async fn login(
     session: Session,
     data: web::Data<AppState>,
@@ -251,7 +251,7 @@ async fn main() -> std::io::Result<()> {
             .service(register_attendance)
             .service(login)
             .service(authenticate)
-            .service(fs::Files::new("/", "public").show_files_listing())
+            .service(fs::Files::new("/", "public").index_file("index.html"))
     })
     .bind((IP, PORT))?
     .run()
