@@ -5,12 +5,10 @@ mod sheets;
 
 use crate::auth::is_authenticated;
 use crate::auth::new_session;
+use crate::errors::name_error::NameErr;
 use actix_web::{http::header::LOCATION, post, HttpRequest};
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
-use errors::name_empty::NameEmptyErr;
-use errors::name_too_long::NameTooLongErr;
-use std::error::Error;
 use std::{env, sync::RwLock};
 use urlencoding::encode;
 
@@ -56,13 +54,14 @@ fn get_redirect_response(url: &str) -> HttpResponse {
         .finish();
 }
 
-fn get_qr_url(name: &str, base_url: &str) -> Result<String, Box<dyn Error>> {
-    if name.len() > MAX_NAME_LEN {
-        return Err(Box::new(NameTooLongErr));
+fn get_qr_url(name: &str, base_url: &str) -> Result<String, NameErr> {
+    if name.is_empty() {
+        println!("empty");
+        return Err(NameErr::NameEmpty);
     }
 
-    if name.is_empty() {
-        return Err(Box::new(NameEmptyErr));
+    if name.len() > MAX_NAME_LEN {
+        return Err(NameErr::NameTooLong);
     }
 
     Ok(format!(
@@ -73,12 +72,12 @@ fn get_qr_url(name: &str, base_url: &str) -> Result<String, Box<dyn Error>> {
 
 #[get("/qr")]
 async fn generate_qr(info: web::Query<UserProfileOptional>, req: HttpRequest) -> impl Responder {
-    // TODO: check name isn't empty
     let html = match info.name.clone() {
         Some(name) => {
             let url = get_qr_url(&name, &get_base_url(&req));
-            if url.is_err() {
-                return Err(NameTooLongErr);
+            match url {
+                Ok(_) => (),
+                Err(err) => return Err(err),
             }
 
             // Generate the QR code as svg
@@ -125,8 +124,9 @@ pub struct UserProfile {
 #[get("/download")]
 async fn download_qr(info: web::Query<UserProfile>, req: HttpRequest) -> impl Responder {
     let url = get_qr_url(&info.name, &get_base_url(&req));
-    if url.is_err() {
-        return HttpResponse::BadRequest().body("Name too long");
+    match url {
+        Ok(_) => (),
+        Err(err) => return Err(err),
     }
 
     // Generate the QR PNG blob
@@ -138,10 +138,10 @@ async fn download_qr(info: web::Query<UserProfile>, req: HttpRequest) -> impl Re
         parameters: vec![DispositionParam::Filename(format!("{}.png", info.name))],
     };
 
-    HttpResponse::Ok()
+    Ok(HttpResponse::Ok()
         .content_type("image/png")
         .append_header(content_disposition)
-        .body(binary)
+        .body(binary))
 }
 
 #[get("/register_attendance")]
