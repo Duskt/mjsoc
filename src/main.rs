@@ -65,7 +65,10 @@ fn get_qr_url(name: &str, base_url: &str) -> Result<String, Box<dyn Error>> {
         return Err(Box::new(NameEmptyErr));
     }
 
-    Ok(format!("{base_url}/register_attendance?name={}", name))
+    Ok(format!(
+        "{base_url}/register_attendance?name={}",
+        encode(name)
+    ))
 }
 
 #[get("/qr")]
@@ -96,7 +99,7 @@ async fn generate_qr(info: web::Query<UserProfileOptional>, req: HttpRequest) ->
                         input id="nameInput" autofocus {}
                     }
 
-                    button onclick=(format!("window.location.href='/download?name={}'", name)) { "Download!" }
+                    button onclick=(format!("window.location.href='/download?name={}'", encode(name))) { "Download!" }
                 }
             }
         }
@@ -218,10 +221,12 @@ async fn login(
         return HttpResponse::Ok().body("already authenticated");
     }
 
+    let redirect = info.redirect.clone().unwrap_or("/".to_string());
+    let redirect_encoded = encode(&redirect);
     let html = html! {
         html {
             p { "Enter admin password to accept member attendance:"}
-            form action=(format!("/auth?redirect={}", info.redirect.clone().unwrap_or("/".to_string()))) method="POST" {
+            form action=(format!("/auth?redirect={redirect_encoded}")) method="POST" {
                 input name="password" id="password" type="password" autofocus {}
             }
         }
