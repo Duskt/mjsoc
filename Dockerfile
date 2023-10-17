@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y libc-bin && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/target/release/mjsoc-attendance .
 COPY ./public ./public
+COPY ./keys ./keys
 
 
 CMD ["./mjsoc-attendance"]
