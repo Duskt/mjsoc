@@ -7,8 +7,14 @@ use crate::auth::is_authenticated;
 use crate::auth::new_session;
 use crate::errors::name_error::NameErr;
 use actix_web::{http::header::LOCATION, post, HttpRequest};
+use base64::engine::general_purpose;
+use base64::Engine;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
+use ring::hmac;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::Read;
 use std::{env, sync::RwLock};
 use urlencoding::encode;
 
@@ -52,9 +58,27 @@ fn get_redirect_response(url: &str) -> HttpResponse {
         .finish();
 }
 
-fn get_qr_url(name: &str, base_url: &str) -> Result<String, NameErr> {
+fn generate_signature(input: &str, key: &Vec<u8>) -> String {
+    let key = hmac::Key::new(hmac::HMAC_SHA256, key);
+    let mut context = hmac::Context::with_key(&key);
+    context.update(input.as_bytes());
+
+    let signature = context.sign();
+    general_purpose::URL_SAFE_NO_PAD.encode(&signature)
+}
+
+fn verify_signature(input: &str, signature: &str, key: &Vec<u8>) -> bool {
+    let signature_bytes = match general_purpose::URL_SAFE_NO_PAD.decode(&signature) {
+        Ok(decoded) => decoded,
+        Err(_) => return false,
+    };
+
+    let verifying_key = hmac::Key::new(hmac::HMAC_SHA256, key);
+    hmac::verify(&verifying_key, input.as_bytes(), &signature_bytes).is_ok()
+}
+
+fn get_qr_url(name: &str, base_url: &str, key: &Vec<u8>) -> Result<String, NameErr> {
     if name.is_empty() {
-        println!("empty");
         return Err(NameErr::NameEmpty);
     }
 
@@ -62,9 +86,12 @@ fn get_qr_url(name: &str, base_url: &str) -> Result<String, NameErr> {
         return Err(NameErr::NameTooLong);
     }
 
+    let signature = generate_signature(name, key);
+
     Ok(format!(
-        "{base_url}/register_attendance?name={}",
-        encode(name)
+        "{base_url}/register_attendance?name={}&signature={}",
+        encode(name),
+        encode(&signature), // Shouldn't need to encode, but to be safe
     ))
 }
 
@@ -84,15 +111,15 @@ async fn generate_qr(
     }
     let html = match info.name.clone() {
         Some(name) => {
-            let url = get_qr_url(&name, &get_base_url(&req));
-            match url {
-                Ok(_) => (),
+            let url = get_qr_url(&name, &get_base_url(&req), &data.hmac_key);
+            let url = match url {
+                Ok(url) => url,
                 Err(err) => return Err(err),
-            }
+            };
 
             // Generate the QR code as svg
             let qr_svg = qrcode_generator::to_svg_to_string::<_, &str>(
-                url.unwrap(),
+                url,
                 QrCodeEcc::Medium,
                 QR_SIZE,
                 None,
@@ -145,7 +172,7 @@ async fn download_qr(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         )));
     }
-    let url = get_qr_url(&info.name, &get_base_url(&req));
+    let url = get_qr_url(&info.name, &get_base_url(&req), &data.hmac_key);
     match url {
         Ok(_) => (),
         Err(err) => return Err(err),
@@ -166,9 +193,15 @@ async fn download_qr(
         .body(binary))
 }
 
+#[derive(Deserialize)]
+pub struct AttendanceQuery {
+    name: String,
+    signature: String,
+}
+
 #[get("/register_attendance")]
 async fn register_attendance(
-    info: web::Query<UserProfile>,
+    info: web::Query<AttendanceQuery>,
     data: web::Data<AppState>,
     session: Session,
     req: HttpRequest,
@@ -179,6 +212,10 @@ async fn register_attendance(
             "/login?redirect={}",
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
+    }
+
+    if !verify_signature(&info.name, &info.signature, &data.hmac_key) {
+        return HttpResponse::UnprocessableEntity().body("Invalid signature");
     }
 
     let client = http_client::http_client();
@@ -260,6 +297,20 @@ struct AppState {
     // key when inserting a new one - this is to prevent using up too much memory
     authenticated_keys: RwLock<CircularBuffer<MAX_AUTHENTICATED_USERS, String>>,
     admin_password: String,
+    hmac_key: Vec<u8>,
+}
+
+fn get_file_bytes(path: &str) -> Vec<u8> {
+    let f = File::open(path).expect("Failed to find file");
+    let mut reader = BufReader::new(f);
+    let mut buffer = Vec::new();
+
+    // Read file into vector.
+    reader
+        .read_to_end(&mut buffer)
+        .expect("Failed to read file");
+
+    buffer
 }
 
 #[actix_web::main]
@@ -270,9 +321,13 @@ async fn main() -> std::io::Result<()> {
     let admin_password =
         env::var("ADMIN_PASSWORD").expect("No admin password provided in environment");
 
+    let hmac_key_file = env::var("HMAC_KEY_FILE").expect("No hmac file provided");
+    let hmac_key = get_file_bytes(&hmac_key_file);
+
     let state = web::Data::new(AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),
         admin_password,
+        hmac_key,
     });
 
     HttpServer::new(move || {
