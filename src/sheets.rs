@@ -58,21 +58,3 @@ pub async fn add_member(
         .doit()
         .await
 }
-
-pub fn userid_to_name(userid: &str) -> String {
-    // this was mostly from chatgpt. super embarrassing. but iterators in rust are still tedious for me
-    userid
-        .split('.')
-        .collect::<Vec<_>>()
-        .iter()
-        .map(|part| {
-            let first_letter = part
-                .chars()
-                .next()
-                .expect("Attempted to format something which was an incorrect user id:");
-            let rest = &part[1..];
-            format!("{}{}", first_letter.to_uppercase(), rest)
-        })
-        .collect::<Vec<String>>()
-        .join(" ")
-}

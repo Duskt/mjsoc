@@ -105,7 +105,7 @@ async fn generate_qr(info: web::Query<UserProfileOptional>, req: HttpRequest) ->
         None => html! {
             html {
                 script src="/index.js" {}
-                p { "Please enter a user ID. For proper formatting, use lowercase with a period (.) to separate names (e.g. John Smith would be john.smith)."}
+                p { "Please enter a name as it should be displayed on the Google Sheet, e.g. John Smith."}
                 form onsubmit="displayQR(event)" method="GET" {
                     input id="nameInput" autofocus {}
                 }
@@ -162,8 +162,7 @@ async fn register_attendance(
     let client = http_client::http_client();
     let auth = auth::google_auth(client.clone()).await;
     let hub = Sheets::new(client.clone(), auth);
-    let name = sheets::userid_to_name(&info.name);
-    let length = match sheets::get_members(&hub, Some(&name)).await {
+    let length = match sheets::get_members(&hub, Some(&info.name)).await {
         Ok(l) => l,
         _ => 0, // just use zero to indicate duplicates?
     };
@@ -171,14 +170,10 @@ async fn register_attendance(
         return HttpResponse::Ok().body("Already in");
     }
     let u8length = length.try_into().unwrap();
-    sheets::add_member(&hub, u8length, &name)
+    sheets::add_member(&hub, u8length, &info.name)
         .await
         .expect("Adding member to the spreadsheet failed.");
-    HttpResponse::Ok().body(format!(
-        "{} has been added to the roster as {}.",
-        info.name.clone(),
-        &name
-    ))
+    HttpResponse::Ok().body(format!("{} has been added to the roster.", &info.name))
 }
 
 #[derive(Debug, Clone, Deserialize)]
