@@ -31,8 +31,6 @@ const PORT: u16 = 5654;
 
 const QR_SIZE: usize = 256;
 
-const MAX_NAME_LEN: usize = 64;
-
 pub const MAX_AUTHENTICATED_USERS: usize = 64;
 
 #[derive(Deserialize)]
@@ -60,7 +58,7 @@ fn get_qr_url(name: &str, base_url: &str) -> Result<String, NameErr> {
         return Err(NameErr::NameEmpty);
     }
 
-    if name.len() > MAX_NAME_LEN {
+    if name.len() > sheets::MAX_NAME_LEN {
         return Err(NameErr::NameTooLong);
     }
 
@@ -167,13 +165,15 @@ async fn register_attendance(
         _ => 0, // just use zero to indicate duplicates?
     };
     if length == 0 {
-        return HttpResponse::Ok().body("Already in");
+        return HttpResponse::Ok().body(format!("{} is already in the roster.", &info.name));
     }
     let u8length = length.try_into().unwrap();
-    sheets::add_member(&hub, u8length, &info.name)
-        .await
-        .expect("Adding member to the spreadsheet failed.");
-    HttpResponse::Ok().body(format!("{} has been added to the roster.", &info.name))
+    match sheets::add_member(&hub, u8length, &info.name).await {
+        Ok(_) => {
+            HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name))
+        }
+        Err(e) => HttpResponse::BadRequest().body(e.to_string()),
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -10,6 +10,7 @@ use std::env;
 
 const SESSION: u8 = 1;
 const MAX_PLAYERS: u8 = 30;
+pub const MAX_NAME_LEN: usize = 64;
 
 pub async fn get_members(
     hub: &Sheets<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>,
@@ -45,6 +46,11 @@ pub async fn add_member(
     name: &str,
 ) -> Result<(Response<Body>, UpdateValuesResponse), Error> {
     dotenv().ok();
+    if name.len() > MAX_NAME_LEN {
+        return Err(Error::BadRequest(Value::from(
+            "Name must not be longer than 64 characters.",
+        )));
+    }
     let range = format!("Session {}!A{}", SESSION, column + 1);
     let req = ValueRange {
         major_dimension: None, // defaults to ROWS, doesn't matter since length is 1
