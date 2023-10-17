@@ -19,7 +19,6 @@ use actix_web::{
     http::header::{ContentDisposition, DispositionParam, DispositionType},
     web, App, HttpResponse, HttpServer, Responder,
 };
-use const_format::formatcp;
 use maud::html;
 use qrcode_generator::QrCodeEcc;
 use serde::Deserialize;
@@ -31,7 +30,6 @@ const IP: &str = "0.0.0.0";
 const PORT: u16 = 5654;
 
 const QR_SIZE: usize = 256;
-const BASE_URL: &str = formatcp!("http://localhost:{PORT}");
 
 const MAX_NAME_LEN: usize = 64;
 
@@ -42,25 +40,34 @@ pub struct UserProfileOptional {
     name: Option<String>,
 }
 
+fn get_base_url(req: &HttpRequest) -> String {
+    let conn_info = req.connection_info();
+    let scheme = conn_info.scheme();
+    let host = conn_info.host();
+
+    format!("{scheme}://{host}")
+}
+
 fn get_redirect_response(url: &str) -> HttpResponse {
     return HttpResponse::Found()
         .append_header((LOCATION, url))
         .finish();
 }
 
-fn get_qr_url(name: &str) -> Result<String, NameTooLongErr> {
+fn get_qr_url(name: &str, base_url: &str) -> Result<String, NameTooLongErr> {
     if name.len() > MAX_NAME_LEN {
         return Err(NameTooLongErr);
     }
 
-    Ok(format!("{BASE_URL}/register_attendance?name={}", name))
+    Ok(format!("{base_url}/register_attendance?name={}", name))
 }
 
 #[get("/qr")]
-async fn generate_qr(info: web::Query<UserProfileOptional>) -> impl Responder {
+async fn generate_qr(info: web::Query<UserProfileOptional>, req: HttpRequest) -> impl Responder {
+    // TODO: check name isn't empty
     let html = match info.name.clone() {
         Some(name) => {
-            let url = get_qr_url(&name);
+            let url = get_qr_url(&name, &get_base_url(&req));
             if url.is_err() {
                 return Err(NameTooLongErr);
             }
@@ -107,8 +114,8 @@ pub struct UserProfile {
 }
 
 #[get("/download")]
-async fn download_qr(info: web::Query<UserProfile>) -> impl Responder {
-    let url = get_qr_url(&info.name);
+async fn download_qr(info: web::Query<UserProfile>, req: HttpRequest) -> impl Responder {
+    let url = get_qr_url(&info.name, &get_base_url(&req));
     if url.is_err() {
         return HttpResponse::BadRequest().body("Name too long");
     }
@@ -138,7 +145,7 @@ async fn register_attendance(
     if !is_authenticated(&session, &data.authenticated_keys) {
         // Login and redirect back here
         return get_redirect_response(&format!(
-            "{BASE_URL}/?redirect={}",
+            "/?redirect={}",
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
@@ -146,7 +153,7 @@ async fn register_attendance(
     // TODO: add to google sheet here
     let client = http_client::http_client();
     let auth = auth::google_auth(client.clone()).await;
-    let mut hub = Sheets::new(client.clone(), auth);
+    let hub = Sheets::new(client.clone(), auth);
     let result = sheets::add_member(&hub).await;
     println!("{:?}", result);
     HttpResponse::Ok().body(info.name.clone())
@@ -159,7 +166,7 @@ pub struct AuthBody {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct RedirectURL {
-    redirect: String,
+    redirect: Option<String>,
 }
 
 #[post("/auth")]
@@ -179,7 +186,7 @@ async fn authenticate(
 
     // Create session for user
     new_session(&session, &data.authenticated_keys);
-    get_redirect_response(&info.redirect)
+    get_redirect_response(&info.redirect.clone().unwrap_or("/".to_string()))
 }
 
 #[get("/")]
@@ -195,7 +202,7 @@ async fn login(
     let html = html! {
         html {
             p { "Enter admin password to accept member attendance:"}
-            form action=(format!("{BASE_URL}/auth?redirect={}", info.redirect)) method="POST" {
+            form action=(format!("/auth?redirect={}", info.redirect.clone().unwrap_or("/".to_string()))) method="POST" {
                 input name="password" id="password" type="password" autofocus {}
             }
         }

@@ -3,3 +3,4 @@
 /public/assets/logo*
 .env
 _*.json
+hop.yml
