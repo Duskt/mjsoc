@@ -150,13 +150,26 @@ async fn register_attendance(
         ));
     }
 
-    // TODO: add to google sheet here
     let client = http_client::http_client();
     let auth = auth::google_auth(client.clone()).await;
     let hub = Sheets::new(client.clone(), auth);
-    let result = sheets::add_member(&hub).await;
-    println!("{:?}", result);
-    HttpResponse::Ok().body(info.name.clone())
+    let name = sheets::userid_to_name(&info.name);
+    let length = match sheets::get_members(&hub, Some(&name)).await {
+        Ok(l) => l,
+        _ => 0, // just use zero to indicate duplicates?
+    };
+    if length == 0 {
+        return HttpResponse::Ok().body("Already in");
+    }
+    let u8length = length.try_into().unwrap();
+    sheets::add_member(&hub, u8length, &name)
+        .await
+        .expect("Adding member to the spreadsheet failed.");
+    HttpResponse::Ok().body(format!(
+        "{} has been added to the roster as {}.",
+        info.name.clone(),
+        &name
+    ))
 }
 
 #[derive(Debug, Clone, Deserialize)]

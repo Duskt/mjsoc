@@ -8,39 +8,71 @@ use google_sheets4::{
 use serde_json::value::Value;
 use std::env;
 
-pub async fn get_members(hub: &Sheets<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>) {
+const SESSION: u8 = 1;
+const MAX_PLAYERS: u8 = 30;
+
+pub async fn get_members(
+    hub: &Sheets<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>,
+    name: Option<&str>,
+) -> Result<usize, String> {
     dotenv().ok();
+    let range: String = format!("Session {}!A1:A{}", SESSION, MAX_PLAYERS);
     let res = hub
         .spreadsheets()
-        .values_get(&env::var("SHEET_ID").unwrap(), "Session 1!A1:A30")
+        .values_get(&env::var("SHEET_ID").unwrap(), &range)
         .doit() // just
         .await
-        .expect("Request failed somehow");
-    // as A1:A30 is just a column, it should always be Vec(1 item)<Vec(30 items)<serde_json::value::Value>>
-    // we want to read the member list, make sure they're not on there, and then add them
-    // (see below - there is an append method as well, but that won't check if theyre alr here)
-    // for now let's just add the id
-    // this should return:
-    // Ok(a number corresponding to the row to add the name to, e.g. 15)
-    // or Err(this person is already added)
+        .expect("Could not get members:");
+    let values = res.1.values.expect("res.1.values was None unexpectedly");
+    if let Some(name) = name {
+        if values.iter().fold(false, |acc, i| {
+            // im a rustacean
+            acc | i
+                .iter()
+                .map(|x| x.to_string().replace('"', ""))
+                .collect::<Vec<String>>()
+                .contains(&name.to_string())
+        }) {
+            return Err(format!("{} already present in roster.", name));
+        }
+    }
+    Ok(values.len())
 }
 
 pub async fn add_member(
     hub: &Sheets<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>,
+    column: u8,
+    name: &str,
 ) -> Result<(Response<Body>, UpdateValuesResponse), Error> {
     dotenv().ok();
-    // THERE IS AN APPEND FUNCTION BTW
-    // https://docs.rs/google-sheets4/latest/google_sheets4/api/struct.SpreadsheetValueAppendCall.html
-    // i can't get this to work. google sheets api is crazy
+    let range = format!("Session {}!A{}", SESSION, column + 1);
     let req = ValueRange {
-        major_dimension: None,
-        range: Some(String::from("Session 1!A15")),
-        values: Some(vec![vec![Value::from("test")]]),
+        major_dimension: None, // defaults to ROWS, doesn't matter since length is 1
+        range: Some(range.clone()),
+        values: Some(vec![vec![Value::from(name)]]),
     };
-    println!("{:?}", req);
     hub.spreadsheets()
-        .values_update(req, &env::var("SHEET_ID").unwrap(), "Session 1!A15")
-        .value_input_option("test")
+        .values_update(req, &env::var("SHEET_ID").unwrap(), &range)
+        // value_input_option must be "RAW" or "USER_ENTERED". fuck enums ig
+        .value_input_option("RAW")
         .doit()
         .await
+}
+
+pub fn userid_to_name(userid: &str) -> String {
+    // this was mostly from chatgpt. super embarrassing. but iterators in rust are still tedious for me
+    userid
+        .split('.')
+        .collect::<Vec<_>>()
+        .iter()
+        .map(|part| {
+            let first_letter = part
+                .chars()
+                .next()
+                .expect("Attempted to format something which was an incorrect user id:");
+            let rest = &part[1..];
+            format!("{}{}", first_letter.to_uppercase(), rest)
+        })
+        .collect::<Vec<String>>()
+        .join(" ")
 }

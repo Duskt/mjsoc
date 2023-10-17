@@ -14,7 +14,6 @@ pub async fn google_auth(
     client: hyper::Client<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>,
 ) -> Authenticator<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>> {
     dotenv().ok();
-    println!("{}", &env::var("PRIVATE_KEY").unwrap());
     let secret: oauth2::ServiceAccountKey = oauth2::read_service_account_key(
         env::var("PRIVATE_KEY").expect("No private key listed in dotenv."),
     )
