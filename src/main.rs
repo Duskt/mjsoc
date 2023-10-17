@@ -88,11 +88,14 @@ fn get_qr_url(name: &str, base_url: &str, key: &Vec<u8>) -> Result<String, NameE
 
     let signature = generate_signature(name, key);
 
-    Ok(format!(
+    let url = format!(
         "{base_url}/register_attendance?name={}&signature={}",
         encode(name),
         encode(&signature), // Shouldn't need to encode, but to be safe
-    ))
+    );
+
+    println!("{url}");
+    Ok(url)
 }
 
 #[get("/qr")]
