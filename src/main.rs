@@ -99,7 +99,7 @@ async fn generate_qr(info: web::Query<UserProfileOptional>, req: HttpRequest) ->
                         input id="nameInput" autofocus {}
                     }
 
-                    button onclick=(format!("window.location.href='/download?name={}'", encode(name))) { "Download!" }
+                    button onclick=(format!("window.location.href='/download?name={}'", encode(&name))) { "Download!" }
                 }
             }
         }
