@@ -235,6 +235,7 @@ async fn login(
     HttpResponse::Ok().body(html.into_string())
 }
 
+#[derive(Debug)]
 struct AppState {
     // Circular buffer allows us to have a fixed capacity and remove oldest
     // key when inserting a new one - this is to prevent using up too much memory
@@ -244,19 +245,24 @@ struct AppState {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
-        dotenv().ok();
+    dotenv().ok();
 
-        let key = cookie::Key::generate();
-        let admin_password =
-            env::var("ADMIN_PASSWORD").expect("No admin password provided in environment");
+    let key = cookie::Key::generate();
+    let admin_password =
+        env::var("ADMIN_PASSWORD").expect("No admin password provided in environment");
 
+    let state = web::Data::new(AppState {
+        authenticated_keys: RwLock::new(CircularBuffer::new()),
+        admin_password,
+    });
+
+    HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(AppState {
-                authenticated_keys: RwLock::new(CircularBuffer::new()),
-                admin_password,
-            }))
-            .wrap(SessionMiddleware::new(CookieSessionStore::default(), key))
+            .app_data(state.clone())
+            .wrap(SessionMiddleware::new(
+                CookieSessionStore::default(),
+                key.clone(),
+            ))
             .service(generate_qr)
             .service(download_qr)
             .service(register_attendance)
