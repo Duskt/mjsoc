@@ -8,7 +8,9 @@ use crate::auth::new_session;
 use actix_web::{http::header::LOCATION, post, HttpRequest};
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
+use errors::name_empty::NameEmptyErr;
 use errors::name_too_long::NameTooLongErr;
+use std::error::Error;
 use std::{env, sync::RwLock};
 use urlencoding::encode;
 
@@ -54,9 +56,13 @@ fn get_redirect_response(url: &str) -> HttpResponse {
         .finish();
 }
 
-fn get_qr_url(name: &str, base_url: &str) -> Result<String, NameTooLongErr> {
+fn get_qr_url(name: &str, base_url: &str) -> Result<String, Box<dyn Error>> {
     if name.len() > MAX_NAME_LEN {
-        return Err(NameTooLongErr);
+        return Err(Box::new(NameTooLongErr));
+    }
+
+    if name.is_empty() {
+        return Err(Box::new(NameEmptyErr));
     }
 
     Ok(format!("{base_url}/register_attendance?name={}", name))
