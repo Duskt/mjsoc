@@ -71,7 +71,7 @@ pub async fn generate_qr(
             let qr_svg = qrcode_generator::to_svg_to_string::<_, &str>(
                 url,
                 QrCodeEcc::Medium,
-                QR_SIZE,
+                QR_SIZE * 2, // TODO: separate QR display size?
                 None,
             )
             .unwrap();

@@ -1,5 +1,35 @@
 body {
+  margin-top: 30px;
   background-color: #c5bcb5;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 36px;
+}
+
+p {
+  text-wrap: pretty;
+  width: 90%;
+  text-align: center
+}
+
+input {
+  margin: 15px;
+  padding: 4px;
+  width: 100%;
+  font-size: 36px;
+}
+
+form {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  width: 80%;
+  max-width: 500px;
+}
+
+button {
+  padding: 10px 20px;
+  margin-top: 20px;
+  font-size: 36px;
   font-family: 'Courier New', Courier, monospace;
 }
 
@@ -7,12 +37,6 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-p {
-  text-wrap: pretty;
-  max-width: 250px;
-  text-align: center
 }
 
 .logo {
