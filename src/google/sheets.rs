@@ -1,4 +1,3 @@
-// sheets.rs
 use dotenv::dotenv;
 use google_sheets4::{
     api::{UpdateValuesResponse, ValueRange},
@@ -7,6 +6,8 @@ use google_sheets4::{
 };
 use serde_json::value::Value;
 use std::env;
+
+use crate::{errors::insert_member_error::InsertMemberErr, http_client::http_client};
 
 const SESSION: u8 = 1;
 const MAX_PLAYERS: u8 = 30;
@@ -63,4 +64,20 @@ pub async fn add_member(
         .value_input_option("RAW")
         .doit()
         .await
+}
+
+pub async fn insert_new_member(name: &str) -> Result<(), InsertMemberErr> {
+    let client = http_client();
+    let auth = super::auth::authenticate(client.clone()).await;
+    let hub = Sheets::new(client.clone(), auth);
+    let length = match super::sheets::get_members(&hub, Some(name)).await {
+        Ok(l) => l,
+        _ => return Err(InsertMemberErr::AlreadyInRoster),
+    };
+
+    let u8length = length.try_into().unwrap();
+    super::sheets::add_member(&hub, u8length, name)
+        .await
+        .map(|_| ())
+        .map_err(|e| InsertMemberErr::GoogleSheetsErr(e))
 }

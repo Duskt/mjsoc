@@ -1,6 +1,6 @@
 use crate::{
-    auth::is_authenticated, errors::name_error::NameErr, get_base_url, get_redirect_response, page,
-    sheets, signature::generate_signature, AppState, QR_SIZE,
+    auth::is_authenticated, errors::name_error::NameErr, get_base_url, get_redirect_response,
+    google::sheets, page, signature::generate_signature, AppState, QR_SIZE,
 };
 use actix_session::Session;
 use actix_web::{

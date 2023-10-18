@@ -1,12 +1,13 @@
 mod auth;
 mod errors;
+mod google;
 mod http_client;
 mod qr;
-mod sheets;
 mod signature;
 
 use crate::{
     auth::{is_authenticated, RedirectURL},
+    google::sheets::insert_new_member,
     signature::verify_signature,
 };
 use actix_files as fs;
@@ -17,6 +18,7 @@ use actix_web::{
 use auth::authenticate;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
+use errors::insert_member_error::InsertMemberErr;
 use maud::{html, PreEscaped, DOCTYPE};
 use qr::{download_qr, generate_qr};
 use serde::Deserialize;
@@ -27,8 +29,6 @@ use std::{
     sync::RwLock,
 };
 use urlencoding::encode;
-
-use google_sheets4::Sheets;
 
 // TODO: Use .env?
 const IP: &str = "0.0.0.0";
@@ -94,22 +94,14 @@ async fn register_attendance(
         return HttpResponse::UnprocessableEntity().body("Invalid signature");
     }
 
-    let client = http_client::http_client();
-    let auth = auth::google_auth(client.clone()).await;
-    let hub = Sheets::new(client.clone(), auth);
-    let length = match sheets::get_members(&hub, Some(&info.name)).await {
-        Ok(l) => l,
-        _ => 0, // just use zero to indicate duplicates?
-    };
-    if length == 0 {
-        return HttpResponse::Ok().body(format!("{} is already in the roster.", &info.name));
-    }
-    let u8length = length.try_into().unwrap();
-    match sheets::add_member(&hub, u8length, &info.name).await {
+    match insert_new_member(&info.name).await {
         Ok(_) => {
             HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name))
         }
-        Err(e) => HttpResponse::BadRequest().body(e.to_string()),
+        Err(InsertMemberErr::AlreadyInRoster) => {
+            HttpResponse::Ok().body(format!("{} is already in the roster.", &info.name))
+        }
+        Err(InsertMemberErr::GoogleSheetsErr(e)) => HttpResponse::BadRequest().body(e.to_string()),
     }
 }
 
