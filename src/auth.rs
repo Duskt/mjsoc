@@ -1,10 +1,12 @@
 use std::{env, sync::RwLock};
 
 use actix_session::Session;
+use actix_web::{post, web, HttpResponse, Responder};
 use circular_buffer::CircularBuffer;
+use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::MAX_AUTHENTICATED_USERS;
+use crate::{get_redirect_response, AppState, MAX_AUTHENTICATED_USERS};
 use dotenv::dotenv;
 use google_sheets4::oauth2::{self, authenticator::Authenticator};
 use google_sheets4::{hyper, hyper_rustls};
@@ -61,4 +63,34 @@ pub fn new_session(
         .push_back(uuid.to_string());
 
     uuid.to_string()
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AuthBody {
+    password: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RedirectURL {
+    pub redirect: Option<String>,
+}
+
+#[post("/auth")]
+pub async fn authenticate(
+    session: Session,
+    data: web::Data<AppState>,
+    body: web::Form<AuthBody>,
+    info: web::Query<RedirectURL>,
+) -> impl Responder {
+    if is_authenticated(&session, &data.authenticated_keys) {
+        return HttpResponse::Ok().body("already authenticated");
+    }
+
+    if body.password != data.admin_password {
+        return HttpResponse::Unauthorized().body("Invalid admin password");
+    }
+
+    // Create session for user
+    new_session(&session, &data.authenticated_keys);
+    get_redirect_response(&info.redirect.clone().unwrap_or("/".to_string()))
 }
