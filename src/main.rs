@@ -11,6 +11,8 @@ use base64::engine::general_purpose;
 use base64::Engine;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
+use maud::PreEscaped;
+use maud::DOCTYPE;
 use ring::hmac;
 use std::fs::File;
 use std::io::BufReader;
@@ -38,6 +40,23 @@ const PORT: u16 = 5654;
 const QR_SIZE: usize = 256;
 
 pub const MAX_AUTHENTICATED_USERS: usize = 64;
+
+fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
+    html! {
+        (DOCTYPE)
+        html {
+            head {
+                title { "Mahjong Bath" }
+                link rel="stylesheet" href="styles.css";
+            }
+            body {
+                div class="centre-container" {
+                    (inner)
+                }
+            }
+        }
+    }
+}
 
 #[derive(Deserialize)]
 pub struct UserProfileOptional {
@@ -129,28 +148,24 @@ async fn generate_qr(
             )
             .unwrap();
 
-            html! {
-                html {
-                    script src="/index.js" {}
-
-                    (maud::PreEscaped(qr_svg))
-                    form onsubmit="displayQR(event)" method="GET" {
-                        input id="nameInput" autofocus {}
-                    }
-
-                    button onclick=(format!("window.location.href='/download?name={}'", encode(&name))) { "Download!" }
-                }
-            }
-        }
-        None => html! {
-            html {
+            page(html! {
                 script src="/index.js" {}
-                p { "Please enter a name as it should be displayed on the Google Sheet, e.g. John Smith."}
+
+                (maud::PreEscaped(qr_svg))
                 form onsubmit="displayQR(event)" method="GET" {
                     input id="nameInput" autofocus {}
                 }
+
+                button onclick=(format!("window.location.href='/download?name={}'", encode(&name))) { "Download!" }
+            })
+        }
+        None => page(html! {
+            script src="/index.js" {}
+            p { "Please enter a name as it should be displayed on the Google Sheet, e.g. John Smith."}
+            form onsubmit="displayQR(event)" method="GET" {
+                input id="nameInput" autofocus {}
             }
-        },
+        }),
     };
 
     Ok(HttpResponse::Ok().body(html.into_string()))
@@ -282,14 +297,26 @@ async fn login(
 
     let redirect = info.redirect.clone().unwrap_or("/".to_string());
     let redirect_encoded = encode(&redirect);
-    let html = html! {
-        html {
-            p { "Enter admin password to accept member attendance:"}
-            form action=(format!("/auth?redirect={redirect_encoded}")) method="POST" {
-                input name="password" id="password" type="password" autofocus {}
-            }
+    let html = page(html! {
+        p { "Enter admin password to accept member attendance:"}
+        form action=(format!("/auth?redirect={redirect_encoded}")) method="POST" {
+            input name="password" id="password" type="password" autofocus {}
         }
-    };
+    });
+
+    HttpResponse::Ok().body(html.into_string())
+}
+
+#[get("/")]
+async fn index() -> impl Responder {
+    let html = page(html! {
+        img src="/assets/logo.jpg" class="logo";
+        p {
+            "Only the Mahjong society committee should need to use this."
+            br; br;
+            "Contact a developer for help."
+        }
+    });
 
     HttpResponse::Ok().body(html.into_string())
 }
@@ -345,7 +372,8 @@ async fn main() -> std::io::Result<()> {
             .service(register_attendance)
             .service(login)
             .service(authenticate)
-            .service(fs::Files::new("/", "public").index_file("index.html"))
+            .service(index)
+            .service(fs::Files::new("/", "public"))
     })
     .bind((IP, PORT))?
     .run()
