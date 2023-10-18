@@ -1,6 +1,12 @@
 use crate::{
-    auth::is_authenticated, errors::name_error::NameErr, get_base_url, get_redirect_response,
-    google::sheets, page, signature::generate_signature, AppState, QR_SIZE,
+    auth::is_authenticated,
+    components::qr::{qr_display, QrData},
+    errors::name_error::NameErr,
+    get_base_url, get_redirect_response,
+    google::sheets,
+    page,
+    signature::generate_signature,
+    AppState, QR_SIZE,
 };
 use actix_session::Session;
 use actix_web::{
@@ -8,7 +14,6 @@ use actix_web::{
     http::header::{ContentDisposition, DispositionParam, DispositionType},
     web, HttpRequest, HttpResponse, Responder,
 };
-use maud::html;
 use qrcode_generator::QrCodeEcc;
 use serde::Deserialize;
 use urlencoding::encode;
@@ -53,7 +58,8 @@ pub async fn generate_qr(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         )));
     }
-    let html = match info.name.clone() {
+
+    let qr_data = match info.name.clone() {
         Some(name) => {
             let url = get_qr_url(&name, &get_base_url(&req), &data.hmac_key);
             let url = match url {
@@ -70,26 +76,15 @@ pub async fn generate_qr(
             )
             .unwrap();
 
-            page(html! {
-                script src="/index.js" {}
-
-                (maud::PreEscaped(qr_svg))
-                form onsubmit="displayQR(event)" method="GET" {
-                    input id="nameInput" autofocus {}
-                }
-
-                button onclick=(format!("window.location.href='/download?name={}'", encode(&name))) { "Download!" }
+            Some(QrData {
+                name: name.to_string(),
+                svg: qr_svg,
             })
         }
-        None => page(html! {
-            script src="/index.js" {}
-            p { "Please enter a name as it should be displayed on the Google Sheet, e.g. John Smith."}
-            form onsubmit="displayQR(event)" method="GET" {
-                input id="nameInput" autofocus {}
-            }
-        }),
+        None => None,
     };
 
+    let html = page(qr_display(qr_data));
     Ok(HttpResponse::Ok().body(html.into_string()))
 }
 

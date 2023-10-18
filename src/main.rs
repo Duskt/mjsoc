@@ -1,4 +1,5 @@
 mod auth;
+mod components;
 mod errors;
 mod google;
 mod http_client;
