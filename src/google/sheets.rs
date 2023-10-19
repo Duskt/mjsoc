@@ -9,8 +9,8 @@ use std::env;
 
 use crate::{errors::insert_member_error::InsertMemberErr, http_client::http_client};
 
-const SESSION: u8 = 1;
-const MAX_PLAYERS: u8 = 30;
+const SESSION: u8 = 2;
+const MAX_PLAYERS: u8 = 50;
 pub const MAX_NAME_LEN: usize = 64;
 
 pub async fn get_members(
