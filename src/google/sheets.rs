@@ -43,7 +43,7 @@ pub async fn get_members(
 
 pub async fn add_member(
     hub: &Sheets<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>,
-    column: u8,
+    row: u8,
     name: &str,
 ) -> Result<(Response<Body>, UpdateValuesResponse), Error> {
     dotenv().ok();
@@ -52,7 +52,7 @@ pub async fn add_member(
             "Name must not be longer than 64 characters.",
         )));
     }
-    let range = format!("Session {}!A{}", SESSION, column + 1);
+    let range = format!("Session {}!A{}", SESSION, row + 1);
     let req = ValueRange {
         major_dimension: None, // defaults to ROWS, doesn't matter since length is 1
         range: Some(range.clone()),
@@ -79,5 +79,5 @@ pub async fn insert_new_member(name: &str) -> Result<(), InsertMemberErr> {
     super::sheets::add_member(&hub, u8length, name)
         .await
         .map(|_| ())
-        .map_err(|e| InsertMemberErr::GoogleSheetsErr(e))
+        .map_err(InsertMemberErr::GoogleSheetsErr)
 }
