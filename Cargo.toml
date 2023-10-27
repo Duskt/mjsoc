@@ -9,6 +9,7 @@ edition = "2021"
 actix-files = "0.6.2"
 actix-session = { version = "0.8.0", features = ["cookie-session"] }
 actix-web = "4"
+argon2 = "0.5.2"
 base64 = "0.21.4"
 circular-buffer = "0.1.3"
 dotenv = "0.15.0"

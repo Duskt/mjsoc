@@ -147,7 +147,7 @@ pub struct AppState {
     // Circular buffer allows us to have a fixed capacity and remove oldest
     // key when inserting a new one - this is to prevent using up too much memory
     authenticated_keys: RwLock<CircularBuffer<MAX_AUTHENTICATED_USERS, String>>,
-    admin_password: String,
+    admin_password_hash: String,
     hmac_key: Vec<u8>,
 }
 
@@ -169,15 +169,15 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
     let key = cookie::Key::generate();
-    let admin_password =
-        env::var("ADMIN_PASSWORD").expect("No admin password provided in environment");
+    let admin_password_hash =
+        env::var("ADMIN_PASSWORD_HASH").expect("No admin password hash provided in environment");
 
     let hmac_key_file = env::var("HMAC_KEY_FILE").expect("No hmac file provided");
     let hmac_key = get_file_bytes(&hmac_key_file);
 
     let state = web::Data::new(AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),
-        admin_password,
+        admin_password_hash,
         hmac_key,
     });
 

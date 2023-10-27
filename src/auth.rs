@@ -1,5 +1,9 @@
+use argon2::{
+    PasswordHash,
+    PasswordVerifier,
+    Argon2,
+};
 use std::sync::RwLock;
-
 use actix_session::Session;
 use actix_web::{post, web, HttpResponse, Responder};
 use circular_buffer::CircularBuffer;
@@ -66,7 +70,8 @@ pub async fn authenticate(
         return HttpResponse::Ok().body("already authenticated");
     }
 
-    if body.password != data.admin_password {
+    let hash = PasswordHash::new(&data.admin_password_hash).unwrap();
+    if !Argon2::default().verify_password(body.password.as_bytes(), &hash).is_ok() {
         return HttpResponse::Unauthorized().body("Invalid admin password");
     }
 
