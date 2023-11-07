@@ -4,11 +4,13 @@ mod errors;
 mod google;
 mod http_client;
 mod qr;
+mod session_week;
 mod signature;
 
 use crate::{
     auth::{is_authenticated, RedirectURL},
     google::sheets::insert_new_member,
+    session_week::{change_week, get_week},
     signature::verify_signature,
 };
 use actix_files as fs;
@@ -27,7 +29,8 @@ use std::{
     env,
     fs::File,
     io::{BufReader, Read},
-    sync::RwLock,
+    sync::{Mutex, RwLock},
+    time::{SystemTime, UNIX_EPOCH},
 };
 use urlencoding::encode;
 
@@ -95,7 +98,22 @@ async fn register_attendance(
         return HttpResponse::UnprocessableEntity().body("Invalid signature");
     }
 
-    match insert_new_member(&info.name).await {
+    let session_week_number;
+    {
+        let mut unixdate = data.last_set.lock().unwrap();
+        let mut session_week = data.session_week.lock().unwrap();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let days_elapsed = (now - *unixdate) / 60 / 24;
+        if days_elapsed > 6 {
+            *unixdate = now;
+            *session_week += 1;
+        }
+        session_week_number = *session_week;
+    }
+    match insert_new_member(&info.name, session_week_number).await {
         Ok(_) => {
             HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name))
         }
@@ -142,13 +160,14 @@ async fn index() -> impl Responder {
     HttpResponse::Ok().body(html.into_string())
 }
 
-#[derive(Debug)]
 pub struct AppState {
     // Circular buffer allows us to have a fixed capacity and remove oldest
     // key when inserting a new one - this is to prevent using up too much memory
     authenticated_keys: RwLock<CircularBuffer<MAX_AUTHENTICATED_USERS, String>>,
     admin_password_hash: String,
     hmac_key: Vec<u8>,
+    session_week: Mutex<u8>,
+    last_set: Mutex<u64>,
 }
 
 fn get_file_bytes(path: &str) -> Vec<u8> {
@@ -179,6 +198,8 @@ async fn main() -> std::io::Result<()> {
         authenticated_keys: RwLock::new(CircularBuffer::new()),
         admin_password_hash,
         hmac_key,
+        session_week: Mutex::new(4),
+        last_set: Mutex::new(1699386533 - 7 * 24 * 60 * 60),
     });
 
     HttpServer::new(move || {
@@ -194,6 +215,8 @@ async fn main() -> std::io::Result<()> {
             .service(login)
             .service(authenticate)
             .service(index)
+            .service(get_week)
+            .service(change_week)
             .service(fs::Files::new("/", "public"))
     })
     .bind((IP, PORT))?
