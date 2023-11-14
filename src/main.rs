@@ -33,7 +33,7 @@ use serde::Deserialize;
 use std::{
     env,
     fs::File,
-    io::{BufReader, Read},
+    io::{BufReader, Read, Write},
     sync::{Arc, Mutex, RwLock},
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -106,17 +106,22 @@ async fn register_attendance(
     let session_week_number;
     {
         let mut unixdate = data.last_set.lock().unwrap();
-        let mut session_week = data.session_week.lock().unwrap();
+        let session_week;
+        {
+            session_week = data.session_week.lock().unwrap().clone();
+        }
+
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
+
         let days_elapsed = (now - *unixdate) / 60 / 24;
         if days_elapsed > 6 {
             *unixdate = now;
-            *session_week += 1;
+            data.save_session_week(session_week + 1);
         }
-        session_week_number = *session_week;
+        session_week_number = session_week;
     }
     match insert_new_member(&info.name, session_week_number).await {
         Ok(_) => {
@@ -175,6 +180,15 @@ pub struct AppState {
     last_set: Mutex<u64>,
 }
 
+impl AppState {
+    pub fn save_session_week(&self, week: u8) {
+        *self.session_week.lock().unwrap() = week;
+
+        let mut file = File::create(env::var("WEEK_FILE").unwrap()).unwrap();
+        file.write_all(week.to_string().as_bytes()).unwrap();
+    }
+}
+
 fn get_file_bytes(path: &str) -> Vec<u8> {
     let f = File::open(path).expect("Failed to find file");
     let mut reader = BufReader::new(f);
@@ -199,11 +213,18 @@ async fn main() -> std::io::Result<()> {
     let hmac_key_file = env::var("HMAC_KEY_FILE").expect("No hmac file provided");
     let hmac_key = get_file_bytes(&hmac_key_file);
 
+    let week_file = env::var("WEEK_FILE").unwrap();
+    let week = String::from_utf8(get_file_bytes(&week_file))
+        .expect("Invalid week file format")
+        .trim()
+        .parse()
+        .expect("Invalid week number");
+
     let state = web::Data::new(AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),
         admin_password_hash,
         hmac_key,
-        session_week: Mutex::new(4),
+        session_week: Mutex::new(week),
         last_set: Mutex::new(1699386533 - 7 * 24 * 60 * 60),
     });
 

@@ -4,4 +4,4 @@
 .env
 _*.json
 hop.yml
-/keys
+/data

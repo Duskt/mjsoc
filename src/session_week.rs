@@ -40,8 +40,7 @@ pub async fn change_week(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    // set state
-    let mut data_session_week = data.session_week.lock().unwrap();
-    *data_session_week = body.week.parse().expect("Input not int");
+    // Set week
+    data.save_session_week(body.week.parse().expect("Input not int"));
     HttpResponse::NoContent().finish()
 }
