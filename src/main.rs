@@ -207,9 +207,20 @@ async fn main() -> std::io::Result<()> {
         last_set: Mutex::new(1699386533 - 7 * 24 * 60 * 60),
     });
 
-    // Max request quota is 5000
-    // If less than 5000, replenish 1 every minute
-    let quotas_mtx = Arc::new(RwLock::new(Quota::new(5000, Duration::minutes(1))));
+    // Max request quota is burst_size
+    // If less than burst_size, replenish 1 every period
+    let burst_size = env::var("RATE_LIMIT_BURST_SIZE")
+        .expect("No burst size provided")
+        .parse()
+        .unwrap();
+
+    let period = Duration::seconds(
+        env::var("RATE_LIMIT_PERIOD_SECONDS")
+            .expect("No period provided")
+            .parse()
+            .expect("Invalid period"),
+    );
+    let quotas_mtx = Arc::new(RwLock::new(Quota::new(burst_size, period)));
 
     HttpServer::new(move || {
         App::new()
