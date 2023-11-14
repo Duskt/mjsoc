@@ -12,7 +12,7 @@ pub fn qr_display(qr_data: Option<QrData>) -> PreEscaped<String> {
 
         @if let Some(QrData { svg, name }) = &qr_data {
             (maud::PreEscaped(svg))
-            button onclick=(format!("window.location.href='/download?name={}'", encode(&name))) { "Download!" }
+            button onclick=(format!("window.location.href='/download?name={}'", encode(name))) { "Download!" }
         }
         p { "Please enter a name as it should be displayed on the Google Sheet, e.g. John Smith."}
         form onsubmit="displayQR(event)" method="GET" {

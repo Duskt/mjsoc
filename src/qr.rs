@@ -18,7 +18,7 @@ use qrcode_generator::QrCodeEcc;
 use serde::Deserialize;
 use urlencoding::encode;
 
-fn get_qr_url(name: &str, base_url: &str, key: &Vec<u8>) -> Result<String, NameErr> {
+fn get_qr_url(name: &str, base_url: &str, key: &[u8]) -> Result<String, NameErr> {
     if name.is_empty() {
         return Err(NameErr::NameEmpty);
     }

@@ -4,6 +4,8 @@ mod errors;
 mod google;
 mod http_client;
 mod qr;
+mod quota;
+mod rate_limit_handler;
 mod session_week;
 mod signature;
 
@@ -19,17 +21,20 @@ use actix_web::{
     cookie, get, http::header::LOCATION, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use auth::authenticate;
+use chrono::Duration;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
 use errors::insert_member_error::InsertMemberErr;
 use maud::{html, PreEscaped, DOCTYPE};
 use qr::{download_qr, generate_qr};
+use quota::Quota;
+use rate_limit_handler::RateLimit;
 use serde::Deserialize;
 use std::{
     env,
     fs::File,
     io::{BufReader, Read},
-    sync::{Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock},
     time::{SystemTime, UNIX_EPOCH},
 };
 use urlencoding::encode;
@@ -202,9 +207,14 @@ async fn main() -> std::io::Result<()> {
         last_set: Mutex::new(1699386533 - 7 * 24 * 60 * 60),
     });
 
+    // Max request quota is 5000
+    // If less than 5000, replenish 1 every minute
+    let quotas_mtx = Arc::new(RwLock::new(Quota::new(5000, Duration::minutes(1))));
+
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
+            .wrap(RateLimit::new(quotas_mtx.clone()))
             .wrap(SessionMiddleware::new(
                 CookieSessionStore::default(),
                 key.clone(),
