@@ -103,25 +103,33 @@ async fn register_attendance(
         return HttpResponse::UnprocessableEntity().body("Invalid signature");
     }
 
+    // Autoincrement session week.
+    // if 6 days have passed since last set, increments ``session_week``
+    // and updates ``last_set``. Otherwise, change nothing.
     let session_week_number;
     {
-        let mut unixdate = data.last_set.lock().unwrap();
+        let mut unix_last_set_seconds_mutex = data.last_set.lock().unwrap();
         let session_week;
         {
             session_week = *data.session_week.lock().unwrap();
         }
 
-        let now = SystemTime::now()
+        let now_seconds = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-
-        let days_elapsed = (now - *unixdate) / 60 / 24;
+        let days_elapsed = (now_seconds - *unix_last_set_seconds_mutex) / 60 / 60 / 24; // diff in secs / 60 -> mins / 60 -> hours / 24 -> days
+        println!(
+            "Last increment: {}, current time {}, difference in days: {}",
+            *unix_last_set_seconds_mutex, now_seconds, days_elapsed
+        );
         if days_elapsed > 6 {
-            *unixdate = now;
-            data.save_session_week(session_week + 1);
+            *unix_last_set_seconds_mutex = now_seconds;
+            session_week_number = session_week + 1;
+            data.save_session_week(session_week_number);
+        } else {
+            session_week_number = session_week;
         }
-        session_week_number = session_week;
     }
     // flip before giving it to the sheets api
     let flipped_name = flip_names(&info.name);
