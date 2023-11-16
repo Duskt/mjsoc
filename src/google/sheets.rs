@@ -57,7 +57,7 @@ pub async fn add_member(
     let req: ValueRange = ValueRange {
         major_dimension: None, // defaults to ROWS, doesn't matter since length is 1
         range: Some(range.clone()),
-        values: Some(vec![vec![Value::from(flip_names(name))]]),
+        values: Some(vec![vec![Value::from(name)]]), // single value in 2d array
     };
     hub.spreadsheets()
         .values_update(req, &env::var("SHEET_ID").unwrap(), &range)
@@ -83,7 +83,7 @@ pub async fn insert_new_member(name: &str, session: u8) -> Result<(), InsertMemb
         .map_err(InsertMemberErr::GoogleSheetsErr)
 }
 
-fn flip_names(name: &str) -> String {
+pub fn flip_names(name: &str) -> String {
     // Takes a name in the format "Last, First Second" and
     // formats to "First Second Last"
     // ["Last", "First Second"]

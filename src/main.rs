@@ -11,7 +11,7 @@ mod signature;
 
 use crate::{
     auth::{is_authenticated, RedirectURL},
-    google::sheets::insert_new_member,
+    google::sheets::{flip_names, insert_new_member},
     session_week::{change_week, get_week},
     signature::verify_signature,
 };
@@ -123,7 +123,9 @@ async fn register_attendance(
         }
         session_week_number = session_week;
     }
-    match insert_new_member(&info.name, session_week_number).await {
+    // flip before giving it to the sheets api
+    let flipped_name = flip_names(&info.name);
+    match insert_new_member(&flipped_name, session_week_number).await {
         Ok(_) => {
             HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name))
         }
