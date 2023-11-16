@@ -76,10 +76,7 @@ pub async fn generate_qr(
             )
             .unwrap();
 
-            Some(QrData {
-                name: name.to_string(),
-                svg: qr_svg,
-            })
+            Some(QrData { name, svg: qr_svg })
         }
         None => None,
     };

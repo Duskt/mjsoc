@@ -108,7 +108,7 @@ async fn register_attendance(
         let mut unixdate = data.last_set.lock().unwrap();
         let session_week;
         {
-            session_week = data.session_week.lock().unwrap().clone();
+            session_week = *data.session_week.lock().unwrap();
         }
 
         let now = SystemTime::now()
