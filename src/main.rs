@@ -169,7 +169,13 @@ async fn login(
 
 #[get("/assets/logo.jpg")]
 async fn logo() -> Result<NamedFile, std::io::Error> {
-    NamedFile::open("data/logo.jpg")
+    match env::var("LOGO_FILE") {
+        Ok(path) => NamedFile::open(path),
+        Err(_) => {
+            println!("No env LOGO_FILE found, using default '/public/assets/logo.jpg'");
+            NamedFile::open("/public/assets/logo.jpg")
+        }
+    }
 }
 
 #[get("/")]
