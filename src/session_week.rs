@@ -8,6 +8,8 @@ use crate::{auth::is_authenticated, get_redirect_response, page, AppState};
 
 #[get("/week")]
 pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
+    println!("Week requested");
+
     let data_session_week = data.session_week.lock().unwrap();
     let html = page(html! {
         img src="/assets/logo.jpg" class="logo";
@@ -41,10 +43,10 @@ pub async fn change_week(
         ));
     }
 
+    let week = body.week.parse().expect("Input not int");
+    println!("Changing week to {}", week);
+
     // Set week
-    data.session_week
-        .lock()
-        .unwrap()
-        .save_week(body.week.parse().expect("Input not int"));
+    data.session_week.lock().unwrap().save_week(week);
     HttpResponse::NoContent().finish()
 }

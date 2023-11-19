@@ -96,7 +96,7 @@ pub async fn download_qr(
     req: HttpRequest,
     data: web::Data<AppState>,
     session: Session,
-) -> impl Responder {
+) -> Result<HttpResponse, NameErr> {
     if !is_authenticated(&session, &data.authenticated_keys) {
         // Login and redirect back here
         return Ok(get_redirect_response(&format!(
@@ -104,14 +104,12 @@ pub async fn download_qr(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         )));
     }
-    let url = get_qr_url(&info.name, &get_base_url(&req), &data.hmac_key);
-    match url {
-        Ok(_) => (),
-        Err(err) => return Err(err),
-    }
+
+    let url = get_qr_url(&info.name, &get_base_url(&req), &data.hmac_key)?;
+    println!("Downloading QR for {}", url);
 
     // Generate the QR PNG blob
-    let binary = qrcode_generator::to_png_to_vec(url.unwrap(), QrCodeEcc::Medium, QR_SIZE).unwrap();
+    let binary = qrcode_generator::to_png_to_vec(url, QrCodeEcc::Medium, QR_SIZE).unwrap();
 
     // Tell the browser to download the file with a specific filename
     let content_disposition = ContentDisposition {

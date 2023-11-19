@@ -128,7 +128,13 @@ where
                     seconds_remaining = read_quota.until_replenish().num_seconds();
                 }
 
+                println!(
+                    "Rate limit hit, need to wait {}s to send another request",
+                    seconds_remaining
+                );
+
                 if remaining == -4 {
+                    println!("About to start dropping requests, sending notification");
                     send_notification(
                         &req.peer_addr().unwrap().ip().to_string(),
                         seconds_remaining,

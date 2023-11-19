@@ -101,6 +101,10 @@ async fn register_attendance(
     }
 
     if !verify_signature(&info.name, &info.signature, &data.hmac_key) {
+        println!(
+            "Failed to verify signature '{}' for '{}'",
+            info.signature, info.name
+        );
         return HttpResponse::UnprocessableEntity().body("Invalid signature");
     }
 
@@ -131,6 +135,8 @@ async fn register_attendance(
             session_week_number = week_data_mutex.week;
         }
     }
+
+    println!("Recording attendance");
 
     // flip before giving it to the sheets api
     let flipped_name = flip_names(&info.name);
@@ -169,17 +175,20 @@ async fn login(
 
 #[get("/assets/logo.jpg")]
 async fn logo() -> Result<NamedFile, std::io::Error> {
+    println!("Logo requested. Using '{:?}'", env::var("LOGO_FILE"));
     match env::var("LOGO_FILE") {
         Ok(path) => NamedFile::open(path),
         Err(_) => {
-            println!("No env LOGO_FILE found, using default '/public/assets/logo.jpg'");
-            NamedFile::open("/public/assets/logo.jpg")
+            println!("No env LOGO_FILE found, using default './public/assets/logo.jpg'");
+            NamedFile::open("./public/assets/logo.jpg")
         }
     }
 }
 
 #[get("/")]
 async fn index() -> impl Responder {
+    println!("Home page requested");
+
     let html = page(html! {
         img src="/assets/logo.jpg" class="logo";
         p {

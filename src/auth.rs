@@ -71,9 +71,11 @@ pub async fn authenticate(
         .verify_password(body.password.as_bytes(), &hash)
         .is_err()
     {
+        println!("Failed to authenticate");
         return HttpResponse::Unauthorized().body("Invalid admin password");
     }
 
+    println!("Authenticated");
     // Create session for user
     new_session(&session, &data.authenticated_keys);
     get_redirect_response(&info.redirect.clone().unwrap_or("/".to_string()))
