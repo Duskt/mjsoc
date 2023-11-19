@@ -15,7 +15,7 @@ pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
             "Enter week number:"
         }
         form action="/week" method="POST" {
-            input name="week" id="week" value=(format!("{}", data_session_week)) autofocus {}
+            input name="week" id="week" value=(format!("{}", data_session_week.week)) autofocus {}
         }
     });
     HttpResponse::Ok().body(html.into_string())
@@ -40,7 +40,11 @@ pub async fn change_week(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
+
     // Set week
-    data.save_session_week(body.week.parse().expect("Input not int"));
+    data.session_week
+        .lock()
+        .unwrap()
+        .save_week(body.week.parse().expect("Input not int"));
     HttpResponse::NoContent().finish()
 }

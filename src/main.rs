@@ -30,7 +30,7 @@ use maud::{html, PreEscaped, DOCTYPE};
 use qr::{download_qr, generate_qr};
 use quota::Quota;
 use rate_limit_handler::RateLimit;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     env,
     fs::File,
@@ -109,29 +109,29 @@ async fn register_attendance(
     // and updates ``last_set``. Otherwise, change nothing.
     let session_week_number;
     {
-        let mut unix_last_set_seconds_mutex = data.last_set.lock().unwrap();
-        let session_week;
-        {
-            session_week = *data.session_week.lock().unwrap();
-        }
+        let mut week_data_mutex = data.session_week.lock().unwrap();
 
         let now_seconds = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        let days_elapsed = (now_seconds - *unix_last_set_seconds_mutex) / 60 / 60 / 24; // diff in secs / 60 -> mins / 60 -> hours / 24 -> days
+
+        // diff in secs / 60 -> mins / 60 -> hours / 24 -> days
+        let days_elapsed = (now_seconds - week_data_mutex.last_set_unix_seconds) / 60 / 60 / 24;
+
         println!(
             "Last increment: {}, current time {}, difference in days: {}",
-            *unix_last_set_seconds_mutex, now_seconds, days_elapsed
+            week_data_mutex.last_set_unix_seconds, now_seconds, days_elapsed
         );
-        if days_elapsed > 6 {
-            *unix_last_set_seconds_mutex = now_seconds;
-            session_week_number = session_week + 1;
-            data.save_session_week(session_week_number);
+
+        if days_elapsed >= 6 {
+            session_week_number = week_data_mutex.week + 1;
+            week_data_mutex.save_week(session_week_number);
         } else {
-            session_week_number = session_week;
+            session_week_number = week_data_mutex.week;
         }
     }
+
     // flip before giving it to the sheets api
     let flipped_name = flip_names(&info.name);
     match insert_new_member(&flipped_name, session_week_number).await {
@@ -192,17 +192,7 @@ pub struct AppState {
     authenticated_keys: RwLock<CircularBuffer<MAX_AUTHENTICATED_USERS, String>>,
     admin_password_hash: String,
     hmac_key: Vec<u8>,
-    session_week: Mutex<u8>,
-    last_set: Mutex<u64>,
-}
-
-impl AppState {
-    pub fn save_session_week(&self, week: u8) {
-        *self.session_week.lock().unwrap() = week;
-
-        let mut file = File::create(env::var("WEEK_FILE").unwrap()).unwrap();
-        file.write_all(week.to_string().as_bytes()).unwrap();
-    }
+    session_week: Mutex<WeekData>,
 }
 
 fn get_file_bytes(path: &str) -> Vec<u8> {
@@ -218,6 +208,51 @@ fn get_file_bytes(path: &str) -> Vec<u8> {
     buffer
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeekData {
+    week: u8,
+    last_set_unix_seconds: u64,
+}
+
+impl WeekData {
+    pub fn from_file(path: &str) -> Self {
+        match File::open(path) {
+            Ok(f) => {
+                let reader = BufReader::new(f);
+                serde_json::from_reader(reader).expect("Failed to read week file format")
+            }
+            Err(_) => {
+                let week_data = Self {
+                    week: 1,
+                    last_set_unix_seconds: SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                };
+
+                week_data.save_to_file();
+                week_data
+            }
+        }
+    }
+
+    pub fn save_week(&mut self, week: u8) {
+        self.last_set_unix_seconds = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        self.week = week;
+        self.save_to_file();
+    }
+
+    fn save_to_file(&self) {
+        let mut file = File::create(env::var("WEEK_FILE").unwrap()).unwrap();
+        file.write_all(serde_json::to_string(&self).unwrap().as_bytes())
+            .unwrap();
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -230,18 +265,12 @@ async fn main() -> std::io::Result<()> {
     let hmac_key = get_file_bytes(&hmac_key_file);
 
     let week_file = env::var("WEEK_FILE").unwrap();
-    let week = String::from_utf8(get_file_bytes(&week_file))
-        .expect("Invalid week file format")
-        .trim()
-        .parse()
-        .expect("Invalid week number");
 
     let state = web::Data::new(AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),
         admin_password_hash,
         hmac_key,
-        session_week: Mutex::new(week),
-        last_set: Mutex::new(1699386533 - 7 * 24 * 60 * 60),
+        session_week: Mutex::new(WeekData::from_file(&week_file)),
     });
 
     // Max request quota is burst_size
