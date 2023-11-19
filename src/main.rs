@@ -25,6 +25,7 @@ use chrono::Duration;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
 use errors::insert_member_error::InsertMemberErr;
+use fs::NamedFile;
 use maud::{html, PreEscaped, DOCTYPE};
 use qr::{download_qr, generate_qr};
 use quota::Quota;
@@ -166,6 +167,11 @@ async fn login(
     HttpResponse::Ok().body(html.into_string())
 }
 
+#[get("/assets/logo.jpg")]
+async fn logo() -> Result<NamedFile, std::io::Error> {
+    NamedFile::open("data/logo.jpg")
+}
+
 #[get("/")]
 async fn index() -> impl Responder {
     let html = page(html! {
@@ -269,6 +275,9 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(get_week)
             .service(change_week)
+            .service(logo)
+            //.service(fs::Files::new("/assets", "./data/assets"))
+            // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.
             .service(fs::Files::new("/", "public"))
     })
     .bind((IP, PORT))?
