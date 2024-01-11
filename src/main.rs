@@ -3,42 +3,39 @@ mod components;
 mod errors;
 mod google;
 mod http_client;
-mod qr;
+mod pages;
 mod quota;
 mod rate_limit_handler;
-mod session_week;
 mod signature;
+mod week_data;
 
-use crate::{
-    auth::{is_authenticated, RedirectURL},
-    google::sheets::{flip_names, insert_new_member},
-    session_week::{change_week, get_week},
-    signature::verify_signature,
-};
 use actix_files as fs;
-use actix_session::{storage::CookieSessionStore, Session, SessionMiddleware};
-use actix_web::{
-    cookie, get, http::header::LOCATION, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
-};
-use auth::authenticate;
+use actix_session::{storage::CookieSessionStore, SessionMiddleware};
+use actix_web::{cookie, http::header::LOCATION, web, App, HttpRequest, HttpResponse, HttpServer};
 use chrono::Duration;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
-use errors::insert_member_error::InsertMemberErr;
-use fs::NamedFile;
 use maud::{html, PreEscaped, DOCTYPE};
-use qr::{download_qr, generate_qr};
+use pages::{
+    auth::authenticate,
+    index::index,
+    login::login,
+    logo::logo,
+    qr::{download_qr, generate_qr},
+    register_attendance::register_attendance,
+    session_week::{change_week, get_week},
+};
 use quota::Quota;
 use rate_limit_handler::RateLimit;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use signature::verify_signature;
 use std::{
     env,
     fs::File,
-    io::{BufReader, Read, Write},
+    io::{BufReader, Read},
     sync::{Arc, Mutex, RwLock},
-    time::{SystemTime, UNIX_EPOCH},
 };
-use urlencoding::encode;
+use week_data::WeekData;
 
 // TODO: Use .env?
 const IP: &str = "0.0.0.0";
@@ -85,122 +82,6 @@ pub struct AttendanceQuery {
     signature: String,
 }
 
-#[get("/register_attendance")]
-async fn register_attendance(
-    info: web::Query<AttendanceQuery>,
-    data: web::Data<AppState>,
-    session: Session,
-    req: HttpRequest,
-) -> impl Responder {
-    if !is_authenticated(&session, &data.authenticated_keys) {
-        // Login and redirect back here
-        return get_redirect_response(&format!(
-            "/login?redirect={}",
-            encode(&req.uri().path_and_query().unwrap().to_string()),
-        ));
-    }
-
-    if !verify_signature(&info.name, &info.signature, &data.hmac_key) {
-        println!(
-            "Failed to verify signature '{}' for '{}'",
-            info.signature, info.name
-        );
-        return HttpResponse::UnprocessableEntity().body("Invalid signature");
-    }
-
-    // Autoincrement session week.
-    // if 6 days have passed since last set, increments ``session_week``
-    // and updates ``last_set``. Otherwise, change nothing.
-    let session_week_number;
-    {
-        let mut week_data_mutex = data.session_week.lock().unwrap();
-
-        let now_seconds = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-
-        // diff in secs / 60 -> mins / 60 -> hours / 24 -> days
-        let days_elapsed = (now_seconds - week_data_mutex.last_set_unix_seconds) / 60 / 60 / 24;
-
-        println!(
-            "Last increment: {}, current time {}, difference in days: {}",
-            week_data_mutex.last_set_unix_seconds, now_seconds, days_elapsed
-        );
-
-        if days_elapsed >= 6 {
-            session_week_number = week_data_mutex.week + 1;
-            week_data_mutex.save_week(session_week_number);
-        } else {
-            session_week_number = week_data_mutex.week;
-        }
-    }
-
-    println!("Recording attendance");
-
-    // flip before giving it to the sheets api
-    let flipped_name = flip_names(&info.name);
-    match insert_new_member(&flipped_name, session_week_number).await {
-        Ok(_) => {
-            HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name))
-        }
-        Err(InsertMemberErr::AlreadyInRoster) => {
-            HttpResponse::Ok().body(format!("{} is already in the roster.", &info.name))
-        }
-        Err(InsertMemberErr::GoogleSheetsErr(e)) => HttpResponse::BadRequest().body(e.to_string()),
-    }
-}
-
-#[get("/login")]
-async fn login(
-    session: Session,
-    data: web::Data<AppState>,
-    info: web::Query<RedirectURL>,
-) -> impl Responder {
-    if is_authenticated(&session, &data.authenticated_keys) {
-        return HttpResponse::Ok().body("already authenticated");
-    }
-
-    let redirect = info.redirect.clone().unwrap_or("/".to_string());
-    let redirect_encoded = encode(&redirect);
-    let html = page(html! {
-        p { "Enter admin password to accept member attendance:"}
-        form action=(format!("/auth?redirect={redirect_encoded}")) method="POST" {
-            input name="password" id="password" type="password" autofocus {}
-        }
-    });
-
-    HttpResponse::Ok().body(html.into_string())
-}
-
-#[get("/assets/logo.jpg")]
-async fn logo() -> Result<NamedFile, std::io::Error> {
-    println!("Logo requested. Using '{:?}'", env::var("LOGO_FILE"));
-    match env::var("LOGO_FILE") {
-        Ok(path) => NamedFile::open(path),
-        Err(_) => {
-            println!("No env LOGO_FILE found, using default './public/assets/logo.jpg'");
-            NamedFile::open("./public/assets/logo.jpg")
-        }
-    }
-}
-
-#[get("/")]
-async fn index() -> impl Responder {
-    println!("Home page requested");
-
-    let html = page(html! {
-        img src="/assets/logo.jpg" class="logo";
-        p {
-            "Only the Mahjong society committee should need to use this."
-            br; br;
-            "Contact a developer for help."
-        }
-    });
-
-    HttpResponse::Ok().body(html.into_string())
-}
-
 pub struct AppState {
     // Circular buffer allows us to have a fixed capacity and remove oldest
     // key when inserting a new one - this is to prevent using up too much memory
@@ -221,51 +102,6 @@ fn get_file_bytes(path: &str) -> Vec<u8> {
         .expect("Failed to read file");
 
     buffer
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WeekData {
-    week: u8,
-    last_set_unix_seconds: u64,
-}
-
-impl WeekData {
-    pub fn from_file(path: &str) -> Self {
-        match File::open(path) {
-            Ok(f) => {
-                let reader = BufReader::new(f);
-                serde_json::from_reader(reader).expect("Failed to read week file format")
-            }
-            Err(_) => {
-                let week_data = Self {
-                    week: 1,
-                    last_set_unix_seconds: SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs(),
-                };
-
-                week_data.save_to_file();
-                week_data
-            }
-        }
-    }
-
-    pub fn save_week(&mut self, week: u8) {
-        self.last_set_unix_seconds = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-
-        self.week = week;
-        self.save_to_file();
-    }
-
-    fn save_to_file(&self) {
-        let mut file = File::create(env::var("WEEK_FILE").unwrap()).unwrap();
-        file.write_all(serde_json::to_string(&self).unwrap().as_bytes())
-            .unwrap();
-    }
 }
 
 #[actix_web::main]
@@ -289,7 +125,7 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Max request quota is burst_size
-    // If less than burst_size, replenish 1 every period
+    // If quota is less than burst_size, replenish 1 every period
     let burst_size = env::var("RATE_LIMIT_BURST_SIZE")
         .expect("No burst size provided")
         .parse()
