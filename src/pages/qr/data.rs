@@ -1,4 +1,8 @@
-use crate::{errors::name_error::NameErr, google::sheets, signature::generate_signature};
+use crate::{
+    components::qr::QrData, errors::name_error::NameErr, get_base_url, google::sheets,
+    signature::generate_signature, QR_SIZE,
+};
+use qrcode_generator::QrCodeEcc;
 use serde::Deserialize;
 use urlencoding::encode;
 
@@ -21,6 +25,24 @@ pub fn get_qr_url(name: &str, base_url: &str, key: &[u8]) -> Result<String, Name
 
     println!("{url}");
     Ok(url)
+}
+
+pub fn get_qr_data(name: &str, base_url: &str, hmac_key: &[u8]) -> Result<QrData, NameErr> {
+    let url = get_qr_url(&name, base_url, hmac_key)?;
+
+    // Generate the QR code as svg
+    let qr_svg = qrcode_generator::to_svg_to_string::<_, &str>(
+        url,
+        QrCodeEcc::Medium,
+        QR_SIZE * 2, // TODO: separate QR display size?
+        None,
+    )
+    .unwrap();
+
+    Ok(QrData {
+        name: name.to_string(),
+        svg: qr_svg,
+    })
 }
 
 #[derive(Deserialize)]

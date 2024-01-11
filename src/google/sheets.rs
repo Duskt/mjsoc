@@ -82,10 +82,3 @@ pub async fn insert_new_member(name: &str, session: u8) -> Result<(), InsertMemb
         .map(|_| ())
         .map_err(InsertMemberErr::GoogleSheetsErr)
 }
-
-pub fn flip_names(name: &str) -> String {
-    // Takes a name in the format "Last, First Second" and
-    // formats to "First Second Last"
-    // ["Last", "First Second"]
-    name.rsplit(", ").collect::<Vec<_>>().join(" ")
-}

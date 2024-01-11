@@ -6,6 +6,11 @@ use urlencoding::encode;
 
 use crate::{auth::is_authenticated, get_redirect_response, page, AppState};
 
+#[derive(Deserialize)]
+pub struct WeekForm {
+    week: String,
+}
+
 #[get("/week")]
 pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
     println!("Week requested");
@@ -21,11 +26,6 @@ pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
         }
     });
     HttpResponse::Ok().body(html.into_string())
-}
-
-#[derive(Deserialize)]
-pub struct WeekForm {
-    week: String,
 }
 
 #[post("/week")]

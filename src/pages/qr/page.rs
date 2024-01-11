@@ -1,9 +1,9 @@
 use crate::{
     auth::is_authenticated,
-    components::qr::{qr_display, QrData},
+    components::qr::qr_display,
     errors::name_error::NameErr,
     get_base_url, get_redirect_response, page,
-    pages::qr::data::{get_qr_url, DownloadQuery, GenerateQuery},
+    pages::qr::data::{get_qr_data, get_qr_url, DownloadQuery, GenerateQuery},
     AppState, QR_SIZE,
 };
 use actix_session::Session;
@@ -30,26 +30,15 @@ pub async fn generate_qr(
         )));
     }
 
-    let qr_data = match info.name.clone() {
-        Some(name) => {
-            let url = get_qr_url(&name, &get_base_url(&req), &data.hmac_key);
-            let url = match url {
-                Ok(url) => url,
-                Err(err) => return Err(err),
-            };
+    let qr_data = info
+        .name
+        .clone()
+        .map(|name| get_qr_data(&name, &get_base_url(&req), &data.hmac_key))
+        .map_or(Ok(None), |v| v.map(Some)); // Swap result and option
 
-            // Generate the QR code as svg
-            let qr_svg = qrcode_generator::to_svg_to_string::<_, &str>(
-                url,
-                QrCodeEcc::Medium,
-                QR_SIZE * 2, // TODO: separate QR display size?
-                None,
-            )
-            .unwrap();
-
-            Some(QrData { name, svg: qr_svg })
-        }
-        None => None,
+    let qr_data = match qr_data {
+        Ok(data) => data,
+        Err(err) => return Err(err),
     };
 
     let html = page(qr_display(qr_data));
