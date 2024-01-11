@@ -11,7 +11,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use crate::quota::Quota;
+use super::quota::Quota;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 struct Notification {

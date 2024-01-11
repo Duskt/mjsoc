@@ -3,8 +3,7 @@ mod components;
 mod errors;
 mod google;
 mod pages;
-mod quota;
-mod rate_limit_handler;
+mod rate_limit;
 mod signature;
 mod week_data;
 
@@ -24,8 +23,7 @@ use pages::{
     register_attendance::register_attendance,
     session_week::{change_week, get_week},
 };
-use quota::Quota;
-use rate_limit_handler::RateLimit;
+use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
 use serde::Deserialize;
 use signature::verify_signature;
 use std::{
