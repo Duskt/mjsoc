@@ -7,7 +7,7 @@ use google_sheets4::{
 use serde_json::value::Value;
 use std::env;
 
-use crate::{errors::insert_member_error::InsertMemberErr, http_client::http_client};
+use crate::{errors::insert_member_error::InsertMemberErr, google::http_client::http_client};
 
 const MAX_PLAYERS: u8 = 50;
 pub const MAX_NAME_LEN: usize = 64;

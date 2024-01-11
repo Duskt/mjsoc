@@ -4,7 +4,7 @@ use maud::html;
 use crate::page;
 
 #[get("/")]
-async fn index() -> impl Responder {
+pub async fn index() -> impl Responder {
     println!("Home page requested");
 
     let html = page(html! {

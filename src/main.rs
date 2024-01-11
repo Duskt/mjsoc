@@ -2,7 +2,6 @@ mod auth;
 mod components;
 mod errors;
 mod google;
-mod http_client;
 mod pages;
 mod quota;
 mod rate_limit_handler;
@@ -21,7 +20,7 @@ use pages::{
     index::index,
     login::login,
     logo::logo,
-    qr::{download_qr, generate_qr},
+    qr::page::{download_qr, generate_qr},
     register_attendance::register_attendance,
     session_week::{change_week, get_week},
 };

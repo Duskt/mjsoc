@@ -2,10 +2,8 @@ use crate::{
     auth::is_authenticated,
     components::qr::{qr_display, QrData},
     errors::name_error::NameErr,
-    get_base_url, get_redirect_response,
-    google::sheets,
-    page,
-    signature::generate_signature,
+    get_base_url, get_redirect_response, page,
+    pages::qr::data::{get_qr_url, DownloadQuery, GenerateQuery},
     AppState, QR_SIZE,
 };
 use actix_session::Session;
@@ -15,34 +13,7 @@ use actix_web::{
     web, HttpRequest, HttpResponse, Responder,
 };
 use qrcode_generator::QrCodeEcc;
-use serde::Deserialize;
 use urlencoding::encode;
-
-fn get_qr_url(name: &str, base_url: &str, key: &[u8]) -> Result<String, NameErr> {
-    if name.is_empty() {
-        return Err(NameErr::NameEmpty);
-    }
-
-    if name.len() > sheets::MAX_NAME_LEN {
-        return Err(NameErr::NameTooLong);
-    }
-
-    let signature = generate_signature(name, key);
-
-    let url = format!(
-        "{base_url}/register_attendance?name={}&signature={}",
-        encode(name),
-        encode(&signature), // Shouldn't need to encode, but to be safe
-    );
-
-    println!("{url}");
-    Ok(url)
-}
-
-#[derive(Deserialize)]
-pub struct GenerateQuery {
-    name: Option<String>,
-}
 
 #[get("/qr")]
 pub async fn generate_qr(
@@ -83,11 +54,6 @@ pub async fn generate_qr(
 
     let html = page(qr_display(qr_data));
     Ok(HttpResponse::Ok().body(html.into_string()))
-}
-
-#[derive(Deserialize)]
-pub struct DownloadQuery {
-    name: String,
 }
 
 #[get("/download")]

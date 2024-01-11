@@ -10,7 +10,7 @@ use urlencoding::encode;
 use crate::{auth::is_authenticated, AppState};
 
 #[get("/register_attendance")]
-async fn register_attendance(
+pub async fn register_attendance(
     info: web::Query<AttendanceQuery>,
     data: web::Data<AppState>,
     session: Session,

@@ -6,7 +6,7 @@ use urlencoding::encode;
 use crate::{auth::is_authenticated, page, pages::auth::RedirectURL, AppState};
 
 #[get("/login")]
-async fn login(
+pub async fn login(
     session: Session,
     data: web::Data<AppState>,
     info: web::Query<RedirectURL>,

@@ -4,7 +4,7 @@ use actix_files::NamedFile;
 use actix_web::get;
 
 #[get("/assets/logo.jpg")]
-async fn logo() -> Result<NamedFile, std::io::Error> {
+pub async fn logo() -> Result<NamedFile, std::io::Error> {
     println!("Logo requested. Using '{:?}'", env::var("LOGO_FILE"));
     match env::var("LOGO_FILE") {
         Ok(path) => NamedFile::open(path),
