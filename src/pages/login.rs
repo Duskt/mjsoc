@@ -3,7 +3,7 @@ use actix_web::{get, web, HttpResponse, Responder};
 use maud::html;
 use urlencoding::encode;
 
-use crate::{auth::is_authenticated, page, pages::auth::RedirectURL, AppState};
+use crate::{auth::is_authenticated, components::page::page, pages::auth::RedirectURL, AppState};
 
 #[get("/login")]
 pub async fn login(

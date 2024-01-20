@@ -4,7 +4,7 @@ use maud::html;
 use serde::Deserialize;
 use urlencoding::encode;
 
-use crate::{auth::is_authenticated, get_redirect_response, page, AppState};
+use crate::{auth::is_authenticated, components::page::page, get_redirect_response, AppState};
 
 #[derive(Deserialize)]
 pub struct WeekForm {

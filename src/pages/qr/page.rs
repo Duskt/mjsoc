@@ -1,8 +1,8 @@
 use crate::{
     auth::is_authenticated,
-    components::qr::qr_display,
+    components::{page::page, qr::qr_display},
     errors::name_error::NameErr,
-    get_base_url, get_redirect_response, page,
+    get_base_url, get_redirect_response,
     pages::qr::data::{get_qr_data, get_qr_url, DownloadQuery, GenerateQuery},
     AppState, QR_SIZE,
 };

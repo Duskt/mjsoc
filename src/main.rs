@@ -13,7 +13,6 @@ use actix_web::{cookie, http::header::LOCATION, web, App, HttpRequest, HttpRespo
 use chrono::Duration;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
-use maud::{html, PreEscaped, DOCTYPE};
 use pages::{
     auth::authenticate,
     index::index,
@@ -41,23 +40,6 @@ const PORT: u16 = 5654;
 const QR_SIZE: usize = 256;
 
 pub const MAX_AUTHENTICATED_USERS: usize = 64;
-
-fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
-    html! {
-        (DOCTYPE)
-        html {
-            head {
-                title { "Mahjong Bath" }
-                link rel="stylesheet" href="styles.css";
-            }
-            body {
-                div class="centre-container" {
-                    (inner)
-                }
-            }
-        }
-    }
-}
 
 fn get_base_url(req: &HttpRequest) -> String {
     let conn_info = req.connection_info();

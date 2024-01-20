@@ -1,7 +1,7 @@
 use actix_web::{get, HttpResponse, Responder};
 use maud::html;
 
-use crate::page;
+use crate::components::page::page;
 
 #[get("/")]
 pub async fn index() -> impl Responder {
