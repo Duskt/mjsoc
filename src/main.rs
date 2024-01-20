@@ -10,7 +10,11 @@ mod week_data;
 
 use actix_files as fs;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
-use actix_web::{cookie, web, App, HttpServer};
+use actix_web::{
+    cookie,
+    web::{self, get, post},
+    App, HttpServer,
+};
 
 use chrono::Duration;
 use circular_buffer::CircularBuffer;
@@ -66,15 +70,15 @@ async fn main() -> std::io::Result<()> {
                 CookieSessionStore::default(),
                 key.clone(),
             ))
-            .service(generate_qr)
-            .service(download_qr)
-            .service(register_attendance)
-            .service(login)
-            .service(authenticate)
-            .service(index)
-            .service(get_week)
-            .service(change_week)
-            .service(logo)
+            .route("/qr", get().to(generate_qr))
+            .route("/download", get().to(download_qr))
+            .route("/", get().to(index))
+            .route("/week", get().to(get_week))
+            .route("/week", post().to(change_week))
+            .route("/login", get().to(login))
+            .route("/auth", post().to(authenticate))
+            .route("/register_attendance", get().to(register_attendance))
+            .route("/assets/logo.jpg", get().to(logo))
             //.service(fs::Files::new("/assets", "./data/assets"))
             // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.
             .service(fs::Files::new("/", "public"))

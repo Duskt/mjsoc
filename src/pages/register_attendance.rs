@@ -4,7 +4,7 @@ use crate::{
 };
 use actix_session::Session;
 use actix_web::HttpRequest;
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, Responder};
 use serde::Deserialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 use urlencoding::encode;
@@ -56,7 +56,6 @@ fn increment_week(data: &web::Data<AppState>) -> u8 {
     session_week_number
 }
 
-#[get("/register_attendance")]
 pub async fn register_attendance(
     info: web::Query<AttendanceQuery>,
     data: web::Data<AppState>,

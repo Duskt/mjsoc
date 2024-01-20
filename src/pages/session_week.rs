@@ -1,5 +1,5 @@
 use actix_session::Session;
-use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use maud::html;
 use serde::Deserialize;
 use urlencoding::encode;
@@ -13,7 +13,6 @@ pub struct WeekForm {
     week: String,
 }
 
-#[get("/week")]
 pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
     println!("Week requested");
 
@@ -30,7 +29,6 @@ pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
     HttpResponse::Ok().body(html.into_string())
 }
 
-#[post("/week")]
 pub async fn change_week(
     session: Session,
     data: web::Data<AppState>,

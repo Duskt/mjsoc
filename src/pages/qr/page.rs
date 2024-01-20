@@ -8,14 +8,12 @@ use crate::{
 };
 use actix_session::Session;
 use actix_web::{
-    get,
     http::header::{ContentDisposition, DispositionParam, DispositionType},
     web, HttpRequest, HttpResponse, Responder,
 };
 use qrcode_generator::QrCodeEcc;
 use urlencoding::encode;
 
-#[get("/qr")]
 pub async fn generate_qr(
     info: web::Query<GenerateQuery>,
     req: HttpRequest,
@@ -45,7 +43,6 @@ pub async fn generate_qr(
     Ok(HttpResponse::Ok().body(html.into_string()))
 }
 
-#[get("/download")]
 pub async fn download_qr(
     info: web::Query<DownloadQuery>,
     req: HttpRequest,

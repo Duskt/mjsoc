@@ -1,5 +1,5 @@
 use actix_session::Session;
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, Responder};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use serde::Deserialize;
 
@@ -19,7 +19,6 @@ pub struct RedirectURL {
     pub redirect: Option<String>,
 }
 
-#[post("/auth")]
 pub async fn authenticate(
     session: Session,
     data: web::Data<AppState>,

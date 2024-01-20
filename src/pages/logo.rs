@@ -1,9 +1,6 @@
 use std::env;
 
 use actix_files::NamedFile;
-use actix_web::get;
-
-#[get("/assets/logo.jpg")]
 pub async fn logo() -> Result<NamedFile, std::io::Error> {
     println!("Logo requested. Using '{:?}'", env::var("LOGO_FILE"));
     match env::var("LOGO_FILE") {

@@ -1,9 +1,8 @@
-use actix_web::{get, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder};
 use maud::html;
 
 use crate::components::page::page;
 
-#[get("/")]
 pub async fn index() -> impl Responder {
     println!("Home page requested");
 
