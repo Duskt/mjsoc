@@ -1,5 +1,5 @@
 use crate::{
-    components::qr::QrData, errors::name_error::NameErr, get_base_url, google::sheets,
+    components::qr::QrData, errors::name_error::NameErr, google::sheets,
     signature::generate_signature, QR_SIZE,
 };
 use qrcode_generator::QrCodeEcc;

@@ -1,4 +1,3 @@
-use dotenv::dotenv;
 use google_sheets4::{
     api::{UpdateValuesResponse, ValueRange},
     hyper::{self, Body, Response},
@@ -17,7 +16,6 @@ pub async fn get_members(
     name: Option<&str>,
     session: u8,
 ) -> Result<usize, String> {
-    dotenv().ok();
     let range: String = format!("Session {}!A1:A{}", session, MAX_PLAYERS);
     let res = hub
         .spreadsheets()
@@ -47,7 +45,6 @@ pub async fn add_member(
     name: &str,
     session: u8,
 ) -> Result<(Response<Body>, UpdateValuesResponse), Error> {
-    dotenv().ok();
     if name.len() > MAX_NAME_LEN {
         return Err(Error::BadRequest(Value::from(
             "Name must not be longer than 64 characters.",
