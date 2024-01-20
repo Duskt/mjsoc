@@ -5,7 +5,8 @@ use serde::Deserialize;
 
 use crate::{
     auth::{is_authenticated, new_session},
-    get_redirect_response, AppState,
+    util::get_redirect_response,
+    AppState,
 };
 
 #[derive(Debug, Clone, Deserialize)]

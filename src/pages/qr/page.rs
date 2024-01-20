@@ -2,8 +2,8 @@ use crate::{
     auth::is_authenticated,
     components::{page::page, qr::qr_display},
     errors::name_error::NameErr,
-    get_base_url, get_redirect_response,
     pages::qr::data::{get_qr_data, get_qr_url, DownloadQuery, GenerateQuery},
+    util::{get_base_url, get_redirect_response},
     AppState, QR_SIZE,
 };
 use actix_session::Session;

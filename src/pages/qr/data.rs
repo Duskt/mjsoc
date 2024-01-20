@@ -28,7 +28,7 @@ pub fn get_qr_url(name: &str, base_url: &str, key: &[u8]) -> Result<String, Name
 }
 
 pub fn get_qr_data(name: &str, base_url: &str, hmac_key: &[u8]) -> Result<QrData, NameErr> {
-    let url = get_qr_url(&name, base_url, hmac_key)?;
+    let url = get_qr_url(name, base_url, hmac_key)?;
 
     // Generate the QR code as svg
     let qr_svg = qrcode_generator::to_svg_to_string::<_, &str>(

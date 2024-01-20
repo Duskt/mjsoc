@@ -1,9 +1,11 @@
-use crate::errors::insert_member_error::InsertMemberErr;
-use crate::google::sheets::insert_new_member;
-use crate::{get_redirect_response, verify_signature, AttendanceQuery};
+use crate::{
+    errors::insert_member_error::InsertMemberErr, google::sheets::insert_new_member,
+    signature::verify_signature, util::get_redirect_response,
+};
 use actix_session::Session;
 use actix_web::HttpRequest;
 use actix_web::{get, web, HttpResponse, Responder};
+use serde::Deserialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 use urlencoding::encode;
 
@@ -14,6 +16,12 @@ use crate::{auth::is_authenticated, AppState};
 // ["Last", "First Second"]
 pub fn flip_names(name: &str) -> String {
     name.rsplit(", ").collect::<Vec<_>>().join(" ")
+}
+
+#[derive(Deserialize)]
+pub struct AttendanceQuery {
+    name: String,
+    signature: String,
 }
 
 // Autoincrement session week and return current week
