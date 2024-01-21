@@ -1,38 +1,92 @@
+use crate::notification::send_notification;
 use actix_web::{
     body::EitherBody,
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpResponse,
 };
 use futures_util::{future::LocalBoxFuture, FutureExt, TryFutureExt};
-use serde::{Deserialize, Serialize};
 use std::{
-    env,
     future::{ready, Ready},
     sync::{Arc, RwLock},
 };
 
 use super::quota::Quota;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-struct Notification {
-    body: String,
-    title: String,
+// if limiting, Some(LimitDetails)
+// else, None
+fn get_limit(quota: Arc<RwLock<Quota>>, num_over_before_drop: i32) -> Option<LimitDetails> {
+    let quota_mtx = quota.clone();
+    let mut quota = quota_mtx.write().unwrap();
 
-    #[serde(rename = "type")]
-    notification_type: String,
+    quota.replenish();
+    let remaining = quota.use_one();
+    drop(quota);
+
+    if remaining <= -num_over_before_drop {
+        panic!("Too many requests. Not sending response");
+    } else if remaining < 0 {
+        let seconds_remaining;
+        {
+            let read_quota = quota_mtx.read().unwrap();
+            seconds_remaining = read_quota.until_replenish().num_seconds();
+        }
+
+        return Some(LimitDetails {
+            seconds_remaining,
+            about_to_drop: remaining == -num_over_before_drop + 1,
+        });
+    }
+
+    None
 }
 
-// There are two steps in middleware processing.
-// 1. Middleware initialization, middleware factory gets called with
-//    next service in chain as parameter.
-// 2. Middleware's call method gets called with normal request.
-pub struct RateLimit {
-    quota: Arc<RwLock<Quota>>,
-}
+impl<S, B> Service<ServiceRequest> for RateLimitMiddleware<S>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S::Future: 'static,
+    B: 'static,
+{
+    type Response = ServiceResponse<EitherBody<B>>;
+    type Error = Error;
+    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
-impl RateLimit {
-    pub fn new(quota: Arc<RwLock<Quota>>) -> Self {
-        Self { quota }
+    forward_ready!(service);
+
+    fn call(&self, req: ServiceRequest) -> Self::Future {
+        match get_limit(self.quota.clone(), 5) {
+            // Continue request as normal
+            None => self
+                .service
+                .call(req)
+                .map_ok(ServiceResponse::map_into_left_body)
+                .boxed_local(),
+            // Rate limit
+            Some(details) => {
+                println!(
+                    "Rate limit hit, need to wait {}s to send another request",
+                    details.seconds_remaining
+                );
+
+                Box::pin(async move {
+                    // If next is a panic, send pushbullet notification now
+                    if details.about_to_drop {
+                        println!("About to start dropping requests, sending notification");
+                        send_notification(
+                            &req.peer_addr().unwrap().ip().to_string(),
+                            details.seconds_remaining,
+                        )
+                        .await;
+                    }
+
+                    // Empty too many requests response (to reduce bytes out)
+                    Ok(req.into_response(
+                        HttpResponse::TooManyRequests()
+                            .finish()
+                            .map_into_right_body(),
+                    ))
+                })
+            }
+        }
     }
 }
 
@@ -59,100 +113,26 @@ where
     }
 }
 
-pub struct RateLimitMiddleware<S> {
-    service: S,
+struct LimitDetails {
+    seconds_remaining: i64,
+    about_to_drop: bool,
+}
+
+// There are two steps in middleware processing.
+// 1. Middleware initialization, middleware factory gets called with
+//    next service in chain as parameter.
+// 2. Middleware's call method gets called with normal request.
+pub struct RateLimit {
     quota: Arc<RwLock<Quota>>,
 }
 
-async fn send_notification(ip: &str, seconds_remaining: i64) {
-    let content = Notification {
-        title: "Rate limiting mjsoc.hop.io".to_string(),
-        body: format!(
-            "Quota exceeded, not sending more responses.\n\nOffending IP: {}\n\nWill replenish in {}s",
-            ip,
-            seconds_remaining
-        ),
-        notification_type: "note".to_string(),
-    };
-
-    let client = reqwest::Client::builder()
-        .connection_verbose(true)
-        .build()
-        .unwrap();
-
-    let pushbullet_access_tokens = env::var("PUSHBULLET_ACCESS_TOKENS");
-    if let Ok(tokens) = pushbullet_access_tokens {
-        let tokens = tokens.split(',').filter(|t| !t.is_empty());
-        for token in tokens {
-            client
-                .post("https://api.pushbullet.com/v2/pushes")
-                .header("Access-Token", token)
-                .json(&content)
-                .send()
-                .await
-                .unwrap();
-        }
+impl RateLimit {
+    pub fn new(quota: Arc<RwLock<Quota>>) -> Self {
+        Self { quota }
     }
 }
 
-impl<S, B> Service<ServiceRequest> for RateLimitMiddleware<S>
-where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
-    S::Future: 'static,
-    B: 'static,
-{
-    type Response = ServiceResponse<EitherBody<B>>;
-    type Error = Error;
-    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-    forward_ready!(service);
-
-    fn call(&self, req: ServiceRequest) -> Self::Future {
-        let quota_mtx = self.quota.clone();
-        let remaining;
-
-        {
-            let mut quota = quota_mtx.write().unwrap();
-
-            quota.replenish();
-            remaining = quota.use_one();
-        }
-
-        if remaining <= -5 {
-            panic!("Too many requests. Not sending response");
-        } else if remaining < 0 {
-            return Box::pin(async move {
-                let seconds_remaining;
-                {
-                    let read_quota = quota_mtx.read().unwrap();
-                    seconds_remaining = read_quota.until_replenish().num_seconds();
-                }
-
-                println!(
-                    "Rate limit hit, need to wait {}s to send another request",
-                    seconds_remaining
-                );
-
-                if remaining == -4 {
-                    println!("About to start dropping requests, sending notification");
-                    send_notification(
-                        &req.peer_addr().unwrap().ip().to_string(),
-                        seconds_remaining,
-                    )
-                    .await;
-                }
-
-                Ok(req.into_response(
-                    HttpResponse::TooManyRequests()
-                        .finish()
-                        .map_into_right_body(),
-                ))
-            });
-        }
-
-        self.service
-            .call(req)
-            .map_ok(ServiceResponse::map_into_left_body)
-            .boxed_local()
-    }
+pub struct RateLimitMiddleware<S> {
+    service: S,
+    quota: Arc<RwLock<Quota>>,
 }

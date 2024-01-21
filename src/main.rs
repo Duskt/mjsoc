@@ -2,6 +2,7 @@ mod auth;
 mod components;
 mod errors;
 mod google;
+mod notification;
 mod pages;
 mod rate_limit;
 mod signature;
