@@ -31,7 +31,7 @@ use pages::{
     login::login,
     logo::logo,
     qr::page::{download_qr, generate_qr},
-    register_attendance::register_attendance,
+    register_attendance::page::register_attendance,
     session_week::{change_week, get_week},
 };
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
