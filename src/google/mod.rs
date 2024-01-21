@@ -1,3 +1,3 @@
-pub mod auth;
-pub mod http_client;
+mod auth;
+mod http_client;
 pub mod sheets;

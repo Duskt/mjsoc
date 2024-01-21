@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use crate::impl_response_error;
 
-use actix_web::{body::BoxBody, HttpResponse, ResponseError};
+use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub enum NameErr {
@@ -17,14 +17,4 @@ impl Display for NameErr {
     }
 }
 
-impl ResponseError for NameErr {
-    fn status_code(&self) -> actix_web::http::StatusCode {
-        actix_web::http::StatusCode::BAD_REQUEST
-    }
-
-    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        let res = HttpResponse::new(self.status_code());
-
-        res.set_body(BoxBody::new(self.to_string()))
-    }
-}
+impl_response_error!(NameErr, actix_web::http::StatusCode::BAD_REQUEST);

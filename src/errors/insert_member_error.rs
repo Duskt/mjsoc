@@ -1,7 +1,7 @@
-use std::fmt::Display;
+use crate::impl_response_error;
 
-use actix_web::{body::BoxBody, HttpResponse, ResponseError};
 use google_sheets4::Error;
+use std::fmt::Display;
 
 #[derive(Debug)]
 pub enum InsertMemberErr {
@@ -18,14 +18,4 @@ impl Display for InsertMemberErr {
     }
 }
 
-impl ResponseError for InsertMemberErr {
-    fn status_code(&self) -> actix_web::http::StatusCode {
-        actix_web::http::StatusCode::BAD_REQUEST
-    }
-
-    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        let res = HttpResponse::new(self.status_code());
-
-        res.set_body(BoxBody::new(self.to_string()))
-    }
-}
+impl_response_error!(InsertMemberErr, actix_web::http::StatusCode::BAD_REQUEST);
