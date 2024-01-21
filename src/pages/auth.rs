@@ -39,6 +39,7 @@ pub async fn authenticate(
     }
 
     println!("Authenticated");
+
     // Create session for user
     new_session(&session, &data.authenticated_keys);
     get_redirect_response(&info.redirect.clone().unwrap_or("/".to_string()))

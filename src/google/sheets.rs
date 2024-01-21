@@ -8,6 +8,7 @@ use std::env;
 
 use crate::{errors::insert_member_error::InsertMemberErr, google::http_client::http_client};
 
+// TODO: env/config?
 const MAX_PLAYERS: u8 = 50;
 pub const MAX_NAME_LEN: usize = 64;
 
@@ -23,6 +24,7 @@ pub async fn get_members(
         .doit() // just
         .await
         .expect("Could not get members:");
+
     let values = res.1.values.expect("res.1.values was None unexpectedly");
     if let Some(name) = name {
         if values.iter().fold(false, |acc, i| {
@@ -36,6 +38,7 @@ pub async fn get_members(
             return Err(format!("{} already present in roster.", name));
         }
     }
+
     Ok(values.len())
 }
 
@@ -50,12 +53,14 @@ pub async fn add_member(
             "Name must not be longer than 64 characters.",
         )));
     }
+
     let range = format!("Session {}!A{}", session, row + 1);
     let req: ValueRange = ValueRange {
         major_dimension: None, // defaults to ROWS, doesn't matter since length is 1
         range: Some(range.clone()),
         values: Some(vec![vec![Value::from(name)]]), // single value in 2d array
     };
+
     hub.spreadsheets()
         .values_update(req, &env::var("SHEET_ID").unwrap(), &range)
         // value_input_option must be "RAW" or "USER_ENTERED". fuck enums ig

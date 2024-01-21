@@ -1,11 +1,12 @@
-use crate::pages::register_attendance::data::{flip_names, increment_week};
 use crate::{
-    errors::insert_member_error::InsertMemberErr, google::sheets::insert_new_member,
-    signature::verify_signature, util::get_redirect_response,
+    errors::insert_member_error::InsertMemberErr,
+    google::sheets::insert_new_member,
+    pages::register_attendance::data::{flip_names, increment_week},
+    signature::verify_signature,
+    util::get_redirect_response,
 };
 use actix_session::Session;
-use actix_web::HttpRequest;
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use urlencoding::encode;
 
 use crate::{auth::is_authenticated, AppState};
