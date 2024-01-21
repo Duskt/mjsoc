@@ -1,23 +1,22 @@
 use google_sheets4::{api::ValueRange, hyper, hyper_rustls, Sheets};
 use serde_json::value::Value;
-use std::env;
 
-use crate::{errors::insert_member_error::InsertMemberErr, google::http_client::http_client};
+use crate::{
+    errors::insert_member_error::InsertMemberErr, expect_env, google::http_client::http_client,
+};
 
 use super::auth::authenticate;
-
-// TODO: env/config?
-const MAX_PLAYERS: u8 = 50;
 
 pub async fn get_members(
     hub: &Sheets<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>,
     name: Option<&str>,
     session: u8,
 ) -> Result<usize, InsertMemberErr> {
-    let range: String = format!("Session {}!A1:A{}", session, MAX_PLAYERS);
+    let max_players = expect_env!("MAX_PLAYERS");
+    let range: String = format!("Session {}!A1:A{}", session, max_players);
     let res = hub
         .spreadsheets()
-        .values_get(&env::var("SHEET_ID").unwrap(), &range)
+        .values_get(&expect_env!("SHEET_ID"), &range)
         .doit() // just
         .await
         .expect("Could not get members");
@@ -63,7 +62,7 @@ async fn add_member(
     };
 
     hub.spreadsheets()
-        .values_update(req, &env::var("SHEET_ID").unwrap(), &range)
+        .values_update(req, &expect_env!("SHEET_ID"), &range)
         // value_input_option must be "RAW" or "USER_ENTERED". fuck enums ig
         .value_input_option("RAW")
         .doit()

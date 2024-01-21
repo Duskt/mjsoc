@@ -20,10 +20,7 @@ use actix_web::{
 use chrono::Duration;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
-use std::{
-    env,
-    sync::{Arc, Mutex, RwLock},
-};
+use std::sync::{Arc, Mutex, RwLock};
 
 use pages::{
     auth::authenticate,
@@ -37,12 +34,6 @@ use pages::{
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
 use util::get_file_bytes;
 use week_data::WeekData;
-
-// TODO: Use .env?
-const IP: &str = "0.0.0.0";
-const PORT: u16 = 5654;
-
-const QR_SIZE: usize = 256;
 
 pub const MAX_AUTHENTICATED_USERS: usize = 64;
 
@@ -84,19 +75,18 @@ async fn main() -> std::io::Result<()> {
             // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.
             .service(fs::Files::new("/", "public"))
     })
-    .bind((IP, PORT))?
+    .bind((expect_env!("IP"), parsed_env!("PORT", u16)))?
     .run()
     .await
 }
 
 fn get_intial_state() -> AppState {
-    let admin_password_hash =
-        env::var("ADMIN_PASSWORD_HASH").expect("No admin password hash provided in environment");
+    let admin_password_hash = expect_env!("ADMIN_PASSWORD_HASH");
 
-    let hmac_key_file = env::var("HMAC_KEY_FILE").expect("No hmac file provided");
+    let hmac_key_file = expect_env!("HMAC_KEY_FILE");
     let hmac_key = get_file_bytes(&hmac_key_file);
 
-    let week_file = env::var("WEEK_FILE").unwrap();
+    let week_file = expect_env!("WEEK_FILE");
 
     AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),
@@ -108,17 +98,8 @@ fn get_intial_state() -> AppState {
 
 fn get_quota() -> Quota {
     // If quota is less than burst_size, replenish 1 every period
-    let burst_size = env::var("RATE_LIMIT_BURST_SIZE")
-        .expect("No burst size provided")
-        .parse()
-        .unwrap();
-
-    let period = Duration::seconds(
-        env::var("RATE_LIMIT_PERIOD_SECONDS")
-            .expect("No period provided")
-            .parse()
-            .expect("Invalid period"),
-    );
+    let burst_size = parsed_env!("RATE_LIMIT_BURST_SIZE", i32);
+    let period = Duration::seconds(parsed_env!("RATE_LIMIT_PERIOD_SECONDS", i64));
 
     Quota::new(burst_size, period)
 }

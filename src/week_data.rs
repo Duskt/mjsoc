@@ -1,11 +1,12 @@
 use std::{
-    env,
     fs::File,
     io::{BufReader, Write},
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use serde::{Deserialize, Serialize};
+
+use crate::expect_env;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WeekData {
@@ -46,7 +47,7 @@ impl WeekData {
     }
 
     fn save_to_file(&self) {
-        let mut file = File::create(env::var("WEEK_FILE").unwrap()).unwrap();
+        let mut file = File::create(expect_env!("WEEK_FILE")).unwrap();
         file.write_all(serde_json::to_string(&self).unwrap().as_bytes())
             .unwrap();
     }

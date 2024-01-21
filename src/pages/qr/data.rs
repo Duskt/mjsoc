@@ -1,19 +1,18 @@
 use crate::{
-    components::qr::QrData, errors::name_error::NameErr, signature::generate_signature, QR_SIZE,
+    components::qr::QrData, errors::name_error::NameErr, parsed_env, signature::generate_signature,
 };
+
 use qrcode_generator::QrCodeEcc;
 use serde::Deserialize;
 use urlencoding::encode;
-
-// TODO: use .env?
-pub const MAX_NAME_LEN: usize = 64;
 
 pub fn get_qr_url(name: &str, base_url: &str, key: &[u8]) -> Result<String, NameErr> {
     if name.is_empty() {
         return Err(NameErr::NameEmpty);
     }
 
-    if name.len() > MAX_NAME_LEN {
+    let max_name_len = parsed_env!("MAX_NAME_LEN", usize);
+    if name.len() > max_name_len {
         return Err(NameErr::NameTooLong);
     }
 
@@ -31,15 +30,12 @@ pub fn get_qr_url(name: &str, base_url: &str, key: &[u8]) -> Result<String, Name
 
 pub fn get_qr_data(name: &str, base_url: &str, hmac_key: &[u8]) -> Result<QrData, NameErr> {
     let url = get_qr_url(name, base_url, hmac_key)?;
+    let qr_size = parsed_env!("QR_SIZE", usize);
 
     // Generate the QR code as svg
-    let qr_svg = qrcode_generator::to_svg_to_string::<_, &str>(
-        url,
-        QrCodeEcc::Medium,
-        QR_SIZE * 2, // TODO: separate QR display size?
-        None,
-    )
-    .unwrap();
+    let qr_svg =
+        qrcode_generator::to_svg_to_string::<_, &str>(url, QrCodeEcc::Medium, qr_size * 2, None)
+            .unwrap();
 
     Ok(QrData {
         name: name.to_string(),
