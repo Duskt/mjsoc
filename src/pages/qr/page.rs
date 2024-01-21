@@ -9,7 +9,7 @@ use crate::{
 use actix_session::Session;
 use actix_web::{
     http::header::{ContentDisposition, DispositionParam, DispositionType},
-    web, HttpRequest, HttpResponse, Responder,
+    web, HttpRequest, HttpResponse,
 };
 use qrcode_generator::QrCodeEcc;
 use urlencoding::encode;
@@ -19,7 +19,7 @@ pub async fn generate_qr(
     req: HttpRequest,
     data: web::Data<AppState>,
     session: Session,
-) -> impl Responder {
+) -> Result<HttpResponse, NameErr> {
     if !is_authenticated(&session, &data.authenticated_keys) {
         // Login and redirect back here
         return Ok(get_redirect_response(&format!(
@@ -28,15 +28,9 @@ pub async fn generate_qr(
         )));
     }
 
-    let qr_data = info
-        .name
-        .clone()
-        .map(|name| get_qr_data(&name, &get_base_url(&req), &data.hmac_key))
-        .map_or(Ok(None), |v| v.map(Some)); // Swap result and option
-
-    let qr_data = match qr_data {
-        Ok(data) => data,
-        Err(err) => return Err(err),
+    let qr_data = match info.name.clone() {
+        Some(name) => Some(get_qr_data(&name, &get_base_url(&req), &data.hmac_key)?),
+        None => None,
     };
 
     let html = page(qr_display(qr_data));

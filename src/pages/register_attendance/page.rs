@@ -6,7 +6,7 @@ use crate::{
     util::get_redirect_response,
 };
 use actix_session::Session;
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse};
 use urlencoding::encode;
 
 use crate::{auth::is_authenticated, AppState};
@@ -18,13 +18,13 @@ pub async fn register_attendance(
     data: web::Data<AppState>,
     session: Session,
     req: HttpRequest,
-) -> impl Responder {
+) -> Result<HttpResponse, InsertMemberErr> {
     if !is_authenticated(&session, &data.authenticated_keys) {
         // Login and redirect back here
-        return get_redirect_response(&format!(
+        return Ok(get_redirect_response(&format!(
             "/login?redirect={}",
             encode(&req.uri().path_and_query().unwrap().to_string()),
-        ));
+        )));
     }
 
     if !verify_signature(&info.name, &info.signature, &data.hmac_key) {
@@ -32,7 +32,7 @@ pub async fn register_attendance(
             "Failed to verify signature '{}' for '{}'",
             info.signature, info.name
         );
-        return HttpResponse::UnprocessableEntity().body("Invalid signature");
+        return Ok(HttpResponse::UnprocessableEntity().body("Invalid signature"));
     }
 
     println!("Recording attendance");
@@ -40,13 +40,7 @@ pub async fn register_attendance(
     // Flip before giving it to the sheets api
     let flipped_name = flip_names(&info.name);
     let session_week_number = increment_week(&data);
-    match insert_new_member(&flipped_name, session_week_number).await {
-        Ok(_) => {
-            HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name))
-        }
-        Err(InsertMemberErr::AlreadyInRoster) => {
-            HttpResponse::Ok().body(format!("{} is already in the roster.", &info.name))
-        }
-        Err(InsertMemberErr::GoogleSheetsErr(e)) => HttpResponse::BadRequest().body(e.to_string()),
-    }
+
+    insert_new_member(&flipped_name, session_week_number).await?;
+    Ok(HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name)))
 }
