@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 use crate::{
     auth::{is_authenticated, new_session},
+    components::already_authenticated::already_authenticated,
     errors::admin_password_error::AdminPasswordErr,
     util::get_redirect_response,
     AppState,
@@ -27,7 +28,7 @@ pub async fn authenticate(
     info: web::Query<RedirectURL>,
 ) -> Result<HttpResponse, AdminPasswordErr> {
     if is_authenticated(&session, &data.authenticated_keys) {
-        return Ok(HttpResponse::Ok().body("already authenticated"));
+        return Ok(HttpResponse::Ok().body(already_authenticated().into_string()));
     }
 
     let hash = PasswordHash::new(&data.admin_password_hash).unwrap();
