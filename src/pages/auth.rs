@@ -1,10 +1,11 @@
 use actix_session::Session;
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use serde::Deserialize;
 
 use crate::{
     auth::{is_authenticated, new_session},
+    errors::admin_password_error::AdminPasswordErr,
     util::get_redirect_response,
     AppState,
 };
@@ -24,9 +25,9 @@ pub async fn authenticate(
     data: web::Data<AppState>,
     body: web::Form<AuthBody>,
     info: web::Query<RedirectURL>,
-) -> impl Responder {
+) -> Result<HttpResponse, AdminPasswordErr> {
     if is_authenticated(&session, &data.authenticated_keys) {
-        return HttpResponse::Ok().body("already authenticated");
+        return Ok(HttpResponse::Ok().body("already authenticated"));
     }
 
     let hash = PasswordHash::new(&data.admin_password_hash).unwrap();
@@ -35,12 +36,14 @@ pub async fn authenticate(
         .is_err()
     {
         println!("Failed to authenticate");
-        return HttpResponse::Unauthorized().body("Invalid admin password");
+        return Err(AdminPasswordErr);
     }
 
     println!("Authenticated");
 
     // Create session for user
     new_session(&session, &data.authenticated_keys);
-    get_redirect_response(&info.redirect.clone().unwrap_or("/".to_string()))
+    Ok(get_redirect_response(
+        &info.redirect.clone().unwrap_or("/".to_string()),
+    ))
 }

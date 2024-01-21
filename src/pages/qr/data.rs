@@ -1,17 +1,19 @@
 use crate::{
-    components::qr::QrData, errors::name_error::NameErr, google::sheets,
-    signature::generate_signature, QR_SIZE,
+    components::qr::QrData, errors::name_error::NameErr, signature::generate_signature, QR_SIZE,
 };
 use qrcode_generator::QrCodeEcc;
 use serde::Deserialize;
 use urlencoding::encode;
+
+// TODO: use .env?
+pub const MAX_NAME_LEN: usize = 64;
 
 pub fn get_qr_url(name: &str, base_url: &str, key: &[u8]) -> Result<String, NameErr> {
     if name.is_empty() {
         return Err(NameErr::NameEmpty);
     }
 
-    if name.len() > sheets::MAX_NAME_LEN {
+    if name.len() > MAX_NAME_LEN {
         return Err(NameErr::NameTooLong);
     }
 

@@ -1,20 +1,13 @@
 use crate::impl_response_error;
 
-use std::fmt::Display;
+use derive_more::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum NameErr {
+    #[display(fmt = "Name empty")]
     NameEmpty,
+    #[display(fmt = "Name too long")]
     NameTooLong,
-}
-
-impl Display for NameErr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            NameErr::NameEmpty => write!(f, "Name empty"),
-            NameErr::NameTooLong => write!(f, "Name too long"),
-        }
-    }
 }
 
 impl_response_error!(NameErr, actix_web::http::StatusCode::BAD_REQUEST);

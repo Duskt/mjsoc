@@ -9,7 +9,11 @@ macro_rules! impl_response_error {
             fn error_response(&self) -> actix_web::HttpResponse<actix_web::body::BoxBody> {
                 let res = actix_web::HttpResponse::new(self.status_code());
 
-                res.set_body(actix_web::body::BoxBody::new(self.to_string()))
+                let body = crate::components::page::page(
+                    maud::html! { "An error occurred: " (self.to_string()) },
+                )
+                .into_string();
+                res.set_body(actix_web::body::BoxBody::new(body))
             }
         }
     };
