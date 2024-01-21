@@ -1,8 +1,11 @@
 use crate::{
     auth::is_authenticated,
-    errors::signature_error::SignatureErr,
+    errors::{
+        either_error::EitherError, insert_member_error::InsertMemberErr,
+        signature_error::SignatureErr,
+    },
     google::sheets::insert_new_member,
-    pages::register_attendance::data::{flip_names, increment_week, RegisterAttendanceError},
+    pages::register_attendance::data::{flip_names, increment_week},
     signature::verify_signature,
     util::get_redirect_response,
     AppState,
@@ -19,7 +22,7 @@ pub async fn register_attendance(
     data: web::Data<AppState>,
     session: Session,
     req: HttpRequest,
-) -> Result<HttpResponse, RegisterAttendanceError> {
+) -> Result<HttpResponse, EitherError<SignatureErr, InsertMemberErr>> {
     if !is_authenticated(&session, &data.authenticated_keys) {
         // Login and redirect back here
         return Ok(get_redirect_response(&format!(
@@ -33,7 +36,7 @@ pub async fn register_attendance(
             "Failed to verify signature '{}' for '{}'",
             info.signature, info.name
         );
-        return Err(RegisterAttendanceError::from(SignatureErr));
+        return Err(EitherError::from_left(SignatureErr));
     }
 
     println!("Recording attendance");
@@ -42,7 +45,9 @@ pub async fn register_attendance(
     let flipped_name = flip_names(&info.name);
     let session_week_number = increment_week(&data);
 
-    insert_new_member(&flipped_name, session_week_number).await?;
+    insert_new_member(&flipped_name, session_week_number)
+        .await
+        .map_err(EitherError::from_right)?;
 
     Ok(HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name)))
 }

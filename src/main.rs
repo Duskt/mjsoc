@@ -1,5 +1,6 @@
 mod auth;
 mod components;
+mod env;
 mod errors;
 mod google;
 mod notification;
@@ -35,6 +36,8 @@ use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
 use util::get_file_bytes;
 use week_data::WeekData;
 
+// NOTE: this needs to be const (used for type), so cannot be environment
+// Reading environment in at compile time wouldn't be any different from const
 pub const MAX_AUTHENTICATED_USERS: usize = 64;
 
 pub struct AppState {

@@ -1,12 +1,6 @@
-use derive_more::Display;
-
-use crate::{
-    errors::{insert_member_error::InsertMemberErr, signature_error::SignatureErr},
-    AppState,
-};
+use crate::AppState;
 
 use actix_web::web;
-
 use serde::Deserialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -52,40 +46,4 @@ pub fn increment_week(data: &web::Data<AppState>) -> u8 {
 
     drop(week_data_mutex);
     session_week_number
-}
-
-#[derive(Debug, Display)]
-pub enum RegisterAttendanceError {
-    #[display(fmt = "{}", _0)]
-    SignatureErr(SignatureErr),
-    #[display(fmt = "{}", _0)]
-    InsertMemberErr(InsertMemberErr),
-}
-
-impl actix_web::ResponseError for RegisterAttendanceError {
-    fn status_code(&self) -> actix_web::http::StatusCode {
-        match self {
-            Self::SignatureErr(s) => s.status_code(),
-            Self::InsertMemberErr(s) => s.status_code(),
-        }
-    }
-
-    fn error_response(&self) -> actix_web::HttpResponse<actix_web::body::BoxBody> {
-        match self {
-            Self::SignatureErr(s) => s.error_response(),
-            Self::InsertMemberErr(s) => s.error_response(),
-        }
-    }
-}
-
-impl From<SignatureErr> for RegisterAttendanceError {
-    fn from(value: SignatureErr) -> Self {
-        RegisterAttendanceError::SignatureErr(value)
-    }
-}
-
-impl From<InsertMemberErr> for RegisterAttendanceError {
-    fn from(value: InsertMemberErr) -> Self {
-        RegisterAttendanceError::InsertMemberErr(value)
-    }
 }
