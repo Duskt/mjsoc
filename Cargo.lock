@@ -1432,6 +1432,7 @@ dependencies = [
  "base64 0.21.4",
  "chrono",
  "circular-buffer",
+ "derive_more",
  "dotenv",
  "futures-util",
  "google-sheets4",

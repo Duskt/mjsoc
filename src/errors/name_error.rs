@@ -1,30 +1,13 @@
-use std::fmt::Display;
+use crate::impl_response_error;
 
-use actix_web::{body::BoxBody, HttpResponse, ResponseError};
+use derive_more::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum NameErr {
+    #[display(fmt = "Name empty")]
     NameEmpty,
+    #[display(fmt = "Name too long")]
     NameTooLong,
 }
 
-impl Display for NameErr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            NameErr::NameEmpty => write!(f, "Name empty"),
-            NameErr::NameTooLong => write!(f, "Name too long"),
-        }
-    }
-}
-
-impl ResponseError for NameErr {
-    fn status_code(&self) -> actix_web::http::StatusCode {
-        actix_web::http::StatusCode::BAD_REQUEST
-    }
-
-    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        let res = HttpResponse::new(self.status_code());
-
-        res.set_body(BoxBody::new(self.to_string()))
-    }
-}
+impl_response_error!(NameErr, actix_web::http::StatusCode::BAD_REQUEST);

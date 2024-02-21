@@ -1,12 +1,18 @@
 use actix_session::Session;
-use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use maud::html;
 use serde::Deserialize;
 use urlencoding::encode;
 
-use crate::{auth::is_authenticated, get_redirect_response, page, AppState};
+use crate::{
+    auth::is_authenticated, components::page::page, util::get_redirect_response, AppState,
+};
 
-#[get("/week")]
+#[derive(Deserialize)]
+pub struct WeekForm {
+    week: String,
+}
+
 pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
     println!("Week requested");
 
@@ -23,12 +29,6 @@ pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
     HttpResponse::Ok().body(html.into_string())
 }
 
-#[derive(Deserialize)]
-pub struct WeekForm {
-    week: String,
-}
-
-#[post("/week")]
 pub async fn change_week(
     session: Session,
     data: web::Data<AppState>,
