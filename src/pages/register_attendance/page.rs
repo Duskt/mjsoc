@@ -6,13 +6,13 @@ use crate::{
     },
     google::sheets::insert_new_member,
     pages::register_attendance::data::{flip_names, increment_week},
-    signature::verify_signature,
     util::get_redirect_response,
     AppState,
 };
 
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse};
+use mj_lib::signature::verify_signature;
 use urlencoding::encode;
 
 use super::data::AttendanceQuery;

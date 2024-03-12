@@ -1,10 +1,6 @@
 use maud::{html, PreEscaped};
+use mj_lib::qr::QrData;
 use urlencoding::encode;
-
-pub struct QrData {
-    pub name: String,
-    pub svg: String,
-}
 
 pub fn qr_display(qr_data: Option<QrData>) -> PreEscaped<String> {
     html!(

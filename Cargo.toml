@@ -3,6 +3,10 @@ name = "mjsoc-attendance"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "mj_lib"
+path = "src/lib/mod.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -14,6 +18,7 @@ argon2 = "0.5.2"
 base64 = "0.21.4"
 chrono = "0.4.31"
 circular-buffer = "0.1.3"
+clap = { version = "4.5.2", features = ["derive"] }
 derive_more = "0.99.17"
 dotenv = "0.15.0"
 futures-util = "0.3.29"
@@ -26,3 +31,4 @@ serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.107"
 urlencoding = "2.1.3"
 uuid = { version = "1.4.1", features = ["v4"] }
+zip = "0.6.6"
