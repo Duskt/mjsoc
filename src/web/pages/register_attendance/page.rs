@@ -12,7 +12,7 @@ use crate::{
 
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse};
-use mj_lib::signature::verify_signature;
+use lib::signature::verify_signature;
 use urlencoding::encode;
 
 use super::data::AttendanceQuery;

@@ -1,5 +1,5 @@
 use maud::{html, PreEscaped};
-use mj_lib::qr::QrData;
+use lib::qr::QrData;
 use urlencoding::encode;
 
 pub fn qr_display(qr_data: Option<QrData>) -> PreEscaped<String> {

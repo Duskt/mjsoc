@@ -10,11 +10,11 @@ pub enum NameErr {
     NameTooLong,
 }
 
-impl From<mj_lib::qr::NameErr> for NameErr {
-    fn from(err: mj_lib::qr::NameErr) -> Self {
+impl From<lib::qr::NameErr> for NameErr {
+    fn from(err: lib::qr::NameErr) -> Self {
         match err {
-            mj_lib::qr::NameErr::NameEmpty => NameErr::NameEmpty,
-            mj_lib::qr::NameErr::NameTooLong => NameErr::NameTooLong,
+            lib::qr::NameErr::NameEmpty => NameErr::NameEmpty,
+            lib::qr::NameErr::NameTooLong => NameErr::NameTooLong,
         }
     }
 }

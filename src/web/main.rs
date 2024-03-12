@@ -14,7 +14,7 @@ use actix_web::{
     web::{self, get, post},
     App, HttpServer,
 };
-use mj_lib::{
+use lib::{
     expect_env, parsed_env,
     util::{self, get_file_bytes},
 };

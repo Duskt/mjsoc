@@ -6,7 +6,7 @@ use std::{
 
 use clap::{Args, Parser};
 use dotenv::dotenv;
-use mj_lib::{expect_env, qr::get_qr_data, util::get_file_bytes};
+use lib::{expect_env, qr::get_qr_data, util::get_file_bytes};
 use zip::{write::FileOptions, ZipWriter};
 
 /// CLI for Mahjong Soc Attendance

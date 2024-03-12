@@ -4,8 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "mj_lib"
+name = "lib"
 path = "src/lib/mod.rs"
+
+
+[[bin]]
+name = "web"
+path = "src/web/main.rs"
+
+[[bin]]
+name = "cli"
+path = "src/cli/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -12,7 +12,7 @@ use actix_web::{
     http::header::{ContentDisposition, DispositionParam, DispositionType},
     web, HttpRequest, HttpResponse,
 };
-use mj_lib::qr::{get_qr_data, get_qr_url};
+use lib::qr::{get_qr_data, get_qr_url};
 use qrcode_generator::QrCodeEcc;
 use urlencoding::encode;
 
