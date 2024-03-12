@@ -1,0 +1,40 @@
+# fly.toml app configuration file generated for mjattendance on 2024-03-11T22:12:32Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'mjattendance'
+primary_region = 'lhr'
+
+[build]
+
+[http_service]
+internal_port = 8080
+force_https = true
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
+processes = ['app']
+
+[[vm]]
+size = 'shared-cpu-1x'
+
+[mounts]
+source = "data"
+destination = "/data"
+
+[env]
+MAX_PLAYERS = '50'
+MAX_NAME_LEN = '64'
+QR_SIZE = '256'
+
+RATE_LIMIT_BURST_SIZE = '5000'
+RATE_LIMIT_PERIOD_SECONDS = '60'
+
+IP = '0.0.0.0'
+PORT = '8080'
+
+HMAC_KEY_FILE = '/data/hmac_key.bin'
+GOOGLE_PRIVATE_KEY_FILE = '/data/google_key.json'
+WEEK_FILE = '/data/week.txt'
+LOGO_FILE = '/data/logo.jpg'
