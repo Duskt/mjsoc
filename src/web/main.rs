@@ -1,13 +1,10 @@
 mod auth;
 mod components;
-mod env;
 mod errors;
 mod google;
 mod notification;
 mod pages;
 mod rate_limit;
-mod signature;
-mod util;
 mod week_data;
 
 use actix_files as fs;
@@ -16,6 +13,10 @@ use actix_web::{
     cookie,
     web::{self, get, post},
     App, HttpServer,
+};
+use lib::{
+    expect_env, parsed_env,
+    util::{self, get_file_bytes},
 };
 
 use chrono::Duration;
@@ -33,7 +34,6 @@ use pages::{
     session_week::{change_week, get_week},
 };
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
-use util::get_file_bytes;
 use week_data::WeekData;
 
 // NOTE: this needs to be const (used for type), so cannot be environment

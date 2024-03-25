@@ -1,6 +1,15 @@
-use crate::{
-    components::qr::QrData, errors::name_error::NameErr, parsed_env, signature::generate_signature,
-};
+use crate::{parsed_env, signature::generate_signature};
+
+#[derive(Debug, Clone)]
+pub enum NameErr {
+    NameEmpty,
+    NameTooLong,
+}
+
+pub struct QrData {
+    pub name: String,
+    pub svg: String,
+}
 
 use qrcode_generator::QrCodeEcc;
 use serde::Deserialize;

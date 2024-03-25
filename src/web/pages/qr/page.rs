@@ -2,7 +2,7 @@ use crate::{
     auth::is_authenticated,
     components::{page::page, qr::qr_display},
     errors::name_error::NameErr,
-    pages::qr::data::{get_qr_data, get_qr_url, DownloadQuery, GenerateQuery},
+    pages::qr::data::{DownloadQuery, GenerateQuery},
     parsed_env,
     util::{get_base_url, get_redirect_response},
     AppState,
@@ -12,6 +12,7 @@ use actix_web::{
     http::header::{ContentDisposition, DispositionParam, DispositionType},
     web, HttpRequest, HttpResponse,
 };
+use lib::qr::{get_qr_data, get_qr_url};
 use qrcode_generator::QrCodeEcc;
 use urlencoding::encode;
 
