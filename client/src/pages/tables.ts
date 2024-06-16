@@ -28,18 +28,18 @@ function renderPlayerTable(parent: HTMLElement, mahjongTable: TableData) {
     let innerRows = [document.createElement('tr'), document.createElement('tr'), document.createElement('tr')]
     // west (in the top position, yes)
     innerRows[0].appendChild(document.createElement('td'));
-    new PlayerTag(innerRows[0], mahjongTable.table_no, "west", mahjongTable.west);
+    let west = new PlayerTag(innerRows[0], mahjongTable, 'west');
     innerRows[0].appendChild(document.createElement('td'));
     // north (left); table no; south (right)
-    new PlayerTag(innerRows[1], mahjongTable.table_no, "north", mahjongTable.north);
+    let north = new PlayerTag(innerRows[1], mahjongTable, "north");
     let inner_table_display = document.createElement("td");
     inner_table_display.classList.add("mahjong-table-display")
     inner_table_display.textContent = mahjongTable.table_no.toString();
     innerRows[1].appendChild(inner_table_display)
-    new PlayerTag(innerRows[1], mahjongTable.table_no, "south", mahjongTable.south);
+    let south = new PlayerTag(innerRows[1], mahjongTable, "south");
     // east (bottom)
     innerRows[2].appendChild(document.createElement('td'));
-    new PlayerTag(innerRows[2], mahjongTable.table_no, "east", mahjongTable.east);
+    let east = new PlayerTag(innerRows[2], mahjongTable, "east");
     let deleteButtonCell = document.createElement('td');
     let deleteButton = new DeleteButton({
         parent: deleteButtonCell,
@@ -47,9 +47,30 @@ function renderPlayerTable(parent: HTMLElement, mahjongTable: TableData) {
     });
     innerRows[2].appendChild(deleteButtonCell);
 
+    let players = [east, south, west, north];
+    // listen to inputs within this table so we can update table data across all of them
+    innerTable.addEventListener('input', (ev) => {
+
+        // find the input and thus player corresponding to the event target
+        let target = ev.target;
+        if (!(target instanceof HTMLElement)) return;
+        let input = players.map((v) => v.nameTag.element).find((v) => v.isSameNode(target));
+        if (!input) {
+            console.error("Input registered in table outside of a nameTag input at:", ev.target);
+            throw new Error("unidentified input in table update");
+        }
+        let player = players.find((v) => v.nameTag.element == input);
+        if (!player) {
+            console.error("Could not identify the player this nameTag belongs to:", input);
+            throw new Error("undefined player in table update");
+        }
+        for (const otherPlayer of players.filter((v) => v != player)) {
+            // update the other players with the new tabledata
+            otherPlayer.update(player.table);
+        }
+    })
+
     // add the rows to the table and return the table
-    for (const i of innerRows) {
-        innerTable.appendChild(i);
-    }
+    innerRows.forEach((i) => innerTable.appendChild(i))
     return innerTable;
 }

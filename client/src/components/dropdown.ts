@@ -30,7 +30,6 @@ class FocusNode<K extends keyof HTMLElementTagNameMap> extends Component<K> {
         return this
     }
     activate() {
-        console.log(`Activating ${this.constructor.name}`);
         this.listener = (ev: MouseEvent) => {
             if (this.excludeChildren) {
                 // todo: why is the cast necessary?
@@ -45,14 +44,11 @@ class FocusNode<K extends keyof HTMLElementTagNameMap> extends Component<K> {
             this.deactivate();
         }
         this.active = true;
-        console.log("added ev lis");
         document.addEventListener(this.deactivation, this.listener);
         return this
     }
     deactivate() {
-        console.log(`DEactivating ${this.constructor.name}`);
         this.active = false;
-        console.log("remov ev lis");
         if (this.listener) document.removeEventListener(this.deactivation, this.listener);
         return this
     }
@@ -70,7 +66,6 @@ export class FocusButton extends FocusNode<'button'> {
             ...params
         });
         this.element.onclick = (ev: MouseEvent) => {
-            console.log(`FocusButton (${this.constructor.name}).onclick`);
             // todo: could be done more precisely...
             // stop parent focusNodes from deactivating onclick
             ev.stopPropagation();
@@ -84,14 +79,20 @@ export class FocusButton extends FocusNode<'button'> {
 }
 
 class Dropdown {
-    element: HTMLElement;
     options: HTMLElement[];
+    element: HTMLElement;
     constructor(options: HTMLElement[]) {
         this.element = new Component({
             tag: 'div',
             classList: ["dropdown"]
         }).element;
+        this.updateOptions(options);
+        // satisfies ts
         this.options = options;
+    }
+    updateOptions(options: HTMLElement[]) {
+        this.options = options;
+        Array.from(this.element.children).forEach((c) => c.remove());
         this.options.forEach((v) => this.element.appendChild(v));
     }
 }

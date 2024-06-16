@@ -107,7 +107,6 @@
       return this;
     }
     activate() {
-      console.log(`Activating ${this.constructor.name}`);
       this.listener = (ev) => {
         if (this.excludeChildren) {
           let childElements = Array.from(this.element.children).filter((v) => v instanceof HTMLElement);
@@ -120,14 +119,11 @@
         this.deactivate();
       };
       this.active = true;
-      console.log("added ev lis");
       document.addEventListener(this.deactivation, this.listener);
       return this;
     }
     deactivate() {
-      console.log(`DEactivating ${this.constructor.name}`);
       this.active = false;
-      console.log("remov ev lis");
       if (this.listener) document.removeEventListener(this.deactivation, this.listener);
       return this;
     }
@@ -140,7 +136,6 @@
         ...params
       });
       this.element.onclick = (ev) => {
-        console.log(`FocusButton (${this.constructor.name}).onclick`);
         ev.stopPropagation();
         if (this.active) {
           this.deactivate();
@@ -151,14 +146,19 @@
     }
   };
   var Dropdown = class {
-    element;
     options;
+    element;
     constructor(options) {
       this.element = new Component({
         tag: "div",
         classList: ["dropdown"]
       }).element;
+      this.updateOptions(options);
       this.options = options;
+    }
+    updateOptions(options) {
+      this.options = options;
+      Array.from(this.element.children).forEach((c) => c.remove());
       this.options.forEach((v) => this.element.appendChild(v));
     }
   };
@@ -195,6 +195,7 @@
       this.dachut = new DropdownButton({
         textContent: "\u6253\u51FA"
       });
+      this.updatePlayers(params.otherPlayers);
     }
     activate() {
       this.element.style["width"] = "100px";
@@ -208,6 +209,13 @@
         this.element.removeChild(c);
       }
       return super.deactivate();
+    }
+    updatePlayers(otherPlayers) {
+      this.dachut.dropdown.updateOptions(otherPlayers.map((v) => new Component({
+        tag: "button",
+        textContent: v,
+        classList: ["small-button"]
+      }).element));
     }
   };
   var FaanDropdownButton = class extends DropdownButton {
@@ -232,12 +240,10 @@
     }
   };
   var PlayerTag = class {
-    // the component (a table cell element) 'player'...
-    player;
-    // contains the nametag (input) and winbutton components
-    nameTag;
-    winButton;
-    constructor(parent, tableNo, seat, name) {
+    constructor(parent, table, seat) {
+      this.parent = parent;
+      this.table = table;
+      this.seat = seat;
       this.player = new Component({
         tag: "td",
         parent,
@@ -247,20 +253,40 @@
         tag: "input",
         classList: ["name-tag", seat],
         parent: this.player.element,
-        value: name
+        value: table[seat]
       });
       this.nameTag.element.addEventListener("input", async (ev) => {
+        let newName = this.nameTag.element.value;
+        this.update({
+          ...this.table,
+          [this.seat]: newName
+        });
         await request("playerNameEdit", {
-          "table_no": tableNo,
+          "table_no": table.table_no,
           "seat": seat,
-          "new_name": this.nameTag.element.value
+          "new_name": newName
         });
       });
+      let otherPlayers = ["east", "south", "west", "north"].filter((v) => v != seat).map((v) => table[v]);
+      if (otherPlayers.length != 3) {
+        console.error(this.player, `got ${otherPlayers.length} other players when expecting 3:`, otherPlayers);
+      }
       this.winButton = new WinButton({
+        otherPlayers,
         textContent: "\u98DF",
         parent: this.player.element,
         classList: ["win-button", "small-button"]
       });
+    }
+    // the component (a table cell element) 'player'...
+    player;
+    // contains the nametag (input) and winbutton components
+    nameTag;
+    winButton;
+    update(table) {
+      this.table = table;
+      let otherPlayers = ["east", "south", "west", "north"].filter((v) => v != this.seat).map((v) => table[v]);
+      this.winButton.updatePlayers(otherPlayers);
     }
   };
 
@@ -289,25 +315,41 @@
     let innerTable = document.createElement("table");
     let innerRows = [document.createElement("tr"), document.createElement("tr"), document.createElement("tr")];
     innerRows[0].appendChild(document.createElement("td"));
-    new PlayerTag(innerRows[0], mahjongTable.table_no, "west", mahjongTable.west);
+    let west = new PlayerTag(innerRows[0], mahjongTable, "west");
     innerRows[0].appendChild(document.createElement("td"));
-    new PlayerTag(innerRows[1], mahjongTable.table_no, "north", mahjongTable.north);
+    let north = new PlayerTag(innerRows[1], mahjongTable, "north");
     let inner_table_display = document.createElement("td");
     inner_table_display.classList.add("mahjong-table-display");
     inner_table_display.textContent = mahjongTable.table_no.toString();
     innerRows[1].appendChild(inner_table_display);
-    new PlayerTag(innerRows[1], mahjongTable.table_no, "south", mahjongTable.south);
+    let south = new PlayerTag(innerRows[1], mahjongTable, "south");
     innerRows[2].appendChild(document.createElement("td"));
-    new PlayerTag(innerRows[2], mahjongTable.table_no, "east", mahjongTable.east);
+    let east = new PlayerTag(innerRows[2], mahjongTable, "east");
     let deleteButtonCell = document.createElement("td");
     let deleteButton = new DeleteButton({
       parent: deleteButtonCell,
       tableNo: mahjongTable.table_no
     });
     innerRows[2].appendChild(deleteButtonCell);
-    for (const i of innerRows) {
-      innerTable.appendChild(i);
-    }
+    let players = [east, south, west, north];
+    innerTable.addEventListener("input", (ev) => {
+      let target = ev.target;
+      if (!(target instanceof HTMLElement)) return;
+      let input = players.map((v) => v.nameTag.element).find((v) => v.isSameNode(target));
+      if (!input) {
+        console.error("Input registered in table outside of a nameTag input at:", ev.target);
+        throw new Error("unidentified input in table update");
+      }
+      let player = players.find((v) => v.nameTag.element == input);
+      if (!player) {
+        console.error("Could not identify the player this nameTag belongs to:", input);
+        throw new Error("undefined player in table update");
+      }
+      for (const otherPlayer of players.filter((v) => v != player)) {
+        otherPlayer.update(player.table);
+      }
+    });
+    innerRows.forEach((i) => innerTable.appendChild(i));
     return innerTable;
   }
 

@@ -2,7 +2,10 @@ import { request } from "../request";
 import Component from ".";
 import { FocusButton, DropdownButton, FocusButtonParameters, DropdownButtonParameters } from "./dropdown";
 
-type WinButtonParameters = FocusButtonParameters;
+interface WinButtonParameters extends FocusButtonParameters {
+    // technically this should enforce length 3: if i can be bothered to write a ts predicate...
+    otherPlayers: string[];
+}
 /** This is a styled focus button (on/off automatic switch).
  * It needs to deal with a lot of options. There are two types of win, 'zimo' and 'dachut' (below).
  * The win will have a certain number of 'faan' (points with a lower and upper limit).
@@ -16,11 +19,12 @@ export class WinButton extends FocusButton {
     constructor(params: WinButtonParameters) {
         super(params)
         this.zimo = new FaanDropdownButton({
-            textContent: "自摸"
+            textContent: "自摸",
         });
         this.dachut = new DropdownButton({
-            textContent: "打出"
+            textContent: "打出",
         });
+        this.updatePlayers(params.otherPlayers);
     }
     activate() {
         this.element.style['width'] = "100px";
@@ -34,6 +38,14 @@ export class WinButton extends FocusButton {
             this.element.removeChild(c);
         }
         return super.deactivate();
+    }
+    updatePlayers(otherPlayers: string[]) {
+        // deals with appending/removing children
+        this.dachut.dropdown.updateOptions(otherPlayers.map((v) => new Component({
+            tag: 'button',
+            textContent: v,
+            classList: ["small-button"]
+        }).element));
     }
 }
 
@@ -64,14 +76,16 @@ class FaanDropdownButton extends DropdownButton {
         this.max = max;
     }
 }
-
+/**
+ * @param {TableData} initTable the TableData this tag was initialised with (NOT UPDATED!)
+ */
 export default class PlayerTag {
     // the component (a table cell element) 'player'...
     player: Component<'td'>;
     // contains the nametag (input) and winbutton components
     nameTag: Component<'input'>
     winButton: WinButton;
-    constructor(parent: HTMLTableRowElement, tableNo: number, seat: SeatWind, name: string) {
+    constructor(public parent: HTMLTableRowElement, public table: TableData, public seat: SeatWind) {
         // table cell element with input and win button
         this.player = new Component({
             tag: 'td',
@@ -83,21 +97,36 @@ export default class PlayerTag {
             tag: 'input',
             classList: ["name-tag", seat],
             parent: this.player.element,
-            value: name
+            value: table[seat]
         });
         this.nameTag.element.addEventListener("input", async (ev) => {
+            let newName = this.nameTag.element.value;
+            this.update({
+                ...this.table,
+                [this.seat]: newName,
+            });
             // await so the winButton rerender isn't premature
             await request("playerNameEdit", {
-                "table_no": tableNo,
+                "table_no": table.table_no,
                 "seat": seat,
-                "new_name": this.nameTag.element.value
+                "new_name": newName,
             });
-            // todo: new names -> rerender win button dropdowns
         });
+        // filtering against the seat wind and then getting the names avoids crashing on duplicate
+        let otherPlayers = (['east', 'south', 'west', 'north'].filter((v) => v != seat) as SeatWind[]).map((v) => table[v]);
+        if (otherPlayers.length != 3) {
+            console.error(this.player, `got ${otherPlayers.length} other players when expecting 3:`, otherPlayers);
+        }
         this.winButton = new WinButton({
+            otherPlayers,
             textContent: "食",
             parent: this.player.element,
             classList: ["win-button", "small-button"]
         });
+    }
+    update(table: TableData) {
+        this.table = table;
+        let otherPlayers = (['east', 'south', 'west', 'north'] as SeatWind[]).filter((v) => v != this.seat).map((v) => table[v]);
+        this.winButton.updatePlayers(otherPlayers);
     }
 }
