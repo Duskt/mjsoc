@@ -24,6 +24,11 @@
   font-size: 16px;
 }
 
+.delete-button {
+  height: 24px;
+  width: 24px;
+}
+
 /* General table element styling */
 .name-tag {
   margin: 0px;

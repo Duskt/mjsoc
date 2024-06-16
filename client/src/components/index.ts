@@ -28,6 +28,7 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
         }
 
         if (params.textContent) this.element.textContent = params.textContent;
+        if (params.value) (this.element as HTMLInputElement).value = params.value;
 
         let classList = params.classList || [];
         for (const c of classList) {

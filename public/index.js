@@ -17,6 +17,7 @@
         this.element.style[styleTag] = styleItem;
       }
       if (params.textContent) this.element.textContent = params.textContent;
+      if (params.value) this.element.value = params.value;
       let classList = params.classList || [];
       for (const c of classList) {
         this.element.classList.add(c);
