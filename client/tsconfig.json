@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "rootDir": "src",
+        "outDir": "../public/",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "lib": [
+            "dom",
+            "es7"
+        ],
+        "strict": true
+    }
+}
