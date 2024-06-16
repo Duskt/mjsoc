@@ -1,5 +1,32 @@
 "use strict";
 (() => {
+  // src/components/index.ts
+  var Component = class {
+    element;
+    constructor(params) {
+      let tag = params.tag;
+      this.element = document.createElement(tag);
+      let parent = params.parent;
+      if (parent) parent.appendChild(this.element);
+      let style = params.style || {};
+      for (const styleTag in style) {
+        let styleItem = style[styleTag];
+        if (styleItem == null) {
+          continue;
+        }
+        this.element.style[styleTag] = styleItem;
+      }
+      if (params.textContent) this.element.textContent = params.textContent;
+      let classList = params.classList || [];
+      for (const c of classList) {
+        this.element.classList.add(c);
+      }
+      for (const i in params.other) {
+        this.element[i] = params.other[i];
+      }
+    }
+  };
+
   // src/request.ts
   async function request(path2, payload, method = "POST") {
     let url = "http://localhost:5654/" + (path2[0] != "/" ? path2 : path2.slice(1));
@@ -36,44 +63,27 @@
   }
 
   // src/components/deleteButton.ts
-  function renderDeleteButton(parent, tableNo) {
-    let deleteButton = document.createElement("button");
-    deleteButton.textContent = "X";
-    deleteButton.style["padding"] = "1px";
-    deleteButton.onclick = async (ev) => {
-      let r = await request("editTable", { "table_no": tableNo }, "DELETE");
-      console.log(r);
-      if (r) {
-        deleteButton.parentElement.parentElement.parentElement.remove();
-      }
-    };
-    parent.appendChild(deleteButton);
-  }
-
-  // src/components/component.ts
-  var Component = class {
-    element;
+  var DeleteButton = class extends Component {
     constructor(params) {
-      let tag = params.tag;
-      this.element = document.createElement(tag);
-      let parent = params.parent;
-      if (parent) parent.appendChild(this.element);
-      let style = params.style || {};
-      for (const styleTag in style) {
-        let styleItem = style[styleTag];
-        if (styleItem == null) {
-          continue;
+      let onclick = params.other?.onclick || (async (ev) => {
+        let r = await request("editTable", { "table_no": params.tableNo }, "DELETE");
+        console.log(r);
+        if (r) {
+          if (ev.target instanceof HTMLElement) ev.target.parentElement?.parentElement?.parentElement?.remove();
         }
-        this.element.style[styleTag] = styleItem;
-      }
-      if (params.textContent) this.element.textContent = params.textContent;
-      let classList = params.classList || [];
-      for (const c of classList) {
-        this.element.classList.add(c);
-      }
-      for (const i in params.other) {
-        this.element[i] = params.other[i];
-      }
+      });
+      let classList = params.classList || ["small-button", "delete-button"];
+      let textContent = params.textContent || "X";
+      super({
+        ...params,
+        tag: "button",
+        classList,
+        textContent,
+        other: {
+          ...params.other,
+          onclick
+        }
+      });
     }
   };
 
@@ -220,32 +230,38 @@
       this.max = max;
     }
   };
-  function renderPlayerNameTag(parent, tableNo, seat, name) {
-    let player = new Component({
-      tag: "td",
-      parent,
-      classList: ["player"]
-    });
-    let nameTag = new Component({
-      tag: "input",
-      classList: ["name-tag", seat],
-      parent: player.element,
-      value: name
-    });
-    nameTag.element.addEventListener("input", async (ev) => {
-      await request("playerNameEdit", {
-        "table_no": tableNo,
-        "seat": seat,
-        "new_name": nameTag.element.value
+  var PlayerTag = class {
+    // the component (a table cell element) 'player'...
+    player;
+    // contains the nametag (input) and winbutton components
+    nameTag;
+    winButton;
+    constructor(parent, tableNo, seat, name) {
+      this.player = new Component({
+        tag: "td",
+        parent,
+        classList: ["player"]
       });
-    });
-    let winButton = new WinButton({
-      textContent: "\u98DF",
-      parent: player.element,
-      classList: ["win-button", "small-button"]
-    });
-    return nameTag;
-  }
+      this.nameTag = new Component({
+        tag: "input",
+        classList: ["name-tag", seat],
+        parent: this.player.element,
+        value: name
+      });
+      this.nameTag.element.addEventListener("input", async (ev) => {
+        await request("playerNameEdit", {
+          "table_no": tableNo,
+          "seat": seat,
+          "new_name": this.nameTag.element.value
+        });
+      });
+      this.winButton = new WinButton({
+        textContent: "\u98DF",
+        parent: this.player.element,
+        classList: ["win-button", "small-button"]
+      });
+    }
+  };
 
   // src/pages/tables.ts
   function onPageRequest() {
@@ -272,18 +288,21 @@
     let innerTable = document.createElement("table");
     let innerRows = [document.createElement("tr"), document.createElement("tr"), document.createElement("tr")];
     innerRows[0].appendChild(document.createElement("td"));
-    renderPlayerNameTag(innerRows[0], mahjongTable.table_no, "west", mahjongTable.west);
+    new PlayerTag(innerRows[0], mahjongTable.table_no, "west", mahjongTable.west);
     innerRows[0].appendChild(document.createElement("td"));
-    renderPlayerNameTag(innerRows[1], mahjongTable.table_no, "north", mahjongTable.north);
+    new PlayerTag(innerRows[1], mahjongTable.table_no, "north", mahjongTable.north);
     let inner_table_display = document.createElement("td");
     inner_table_display.classList.add("mahjong-table-display");
     inner_table_display.textContent = mahjongTable.table_no.toString();
     innerRows[1].appendChild(inner_table_display);
-    renderPlayerNameTag(innerRows[1], mahjongTable.table_no, "south", mahjongTable.south);
+    new PlayerTag(innerRows[1], mahjongTable.table_no, "south", mahjongTable.south);
     innerRows[2].appendChild(document.createElement("td"));
-    renderPlayerNameTag(innerRows[2], mahjongTable.table_no, "east", mahjongTable.east);
+    new PlayerTag(innerRows[2], mahjongTable.table_no, "east", mahjongTable.east);
     let deleteButtonCell = document.createElement("td");
-    renderDeleteButton(deleteButtonCell, mahjongTable.table_no);
+    let deleteButton = new DeleteButton({
+      parent: deleteButtonCell,
+      tableNo: mahjongTable.table_no
+    });
     innerRows[2].appendChild(deleteButtonCell);
     for (const i of innerRows) {
       innerTable.appendChild(i);
@@ -291,7 +310,7 @@
     return innerTable;
   }
 
-  // src/main.ts
+  // src/index.ts
   function path() {
     return window.location.href.split("/").slice(3).join("/");
   }

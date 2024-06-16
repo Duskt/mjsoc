@@ -19,6 +19,8 @@ export default class DeleteButton extends Component<'button'> {
         super({
             ...params,
             tag: 'button',
+            classList,
+            textContent,
             other: {
                 ...params.other,
                 onclick
