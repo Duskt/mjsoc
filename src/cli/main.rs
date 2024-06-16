@@ -62,8 +62,8 @@ fn bulk_qr(args: BulkQrArgs) {
         );
     }
 
-    let hmac_key_file = expect_env!("HMAC_KEY_FILE");
-    let hmac_key = get_file_bytes(&hmac_key_file);
+    let hmac_key_path = expect_env!("HMAC_KEY_PATH");
+    let hmac_key = get_file_bytes(&hmac_key_path);
 
     let path = Path::new(&args.output_file);
     let file = File::create(path).unwrap();
