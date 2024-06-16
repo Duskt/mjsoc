@@ -1,4 +1,4 @@
-import { request, elem } from "../util";
+import { request } from "../request";
 import Component from "./component";
 import { FocusButton, DropdownButton, FocusButtonParameters, DropdownButtonParameters } from "./dropdown";
 
@@ -50,12 +50,15 @@ class FaanDropdownButton extends DropdownButton {
         // number range from min (incl.) to max (incl.)
         let faanRange = Array.from(Array(max + 1).keys()).slice(min);
         // makes dropdown item buttons for each number in range
-        let options = faanRange.map((faan) => elem('button', {
+        let options = faanRange.map((faan) => new Component({
+            tag: 'button',
             textContent: faan.toString(),
-            onclick: (ev: MouseEvent) => {
-                alert(`Took ${faan} faan!`);
+            other: {
+                onclick: (ev) => {
+                    alert(`Took ${faan} faan!`);
+                }
             }
-        }));
+        }).element);
         super({ ...params, options });
         this.min = min;
         this.max = max;

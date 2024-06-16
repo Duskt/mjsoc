@@ -1,5 +1,5 @@
 type HTMLElementMap = {
-    [other in keyof HTMLElement]: HTMLElement[other];
+    [other in keyof HTMLElement]?: HTMLElement[other];
 }
 
 export interface ComponentParameters<K extends keyof HTMLElementTagNameMap> {
@@ -33,7 +33,7 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
         for (const c of classList) {
             this.element.classList.add(c);
         }
-        
+
         for (const i in params.other) {
             // @ts-ignore
             this.element[i] = params.other[i];

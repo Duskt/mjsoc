@@ -1,4 +1,4 @@
-import { request } from "../util";
+import { request } from "../request";
 
 export default function renderDeleteButton(parent: HTMLTableCellElement, tableNo: number) {
     let deleteButton = document.createElement('button');

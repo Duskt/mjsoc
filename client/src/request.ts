@@ -33,33 +33,3 @@ export async function request(path: string, payload: object, method: string = "P
     }
     return !r.redirected;
 }
-
-export function elem<T extends keyof HTMLElementTagNameMap>(tag: T, attributes: {
-    classList?: string[],
-    id?: string,
-    style?: Partial<CSSStyleDeclaration>,
-    textContent?: string,
-    value?: string,
-    onclick?: Function,
-} = {}, parent?: HTMLElement): HTMLElementTagNameMap[T] {
-    let e = document.createElement(tag);
-    // why didn't typescript catch this?
-    for (const classItem of attributes.classList ? attributes.classList : []) {
-        e.classList.add(classItem);
-    }
-    delete attributes.classList;
-    if (attributes.style) {
-        for (const styleKey in attributes.style) {
-            let item = attributes.style[styleKey];
-            if (!item) continue
-            e.style[styleKey] = item;
-        }
-    }
-    delete attributes.style;
-    for (const i in attributes) {
-        // @ts-ignore
-        e[i] = attributes[i];
-    }
-    if (parent) { parent.appendChild(e); }
-    return e;
-}

@@ -1,4 +1,3 @@
-import { elem } from "../util";
 import Component, { ComponentParameters } from "./component";
 
 interface FocusNodeParameters<K extends keyof HTMLElementTagNameMap> extends ComponentParameters<K> {
@@ -65,7 +64,7 @@ export type FocusButtonParameters = Omit<FocusNodeParameters<'button'>, 'tag'>;
  */
 export class FocusButton extends FocusNode<'button'> {
     deactivation: 'click' = 'click';
-    constructor( params: FocusButtonParameters = {}) {
+    constructor(params: FocusButtonParameters = {}) {
         super({
             tag: 'button',
             ...params
@@ -85,12 +84,13 @@ export class FocusButton extends FocusNode<'button'> {
 }
 
 class Dropdown {
-    element: HTMLDivElement;
+    element: HTMLElement;
     options: HTMLElement[];
     constructor(options: HTMLElement[]) {
-        this.element = elem('div', {
-            classList: ["dropdown"],
-        });
+        this.element = new Component({
+            tag: 'div',
+            classList: ["dropdown"]
+        }).element;
         this.options = options;
         this.options.forEach((v) => this.element.appendChild(v));
     }
