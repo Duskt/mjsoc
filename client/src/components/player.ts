@@ -41,10 +41,9 @@ export class WinButton extends FocusButton {
     }
     updatePlayers(otherPlayers: string[]) {
         // deals with appending/removing children
-        this.dachut.dropdown.updateOptions(otherPlayers.map((v) => new Component({
-            tag: 'button',
+        this.dachut.dropdown.updateOptions(otherPlayers.map((v) => new FaanDropdownButton({
             textContent: v,
-            classList: ["small-button"]
+            classList: ["small-button"],
         }).element));
     }
 }
@@ -64,6 +63,7 @@ class FaanDropdownButton extends DropdownButton {
         // makes dropdown item buttons for each number in range
         let options = faanRange.map((faan) => new Component({
             tag: 'button',
+            classList: ["small-button"],
             textContent: faan.toString(),
             other: {
                 onclick: (ev) => {

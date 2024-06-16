@@ -213,8 +213,7 @@
       return super.deactivate();
     }
     updatePlayers(otherPlayers) {
-      this.dachut.dropdown.updateOptions(otherPlayers.map((v) => new Component({
-        tag: "button",
+      this.dachut.dropdown.updateOptions(otherPlayers.map((v) => new FaanDropdownButton({
         textContent: v,
         classList: ["small-button"]
       }).element));
@@ -229,6 +228,7 @@
       let faanRange = Array.from(Array(max + 1).keys()).slice(min);
       let options = faanRange.map((faan) => new Component({
         tag: "button",
+        classList: ["small-button"],
         textContent: faan.toString(),
         other: {
           onclick: (ev) => {

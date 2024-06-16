@@ -12,7 +12,7 @@ interface FocusNodeParameters<K extends keyof HTMLElementTagNameMap> extends Com
  * @param {boolean} [excludeChildren=true] If true, dynamically excludes any and all children of this element from 'elsewhere'
  *  @param {HTMLElement[]} [exclude=[]] Other elements to exclude from 'elsewhere'.
 */
-class FocusNode<K extends keyof HTMLElementTagNameMap> extends Component<K> {
+abstract class FocusNode<K extends keyof HTMLElementTagNameMap> extends Component<K> {
     exclude: HTMLElement[];
     excludeSelf: boolean;
     excludeChildren: boolean;
