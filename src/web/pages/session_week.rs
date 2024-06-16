@@ -16,14 +16,14 @@ pub struct WeekForm {
 pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
     println!("Week requested");
 
-    let data_session_week = data.session_week.lock().unwrap();
+    let mjdata = data.mahjong_data.lock().unwrap();
     let html = page(html! {
         img src="/assets/logo.jpg" class="logo";
         p {
             "Enter week number:"
         }
         form action="/week" method="POST" {
-            input name="week" id="week" value=(format!("{}", data_session_week.week)) autofocus {}
+            input name="week" id="week" value=(format!("{}", mjdata.week.get())) autofocus {}
         }
     });
     HttpResponse::Ok().body(html.into_string())
@@ -35,6 +35,7 @@ pub async fn change_week(
     body: web::Form<WeekForm>,
     req: HttpRequest,
 ) -> impl Responder {
+    println!("Change week running");
     if !is_authenticated(&session, &data.authenticated_keys) {
         // Login and redirect back here
         return get_redirect_response(&format!(
@@ -47,6 +48,8 @@ pub async fn change_week(
     println!("Changing week to {}", week);
 
     // Set week
-    data.session_week.lock().unwrap().save_week(week);
+    let mut mjdata = data.mahjong_data.lock().unwrap();
+    mjdata.week.set(week);
+    mjdata.save_to_file();
     HttpResponse::NoContent().finish()
 }

@@ -2,16 +2,16 @@ mod auth;
 mod components;
 mod errors;
 mod google;
+mod mahjong;
 mod notification;
 mod pages;
 mod rate_limit;
-mod week_data;
 
 use actix_files as fs;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
     cookie,
-    web::{self, get, post},
+    web::{self, delete, get, post},
     App, HttpServer,
 };
 use lib::{
@@ -24,17 +24,21 @@ use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
 use std::sync::{Arc, Mutex, RwLock};
 
+use mahjong::MahjongData;
 use pages::{
     auth::authenticate,
     index::index,
     login::login,
     logo::logo,
+    mahjong::{
+        players::post_player_name_edit,
+        tables::{create_table, delete_table, get_tables},
+    },
     qr::page::{download_qr, generate_qr},
     register_attendance::page::register_attendance,
     session_week::{change_week, get_week},
 };
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
-use week_data::WeekData;
 
 // NOTE: this needs to be const (used for type), so cannot be environment
 // Reading environment in at compile time wouldn't be any different from const
@@ -46,7 +50,7 @@ pub struct AppState {
     authenticated_keys: RwLock<CircularBuffer<MAX_AUTHENTICATED_USERS, String>>,
     admin_password_hash: String,
     hmac_key: Vec<u8>,
-    session_week: Mutex<WeekData>,
+    mahjong_data: Mutex<MahjongData>,
 }
 
 #[actix_web::main]
@@ -68,8 +72,17 @@ async fn main() -> std::io::Result<()> {
             .route("/qr", get().to(generate_qr))
             .route("/download", get().to(download_qr))
             .route("/", get().to(index))
+            // session week page routing
             .route("/week", get().to(get_week))
             .route("/week", post().to(change_week))
+            // table page routing
+            .route("/tables", get().to(get_tables))
+            .route("/table", get().to(get_tables))
+            .route("/table", post().to(create_table))
+            .route("/playerNameEdit", post().to(post_player_name_edit))
+            .route("/playerNameEdit", get().to(get_tables))
+            .route("/editTable", delete().to(delete_table))
+            // authentication
             .route("/login", get().to(login))
             .route("/auth", post().to(authenticate))
             .route("/register_attendance", get().to(register_attendance))
@@ -86,16 +99,16 @@ async fn main() -> std::io::Result<()> {
 fn get_intial_state() -> AppState {
     let admin_password_hash = expect_env!("ADMIN_PASSWORD_HASH");
 
-    let hmac_key_file = expect_env!("HMAC_KEY_FILE");
-    let hmac_key = get_file_bytes(&hmac_key_file);
+    let hmac_key_path = expect_env!("HMAC_KEY_PATH");
+    let hmac_key = get_file_bytes(&hmac_key_path);
 
-    let week_file = expect_env!("WEEK_FILE");
+    let mahjong_data_path = expect_env!("MAHJONG_DATA_PATH");
 
     AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),
         admin_password_hash,
         hmac_key,
-        session_week: Mutex::new(WeekData::from_file(&week_file)),
+        mahjong_data: Mutex::new(MahjongData::from_file(&mahjong_data_path)),
     }
 }
 

@@ -1,0 +1,97 @@
+:root {
+  --name-tag-length: 100px;
+  --name-tag-depth: 24px;
+}
+
+/* Table styling */
+.mahjong-table-display {
+  border: 2px solid black;
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.small-button {
+  padding: 0px;
+  margin: 0px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.win-button {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+}
+
+/* General table element styling */
+.name-tag {
+  margin: 0px;
+  padding: 0px;
+  height: var(--name-tag-depth);
+  width: var(--name-tag-length);
+  font-size: 12px;
+}
+
+/* Name tag styling */
+.player {
+  display: flex;
+  float: left;
+  align-items: center;
+}
+
+.player:has(.south) {
+  flex-direction: column-reverse;
+}
+
+.player:has(.north) {
+  flex-direction: column;
+}
+
+.player:has(.west) {
+  flex-direction: row-reverse;
+}
+
+input.south,
+input.north {
+  writing-mode: tb;
+  width: var(--name-tag-depth);
+  height: var(--name-tag-length);
+}
+
+/* dropdown-button is the button summoning a dropdown */
+.dropdown-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  z-index: 1;
+}
+
+.dropdown-button:first-child {
+  left: 0;
+}
+
+/* dropdown container */
+.dropdown {
+  position: absolute;
+  top: 24px;
+  flex-direction: column;
+  z-index: 1;
+  padding: 0px;
+  border: 1px solid black;
+}
+
+/* dropdown buttons are within the dropdown container, summoned by a DropdownButton (.dropdown-button)*/
+.dropdown button {
+  font-size: 12px;
+  width: 6em;
+  margin: 0px;
+  background-color: grey;
+  border: 0px;
+}
+
+.dropdown button:hover {
+  background-color: lightgrey;
+}

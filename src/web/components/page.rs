@@ -7,6 +7,7 @@ pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
             head {
                 title { "Mahjong Bath" }
                 link rel="stylesheet" href="styles.css";
+                link rel="stylesheet" href="tables.css";
             }
             body {
                 div class="centre-container" {

@@ -5,7 +5,7 @@ use crate::{
         signature_error::SignatureErr,
     },
     google::sheets::insert_new_member,
-    pages::register_attendance::data::{flip_names, increment_week},
+    pages::register_attendance::data::flip_names,
     util::get_redirect_response,
     AppState,
 };
@@ -43,7 +43,7 @@ pub async fn register_attendance(
 
     // Flip before giving it to the sheets api
     let flipped_name = flip_names(&info.name);
-    let session_week_number = increment_week(&data);
+    let session_week_number = data.mahjong_data.lock().unwrap().week.increment();
 
     insert_new_member(&flipped_name, session_week_number)
         .await
