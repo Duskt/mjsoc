@@ -8,9 +8,9 @@ interface FocusNodeParameters<K extends keyof HTMLElementTagNameMap> extends Com
 /** An "on/off switch" element node used as a superclass.
  * .activate() function is NOT IMPLICITLY CALLED ANYWHERE (e.g. on click).
  * .deactivate() is called when the .deactivation event is registered elsewhere (Event.EventTarget). 
- * @param {HTMLElement[]} [exclude=[]] Elements to exclude from 'elsewhere'.
  * @param {boolean} [excludeSelf=true] todo: MUST BE TRUE OR ELSE IT WILL HIDE IMMEDIATELY
  * @param {boolean} [excludeChildren=true] If true, dynamically excludes any and all children of this element from 'elsewhere'
+ *  @param {HTMLElement[]} [exclude=[]] Other elements to exclude from 'elsewhere'.
 */
 class FocusNode<K extends keyof HTMLElementTagNameMap> extends Component<K> {
     exclude: HTMLElement[];
@@ -26,21 +26,21 @@ class FocusNode<K extends keyof HTMLElementTagNameMap> extends Component<K> {
         this.excludeSelf = params.excludeSelf || true;
         this.excludeChildren = params.excludeChildren || true;
         this.active = false;
-        if (this.excludeSelf) this.exclude.push(this.element);
         return this
     }
     activate() {
         this.listener = (ev: MouseEvent) => {
-            if (this.excludeChildren) {
-                // todo: why is the cast necessary?
-                let childElements = Array.from(this.element.children).filter((v) => (v instanceof HTMLElement)) as HTMLElement[];
-                let newChildren = childElements.filter((v) => !this.exclude.includes(v));
-                this.exclude.concat(newChildren);
-                // in case of children being deleted
-                this.exclude = this.exclude.filter((v) => v);
-            };
+            let target = ev.target;
+            if (!(target instanceof HTMLElement)) return;
+            if (this.excludeSelf && target.isSameNode(this.element)) return;
+            // check if this event propagates from a child node
+            let parent = target.parentElement;
+            while (parent) {
+                if (parent.isSameNode(this.element)) return;
+                parent = parent.parentElement;
+            }
             // ignore if target is the win button or this dropdown
-            if (ev.target instanceof HTMLElement && this.exclude.includes(ev.target)) return;
+            if (this.exclude.includes(target)) return;
             this.deactivate();
         }
         this.active = true;
@@ -66,9 +66,10 @@ export class FocusButton extends FocusNode<'button'> {
             ...params
         });
         this.element.onclick = (ev: MouseEvent) => {
-            // todo: could be done more precisely...
-            // stop parent focusNodes from deactivating onclick
-            ev.stopPropagation();
+            // check if this event propagates from a child node
+            if (this.excludeChildren && ev.target != this.element) {
+                return
+            }
             if (this.active) {
                 this.deactivate();
             } else {

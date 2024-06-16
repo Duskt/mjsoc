@@ -103,19 +103,19 @@
       this.excludeSelf = params.excludeSelf || true;
       this.excludeChildren = params.excludeChildren || true;
       this.active = false;
-      if (this.excludeSelf) this.exclude.push(this.element);
       return this;
     }
     activate() {
       this.listener = (ev) => {
-        if (this.excludeChildren) {
-          let childElements = Array.from(this.element.children).filter((v) => v instanceof HTMLElement);
-          let newChildren = childElements.filter((v) => !this.exclude.includes(v));
-          this.exclude.concat(newChildren);
-          this.exclude = this.exclude.filter((v) => v);
+        let target = ev.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (this.excludeSelf && target.isSameNode(this.element)) return;
+        let parent = target.parentElement;
+        while (parent) {
+          if (parent.isSameNode(this.element)) return;
+          parent = parent.parentElement;
         }
-        ;
-        if (ev.target instanceof HTMLElement && this.exclude.includes(ev.target)) return;
+        if (this.exclude.includes(target)) return;
         this.deactivate();
       };
       this.active = true;
@@ -136,7 +136,9 @@
         ...params
       });
       this.element.onclick = (ev) => {
-        ev.stopPropagation();
+        if (this.excludeChildren && ev.target != this.element) {
+          return;
+        }
         if (this.active) {
           this.deactivate();
         } else {
