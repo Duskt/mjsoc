@@ -1,5 +1,5 @@
 import { request } from "../request";
-import Component from "./component";
+import Component from ".";
 import { FocusButton, DropdownButton, FocusButtonParameters, DropdownButtonParameters } from "./dropdown";
 
 type WinButtonParameters = FocusButtonParameters;
@@ -65,33 +65,39 @@ class FaanDropdownButton extends DropdownButton {
     }
 }
 
-export default function renderPlayerNameTag(parent: HTMLTableRowElement, tableNo: number, seat: SeatWind, name: string) {
-    // table cell element with input and win button
-    let player = new Component({
-        tag: 'td',
-        parent,
-        classList: ["player"],
-    });
-    // name input
-    let nameTag = new Component({
-        tag: 'input',
-        classList: ["name-tag", seat],
-        parent: player.element,
-        value: name
-    });
-    nameTag.element.addEventListener("input", async (ev) => {
-        // await so the winButton rerender isn't premature
-        await request("playerNameEdit", {
-            "table_no": tableNo,
-            "seat": seat,
-            "new_name": nameTag.element.value
+export default class PlayerTag {
+    // the component (a table cell element) 'player'...
+    player: Component<'td'>;
+    // contains the nametag (input) and winbutton components
+    nameTag: Component<'input'>
+    winButton: WinButton;
+    constructor(parent: HTMLTableRowElement, tableNo: number, seat: SeatWind, name: string) {
+        // table cell element with input and win button
+        this.player = new Component({
+            tag: 'td',
+            parent,
+            classList: ["player"],
         });
-        // todo: new names -> rerender win button dropdowns
-    });
-    let winButton = new WinButton({
-        textContent: "食",
-        parent: player.element,
-        classList: ["win-button", "small-button"]
-    });
-    return nameTag;
+        // name input
+        this.nameTag = new Component({
+            tag: 'input',
+            classList: ["name-tag", seat],
+            parent: this.player.element,
+            value: name
+        });
+        this.nameTag.element.addEventListener("input", async (ev) => {
+            // await so the winButton rerender isn't premature
+            await request("playerNameEdit", {
+                "table_no": tableNo,
+                "seat": seat,
+                "new_name": this.nameTag.element.value
+            });
+            // todo: new names -> rerender win button dropdowns
+        });
+        this.winButton = new WinButton({
+            textContent: "食",
+            parent: this.player.element,
+            classList: ["win-button", "small-button"]
+        });
+    }
 }

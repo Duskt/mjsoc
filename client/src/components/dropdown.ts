@@ -1,4 +1,4 @@
-import Component, { ComponentParameters } from "./component";
+import Component, { ComponentParameters } from ".";
 
 interface FocusNodeParameters<K extends keyof HTMLElementTagNameMap> extends ComponentParameters<K> {
     exclude?: HTMLElement[],

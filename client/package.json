@@ -4,6 +4,6 @@
     "typescript": "^5.4.5"
   },
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --outfile=../public/index.js"
+    "build": "esbuild src/index.ts --bundle --outfile=../public/index.js"
   }
-} 
+}

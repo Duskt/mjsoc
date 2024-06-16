@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // src/util.ts
+  // src/request.ts
   async function request(path2, payload, method = "POST") {
     let url = "http://localhost:5654/" + (path2[0] != "/" ? path2 : path2.slice(1));
     let r = await fetch(url, {
@@ -33,28 +33,6 @@
       window.location.replace(redirectHref);
     }
     return !r.redirected;
-  }
-  function elem(tag, attributes = {}, parent) {
-    let e = document.createElement(tag);
-    for (const classItem of attributes.classList ? attributes.classList : []) {
-      e.classList.add(classItem);
-    }
-    delete attributes.classList;
-    if (attributes.style) {
-      for (const styleKey in attributes.style) {
-        let item = attributes.style[styleKey];
-        if (!item) continue;
-        e.style[styleKey] = item;
-      }
-    }
-    delete attributes.style;
-    for (const i in attributes) {
-      e[i] = attributes[i];
-    }
-    if (parent) {
-      parent.appendChild(e);
-    }
-    return e;
   }
 
   // src/components/deleteButton.ts
@@ -165,9 +143,10 @@
     element;
     options;
     constructor(options) {
-      this.element = elem("div", {
+      this.element = new Component({
+        tag: "div",
         classList: ["dropdown"]
-      });
+      }).element;
       this.options = options;
       this.options.forEach((v) => this.element.appendChild(v));
     }
@@ -227,12 +206,15 @@
       let min = params.min || 3;
       let max = params.max || 13;
       let faanRange = Array.from(Array(max + 1).keys()).slice(min);
-      let options = faanRange.map((faan) => elem("button", {
+      let options = faanRange.map((faan) => new Component({
+        tag: "button",
         textContent: faan.toString(),
-        onclick: (ev) => {
-          alert(`Took ${faan} faan!`);
+        other: {
+          onclick: (ev) => {
+            alert(`Took ${faan} faan!`);
+          }
         }
-      }));
+      }).element);
       super({ ...params, options });
       this.min = min;
       this.max = max;
