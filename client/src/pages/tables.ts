@@ -1,7 +1,8 @@
 import DeleteButton from "../components/deleteButton";
 import PlayerTag from "../components/player";
+import renderSidebar from "../components/sidebar";
 
-export default function onPageRequest() {
+export default function tables() {
     let table_table = document.getElementById('table');
     if (!table_table) throw Error("No element with the table id is present.");
     let current_row = document.createElement('tr');
@@ -20,6 +21,7 @@ export default function onPageRequest() {
         td = document.createElement('td');
     }
     table_table.appendChild(current_row);
+    renderSidebar();
 }
 
 function renderPlayerTable(parent: HTMLElement, mahjongTable: TableData) {

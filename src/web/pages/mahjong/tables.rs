@@ -31,13 +31,20 @@ pub async fn get_tables(
             "window.MJDATA = "(PreEscaped(cereal))";"
         }
         script src="/index.js" {}
+        main {
+        div class="sidebar" {
+            div {}
+            button { ">" }
+        }
+        article {
+            h1 { "Tables" }
+            form action="/table" method="POST" {
+                button name="addtable" id="addtable" autofocus { "Create a table" }
+            }
 
-        h1 { "Tables" }
-        form action="/table" method="POST" {
-            button name="addtable" id="addtable" autofocus { "Create a table" }
-        } 
-
-        table id="table" {}
+            table id="table" {}
+        }
+    }
     });
     HttpResponse::Ok().body(html.into_string())
 }

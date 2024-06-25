@@ -292,8 +292,39 @@
     }
   };
 
+  // src/components/sidebar.ts
+  function renderSidebar() {
+    let sidebar = document.getElementsByClassName("sidebar")[0];
+    if (!(sidebar instanceof HTMLElement)) {
+      throw Error("Could not find sidebar");
+    }
+    let sidebarButton = Array.from(sidebar.children).find((v) => v.tagName == "BUTTON");
+    if (!(sidebarButton instanceof HTMLButtonElement)) {
+      throw Error("Could not find sidebarButton");
+    }
+    let sidebarDiv = Array.from(sidebar.children).find((v) => v.tagName == "DIV");
+    if (!(sidebarDiv instanceof HTMLElement)) {
+      throw Error("Could not find sidebarDiv");
+    }
+    let closeSidebar = () => {
+      sidebarDiv.style["width"] = "0%";
+      sidebar.style["width"] = "12px";
+      sidebarButton.textContent = ">";
+    };
+    let openSidebar = () => {
+      sidebar.style["width"] = "30%";
+      sidebarDiv.style["width"] = "100%";
+      sidebarButton.textContent = "<";
+    };
+    closeSidebar();
+    sidebarButton.onclick = () => {
+      if (sidebarButton.textContent == ">") openSidebar();
+      else closeSidebar();
+    };
+  }
+
   // src/pages/tables.ts
-  function onPageRequest() {
+  function tables() {
     let table_table = document.getElementById("table");
     if (!table_table) throw Error("No element with the table id is present.");
     let current_row = document.createElement("tr");
@@ -312,6 +343,7 @@
       td = document.createElement("td");
     }
     table_table.appendChild(current_row);
+    renderSidebar();
   }
   function renderPlayerTable(parent, mahjongTable) {
     let innerTable = document.createElement("table");
@@ -360,6 +392,6 @@
     return window.location.href.split("/").slice(3).join("/");
   }
   if (["tables", "table"].some((x) => x == path())) {
-    document.addEventListener("DOMContentLoaded", onPageRequest);
+    document.addEventListener("DOMContentLoaded", tables);
   }
 })();

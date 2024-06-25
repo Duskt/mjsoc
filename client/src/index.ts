@@ -1,5 +1,5 @@
 import displayQR from "./pages/qr.ts";
-import onPageRequest from "./pages/tables.ts";
+import tables from "./pages/tables.ts";
 
 declare global {
     interface Window {
@@ -13,5 +13,5 @@ function path() {
 }
 
 if (["tables", "table"].some(x => x == path())) {
-    document.addEventListener("DOMContentLoaded", onPageRequest);
+    document.addEventListener("DOMContentLoaded", tables);
 }

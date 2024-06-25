@@ -105,3 +105,40 @@ input.north {
 .dropdown button .dropdown {
   left: 100%;
 }
+
+main {
+  display: flex;
+  flex-grow: 1;
+  width: 100%;
+}
+
+.sidebar div {
+  width: 100%;
+  transition: width 1s;
+  height: 100%;
+  border-right: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.sidebar {
+  transition: width 1s;
+  display: flex;
+}
+
+article {
+  min-width: 60%;
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  align-items: center;
+  margin-left: -12px;
+  z-index: -1;
+}
+
+.sidebar button {
+  border-radius: 0px 4px 4px 0px;
+  font-size: 12px;
+  width: 12px;
+  height: 24px;
+  padding: 0px;
+  margin: 0;
+}
