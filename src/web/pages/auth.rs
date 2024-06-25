@@ -1,7 +1,6 @@
 use actix_session::Session;
 use actix_web::{web, HttpResponse};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use log::error;
 use serde::Deserialize;
 
 use crate::{
@@ -37,9 +36,11 @@ pub async fn authenticate(
         .verify_password(body.password.as_bytes(), &hash)
         .is_err()
     {
-        error!("Failed to authenticate");
+        println!("Failed to authenticate");
         return Err(AdminPasswordErr);
     }
+
+    println!("Authenticated");
 
     // Create session for user
     new_session(&session, &data.authenticated_keys);

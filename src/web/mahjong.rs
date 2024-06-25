@@ -4,7 +4,6 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::expect_env;
@@ -42,7 +41,7 @@ impl WeekData {
         // diff in secs / 60 -> mins / 60 -> hours / 24 -> days
         let days_elapsed = (now_seconds - self.last_set_unix_seconds) / 60 / 60 / 24;
 
-        info!(
+        println!(
             "Last increment: {}, current time {}, difference in days: {}",
             self.last_set_unix_seconds, now_seconds, days_elapsed
         );

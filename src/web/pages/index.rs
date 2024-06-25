@@ -4,6 +4,8 @@ use maud::html;
 use crate::components::page::page;
 
 pub async fn index() -> impl Responder {
+    println!("Home page requested");
+
     let html = page(html! {
         img src="/assets/logo.jpg" class="logo";
         p {
