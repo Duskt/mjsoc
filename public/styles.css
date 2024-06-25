@@ -1,6 +1,7 @@
 body {
   background-color: #c5bcb5;
   font-family: 'Courier New', Courier, monospace;
+  margin: 0px;
 }
 
 p {
@@ -39,4 +40,28 @@ button {
 
 .logo {
   max-width: 150px;
+}
+
+nav {
+  display: flex;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+nav * {
+  margin-left: 4px;
+  margin-right: 4px;
+}
+
+.home-icon {
+  max-height: 40px;
+}
+
+.nav-link {
+  padding: 8px;
+  align-content: center;
+}
+
+.nav-link:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
