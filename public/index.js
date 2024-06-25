@@ -307,16 +307,14 @@
       throw Error("Could not find sidebarDiv");
     }
     let closeSidebar = () => {
-      sidebarDiv.style["width"] = "0%";
-      sidebar.style["width"] = "12px";
+      sidebar.classList.replace("open", "closed");
       sidebarButton.textContent = ">";
     };
     let openSidebar = () => {
-      sidebar.style["width"] = "30%";
-      sidebarDiv.style["width"] = "100%";
+      sidebar.classList.replace("closed", "open");
       sidebarButton.textContent = "<";
     };
-    closeSidebar();
+    sidebar.classList.add("closed");
     sidebarButton.onclick = () => {
       if (sidebarButton.textContent == ">") openSidebar();
       else closeSidebar();
