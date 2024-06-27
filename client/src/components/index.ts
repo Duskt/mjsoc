@@ -4,6 +4,7 @@ type HTMLElementMap = {
 
 export interface ComponentParameters<K extends keyof HTMLElementTagNameMap> {
     tag: K,
+    element?: HTMLElementTagNameMap[K],
     parent?: HTMLElement,
     style?: Partial<CSSStyleDeclaration>,
     textContent?: string,
@@ -15,7 +16,7 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
     element: HTMLElementTagNameMap[K]
     constructor(params: ComponentParameters<K>) {
         let tag = params.tag;
-        this.element = document.createElement(tag);
+        this.element = params.element ? params.element : document.createElement(tag);
 
         let parent = params.parent;
         if (parent) parent.appendChild(this.element);
