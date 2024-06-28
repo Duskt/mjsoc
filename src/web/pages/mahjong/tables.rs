@@ -47,7 +47,8 @@ pub async fn get_tables(
             table id="table" {}
         }
         dialog {
-            form method="post" action="/member" enctype="application/json" {
+            // as far as i can tell method="dialog" does nothing since i override onsubmit
+            form method="dialog" action="/member" enctype="application/json" {
                 label for="name" { "Name:" }
                 input name="name" id="name" required {}
                 button { "Submit" }

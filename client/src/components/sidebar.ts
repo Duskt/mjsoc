@@ -43,20 +43,20 @@ export default function renderSidebar() {
     if (!(form instanceof HTMLFormElement)) {
         throw Error("no form");
     }
+    let dialog = new Dialog({
+        tag: 'dialog',
+        element: document.getElementsByTagName('dialog')[0],
+        activator: addMemberButton
+    });
     form.onsubmit = async (ev) => {
         ev.preventDefault();
         let name = new FormData(form).get("name");
         if (!name) {
             throw Error("no name");
         }
-        console.log(await request('/member', {
+        await request('/member', {
             name
-        }, 'POST'));
+        }, 'POST');
+        dialog.deactivate();
     }
-
-    let dialog = new Dialog({
-        tag: 'dialog',
-        element: document.getElementsByTagName('dialog')[0],
-        activator: addMemberButton
-    });
 }
