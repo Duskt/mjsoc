@@ -6,7 +6,8 @@ use serde_json;
 use urlencoding::encode;
 
 use crate::{
-    auth::is_authenticated, components::page::page, util::get_redirect_response, AppState,
+    auth::is_authenticated, components::page::page, mahjong::TableData,
+    util::get_redirect_response, AppState,
 };
 
 // display tables webpage
@@ -103,5 +104,36 @@ pub async fn delete_table(
             "Could not find index with table number {}",
             body.table_no
         ))
+    }
+}
+
+#[derive(Deserialize)]
+pub struct UpdateTablePostRequest {
+    table_no: u32,
+    table: TableData,
+}
+
+pub async fn update_table(
+    session: Session,
+    data: web::Data<AppState>,
+    body: web::Json<UpdateTablePostRequest>,
+) -> impl Responder {
+    if !is_authenticated(&session, &data.authenticated_keys) {
+        return get_redirect_response("/login?redirect=tables");
+    }
+    let mut mjdata = data.mahjong_data.lock().unwrap();
+    if let Some(table_index) = mjdata
+        .tables
+        .iter()
+        .position(|x| x.table_no == body.table_no)
+    {
+        mjdata.tables[table_index] = body.table.clone();
+        mjdata.save_to_file();
+        return HttpResponse::Ok().body("Updated table as desired.");
+    } else {
+        return HttpResponse::BadRequest().body(format!(
+            "Could not find index with table number {}",
+            body.table_no
+        ));
     }
 }

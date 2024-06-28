@@ -58,21 +58,23 @@ impl WeekData {
     }
 }
 
+pub type MemberId = u32;
+
 // table data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableData {
     pub table_no: u32,
-    pub east: String,
-    pub south: String,
-    pub west: String,
-    pub north: String,
+    pub east: MemberId,
+    pub south: MemberId,
+    pub west: MemberId,
+    pub north: MemberId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Member {
-    pub id: u32,
+    pub id: MemberId,
     pub name: String,
-    pub points: i32
+    pub points: i32,
 }
 
 // player data
@@ -89,10 +91,11 @@ impl MahjongData {
         if self.tables.len() == 0 {
             self.tables.push(TableData {
                 table_no: 1,
-                east: String::new(),
-                south: String::new(),
-                west: String::new(),
-                north: String::new(),
+                // 0 represents empty
+                east: 0,
+                south: 0,
+                west: 0,
+                north: 0,
             });
             self.save_to_file();
             return &self.tables[0];
@@ -106,10 +109,10 @@ impl MahjongData {
             .table_no;
         let new_table = TableData {
             table_no: last_index + 1,
-            east: String::new(),
-            south: String::new(),
-            west: String::new(),
-            north: String::new(),
+            east: 0,
+            south: 0,
+            west: 0,
+            north: 0,
         };
 
         self.tables.push(new_table);

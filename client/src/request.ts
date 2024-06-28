@@ -1,4 +1,6 @@
-export async function request(path: string, payload: object, method: string = "POST") {
+type RequestMethod = "GET" | "POST" | "PUT" | "DELETE"
+
+export async function request(path: string, payload: object, method: RequestMethod = "POST") {
     // todo: configure hostname
     let url = "http://localhost:5654/" + (path[0] != '/' ? path : path.slice(1));
     let r = await fetch(url, {
@@ -8,8 +10,8 @@ export async function request(path: string, payload: object, method: string = "P
             "Content-Type": "application/json; charset=UTF-8"
         }
     });
-    document.createElement('a').children[0]
-    if (r.redirected && method != "GET") {
+    // todo: some redirecting stuff
+    /*if (r.redirected && method != "GET") {
         let oldHref = window.location.href;
         let redirectHref = r.url;
         // observe for the redirect back and resend the request, then go back to starting page
@@ -29,6 +31,6 @@ export async function request(path: string, payload: object, method: string = "P
             }
         });
         window.location.replace(redirectHref);
-    }
+    }*/
     return r;
 }

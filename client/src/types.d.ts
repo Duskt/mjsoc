@@ -1,7 +1,7 @@
 type Wind = "east" | "south" | "west" | "north";
 type RoundWind = Wind;
 type SeatWind = Wind;
-type PlayerWinds = { [key in SeatWind]: string }
+type PlayerWinds = { [key in SeatWind]: Member['id'] | 0 }
 
 interface TableData extends PlayerWinds {
     table_no: number,

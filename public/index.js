@@ -39,27 +39,6 @@
         "Content-Type": "application/json; charset=UTF-8"
       }
     });
-    document.createElement("a").children[0];
-    if (r.redirected && method != "GET") {
-      let oldHref = window.location.href;
-      let redirectHref = r.url;
-      const observer = new MutationObserver((mutations) => {
-        if (redirectHref != window.location.href) {
-          console.debug("redirect mutation detected, resending request");
-          fetch(url, {
-            method,
-            body: JSON.stringify(payload),
-            headers: {
-              "Content-Type": "application/json; charset=UTF-8"
-            }
-          });
-          console.debug("disconnecting after going back to ", oldHref);
-          observer.disconnect();
-          window.location.replace(oldHref);
-        }
-      });
-      window.location.replace(redirectHref);
-    }
     return r;
   }
 
@@ -183,7 +162,7 @@
     }
   };
 
-  // src/components/select.ts
+  // src/components/nametag.ts
   var NameTag = class extends Component {
     nameOptions;
     constructor(params) {
@@ -193,16 +172,40 @@
         value: void 0
       });
       this.nameOptions = {};
-      this.renderOption(params.value);
+      if (params.value) {
+        this.renderOption(params.value);
+      } else {
+        this.renderPlaceholder();
+      }
+      ;
       for (const m of window.MJDATA.members) {
-        if (m.id === params.value.id) continue;
+        if (m.id === params.value?.id) continue;
         this.renderOption(m);
       }
+      this.element.addEventListener("input", async (ev) => {
+        console.debug("Nametag select input event:", ev.target);
+        let newMember = window.MJDATA.members.find((v) => v.name === this.element.value);
+        if (!newMember) throw Error("<option> had an unlisted member name");
+        let table = window.MJDATA.tables.find((v) => v.table_no === params.table_no);
+        if (!table) throw Error("table_no is incorrect or out of date");
+        console.debug("newMember", newMember, "new table", table);
+        table[params.seat] = newMember.id;
+        await request("table", {
+          table_no: params.table_no,
+          table
+        }, "PUT");
+      });
     }
     renderOption(member) {
       let optElem = document.createElement("option");
       optElem.textContent = member.name;
       this.nameOptions[member.id] = optElem;
+      this.element.appendChild(optElem);
+      return optElem;
+    }
+    renderPlaceholder() {
+      let optElem = document.createElement("option");
+      optElem.textContent = "EMPTY";
       this.element.appendChild(optElem);
       return optElem;
     }
@@ -240,7 +243,7 @@
     }
     updatePlayers(otherPlayers) {
       this.dachut.dropdown.updateOptions(otherPlayers.map((v) => new FaanDropdownButton({
-        textContent: v,
+        textContent: window.MJDATA.members.find((m) => m.id === v)?.name,
         classList: ["small-button"]
       }).element));
     }
@@ -280,23 +283,9 @@
       this.nameTag = new NameTag({
         classList: ["name-tag", seat],
         parent: this.player.element,
-        value: {
-          id: 0,
-          name: table[seat],
-          points: 0
-        }
-      });
-      this.nameTag.element.addEventListener("input", async (ev) => {
-        let newName = this.nameTag.element.value;
-        this.update({
-          ...this.table,
-          [this.seat]: newName
-        });
-        await request("playerNameEdit", {
-          "table_no": table.table_no,
-          "seat": seat,
-          "new_name": newName
-        });
+        table_no: table.table_no,
+        seat,
+        value: window.MJDATA.members.find((v) => v.id === table[seat])
       });
       let otherPlayers = ["east", "south", "west", "north"].filter((v) => v != seat).map((v) => table[v]);
       if (otherPlayers.length != 3) {

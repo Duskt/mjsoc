@@ -11,7 +11,7 @@ use actix_files as fs;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
     cookie,
-    web::{self, delete, get, post},
+    web::{self, delete, get, post, put},
     App, HttpServer,
 };
 use lib::{
@@ -32,7 +32,7 @@ use pages::{
     logo::logo,
     mahjong::{
         players::{post_new_member, post_player_name_edit},
-        tables::{create_table, delete_table, get_tables},
+        tables::{create_table, delete_table, get_tables, update_table},
     },
     qr::page::{download_qr, generate_qr},
     register_attendance::page::register_attendance,
@@ -79,6 +79,8 @@ async fn main() -> std::io::Result<()> {
             .route("/tables", get().to(get_tables))
             .route("/table", get().to(get_tables))
             .route("/table", post().to(create_table))
+            // .route("/table", delete().to(delete_table))
+            .route("/table", put().to(update_table))
             .route("/playerNameEdit", post().to(post_player_name_edit))
             .route("/playerNameEdit", get().to(get_tables))
             .route("/member", post().to(post_new_member))

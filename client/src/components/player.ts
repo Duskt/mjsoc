@@ -2,11 +2,11 @@ import { request } from "../request";
 import Component from ".";
 import { DropdownButton, DropdownButtonParameters } from "./focus/dropdown";
 import { FocusButton, FocusButtonParameters } from "./focus";
-import NameTag from "./select";
+import NameTag from "./nametag";
 
 interface WinButtonParameters extends FocusButtonParameters {
     // technically this should enforce length 3: if i can be bothered to write a ts predicate...
-    otherPlayers: string[];
+    otherPlayers: Member['id'][];
 }
 /** This is a styled focus button (on/off automatic switch).
  * It needs to deal with a lot of options. There are two types of win, 'zimo' and 'dachut' (below).
@@ -41,10 +41,10 @@ export class WinButton extends FocusButton {
         }
         return super.deactivate();
     }
-    updatePlayers(otherPlayers: string[]) {
+    updatePlayers(otherPlayers: Member['id'][]) {
         // deals with appending/removing children
         this.dachut.dropdown.updateOptions(otherPlayers.map((v) => new FaanDropdownButton({
-            textContent: v,
+            textContent: window.MJDATA.members.find((m) => m.id === v)?.name,
             classList: ["small-button"],
         }).element));
     }
@@ -98,28 +98,13 @@ export default class PlayerTag {
         this.nameTag = new NameTag({
             classList: ["name-tag", seat],
             parent: this.player.element,
-            value: {
-                id: 0,
-                name: table[seat],
-                points: 0
-            }
-        }); //new Component({tag: 'input',classList: ["name-tag", seat],parent: this.player.element,value: table[seat]});
-        this.nameTag.element.addEventListener("input", async (ev) => {
-            let newName = this.nameTag.element.value;
-            this.update({
-                ...this.table,
-                [this.seat]: newName,
-            });
-            // await so the winButton rerender isn't premature
-            await request("playerNameEdit", {
-                "table_no": table.table_no,
-                "seat": seat,
-                "new_name": newName,
-            });
+            table_no: table.table_no,
+            seat,
+            value: window.MJDATA.members.find((v) => v.id === table[seat])
         });
         // filtering against the seat wind and then getting the names avoids crashing on duplicate
-        let otherPlayers = (['east', 'south', 'west', 'north']
-            .filter((v) => v != seat) as SeatWind[])
+        let otherPlayers = (['east', 'south', 'west', 'north'] as SeatWind[])
+            .filter((v) => v != seat)
             .map((v) => table[v]);
         if (otherPlayers.length != 3) {
             console.error(this.player, `got ${otherPlayers.length} other players when expecting 3:`, otherPlayers);
