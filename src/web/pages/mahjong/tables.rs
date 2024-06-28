@@ -129,11 +129,11 @@ pub async fn update_table(
     {
         mjdata.tables[table_index] = body.table.clone();
         mjdata.save_to_file();
-        return HttpResponse::Ok().body("Updated table as desired.");
+        HttpResponse::Ok().body("Updated table as desired.")
     } else {
-        return HttpResponse::BadRequest().body(format!(
+        HttpResponse::BadRequest().body(format!(
             "Could not find index with table number {}",
             body.table_no
-        ));
+        ))
     }
 }

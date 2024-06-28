@@ -88,7 +88,7 @@ pub struct MahjongData {
 
 impl MahjongData {
     pub fn create_table(&mut self) -> &TableData {
-        if self.tables.len() == 0 {
+        if self.tables.is_empty() {
             self.tables.push(TableData {
                 table_no: 1,
                 // 0 represents empty
