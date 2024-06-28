@@ -2,6 +2,7 @@ import { request } from "../request";
 import Component from ".";
 import { DropdownButton, DropdownButtonParameters } from "./focus/dropdown";
 import { FocusButton, FocusButtonParameters } from "./focus";
+import NameTag from "./select";
 
 interface WinButtonParameters extends FocusButtonParameters {
     // technically this should enforce length 3: if i can be bothered to write a ts predicate...
@@ -84,7 +85,7 @@ export default class PlayerTag {
     // the component (a table cell element) 'player'...
     player: Component<'td'>;
     // contains the nametag (input) and winbutton components
-    nameTag: Component<'input'>
+    nameTag: NameTag
     winButton: WinButton;
     constructor(public parent: HTMLTableRowElement, public table: TableData, public seat: SeatWind) {
         // table cell element with input and win button
@@ -94,12 +95,15 @@ export default class PlayerTag {
             classList: ["player"],
         });
         // name input
-        this.nameTag = new Component({
-            tag: 'input',
+        this.nameTag = new NameTag({
             classList: ["name-tag", seat],
             parent: this.player.element,
-            value: table[seat]
-        });
+            value: {
+                id: 0,
+                name: table[seat],
+                points: 0
+            }
+        }); //new Component({tag: 'input',classList: ["name-tag", seat],parent: this.player.element,value: table[seat]});
         this.nameTag.element.addEventListener("input", async (ev) => {
             let newName = this.nameTag.element.value;
             this.update({
@@ -114,7 +118,9 @@ export default class PlayerTag {
             });
         });
         // filtering against the seat wind and then getting the names avoids crashing on duplicate
-        let otherPlayers = (['east', 'south', 'west', 'north'].filter((v) => v != seat) as SeatWind[]).map((v) => table[v]);
+        let otherPlayers = (['east', 'south', 'west', 'north']
+            .filter((v) => v != seat) as SeatWind[])
+            .map((v) => table[v]);
         if (otherPlayers.length != 3) {
             console.error(this.player, `got ${otherPlayers.length} other players when expecting 3:`, otherPlayers);
         }
@@ -127,7 +133,9 @@ export default class PlayerTag {
     }
     update(table: TableData) {
         this.table = table;
-        let otherPlayers = (['east', 'south', 'west', 'north'] as SeatWind[]).filter((v) => v != this.seat).map((v) => table[v]);
+        let otherPlayers = (['east', 'south', 'west', 'north'] as SeatWind[])
+            .filter((v) => v != this.seat)
+            .map((v) => table[v]);
         this.winButton.updatePlayers(otherPlayers);
     }
 }

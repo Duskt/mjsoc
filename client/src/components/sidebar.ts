@@ -62,7 +62,10 @@ export default function renderSidebar() {
         request('/member', { name }, 'POST')
             .then((v) => {
                 if (v.ok) v.json().then(
-                    (v: Member) => memberList.renderLi(v)
+                    (v: Member) => {
+                        window.MJDATA.members.push(v);
+                        memberList.renderLi(v);
+                    }
                 )
             });
         dialog.deactivate();
@@ -71,7 +74,7 @@ export default function renderSidebar() {
 
 class MemberList extends Component<'ul'> {
     memberElems: {
-        [id: number]: HTMLLIElement;
+        [id: Member['id']]: HTMLLIElement;
     };
     constructor(params: ComponentParameters<'ul'>) {
         super(params)

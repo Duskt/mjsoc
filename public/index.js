@@ -183,6 +183,31 @@
     }
   };
 
+  // src/components/select.ts
+  var NameTag = class extends Component {
+    nameOptions;
+    constructor(params) {
+      super({
+        tag: "select",
+        ...params,
+        value: void 0
+      });
+      this.nameOptions = {};
+      this.renderOption(params.value);
+      for (const m of window.MJDATA.members) {
+        if (m.id === params.value.id) continue;
+        this.renderOption(m);
+      }
+    }
+    renderOption(member) {
+      let optElem = document.createElement("option");
+      optElem.textContent = member.name;
+      this.nameOptions[member.id] = optElem;
+      this.element.appendChild(optElem);
+      return optElem;
+    }
+  };
+
   // src/components/player.ts
   var WinButton = class extends FocusButton {
     // there are two types of wins:
@@ -252,11 +277,14 @@
         parent,
         classList: ["player"]
       });
-      this.nameTag = new Component({
-        tag: "input",
+      this.nameTag = new NameTag({
         classList: ["name-tag", seat],
         parent: this.player.element,
-        value: table[seat]
+        value: {
+          id: 0,
+          name: table[seat],
+          points: 0
+        }
       });
       this.nameTag.element.addEventListener("input", async (ev) => {
         let newName = this.nameTag.element.value;
@@ -373,7 +401,10 @@
       }
       request("/member", { name }, "POST").then((v) => {
         if (v.ok) v.json().then(
-          (v2) => memberList.renderLi(v2)
+          (v2) => {
+            window.MJDATA.members.push(v2);
+            memberList.renderLi(v2);
+          }
         );
       });
       dialog.deactivate();
