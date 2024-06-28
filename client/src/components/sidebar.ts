@@ -59,7 +59,7 @@ export default function renderSidebar() {
         if (!name) {
             throw Error("no name");
         }
-        request('/member', { name }, 'POST')
+        request('/members', { name }, 'POST')
             .then((v) => {
                 if (v.ok) v.json().then(
                     (v: Member) => {

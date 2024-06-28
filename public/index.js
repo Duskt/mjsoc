@@ -46,7 +46,7 @@
   var DeleteButton = class extends Component {
     constructor(params) {
       let onclick = params.other?.onclick || (async (ev) => {
-        let r = await request("editTable", { "table_no": params.tableNo }, "DELETE");
+        let r = await request("/tables", { "table_no": params.tableNo }, "DELETE");
         if (!r.redirected) {
           if (ev.target instanceof HTMLElement) ev.target.parentElement?.parentElement?.parentElement?.remove();
         }
@@ -190,7 +190,7 @@
         if (!table) throw Error("table_no is incorrect or out of date");
         console.debug("newMember", newMember, "new table", table);
         table[params.seat] = newMember.id;
-        await request("table", {
+        await request("/tables", {
           table_no: params.table_no,
           table
         }, "PUT");
@@ -388,7 +388,7 @@
       if (!name) {
         throw Error("no name");
       }
-      request("/member", { name }, "POST").then((v) => {
+      request("/members", { name }, "POST").then((v) => {
         if (v.ok) v.json().then(
           (v2) => {
             window.MJDATA.members.push(v2);

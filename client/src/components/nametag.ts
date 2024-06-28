@@ -41,7 +41,7 @@ export default class NameTag extends Component<'select'> {
             console.debug("newMember", newMember, "new table", table);
             table[params.seat] = newMember.id;
             // await so the winButton rerender isn't premature
-            await request("table", {
+            await request("/tables", {
                 table_no: params.table_no,
                 table
             }, "PUT");

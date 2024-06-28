@@ -31,7 +31,7 @@ use pages::{
     login::login,
     logo::logo,
     mahjong::{
-        players::{post_new_member, post_player_name_edit},
+        players::{create_member, update_member},
         tables::{create_table, delete_table, get_tables, update_table},
     },
     qr::page::{download_qr, generate_qr},
@@ -76,15 +76,18 @@ async fn main() -> std::io::Result<()> {
             .route("/week", get().to(get_week))
             .route("/week", post().to(change_week))
             // table page routing
-            .route("/tables", get().to(get_tables))
-            .route("/table", get().to(get_tables))
-            .route("/table", post().to(create_table))
-            // .route("/table", delete().to(delete_table))
-            .route("/table", put().to(update_table))
-            .route("/playerNameEdit", post().to(post_player_name_edit))
-            .route("/playerNameEdit", get().to(get_tables))
-            .route("/member", post().to(post_new_member))
-            .route("/editTable", delete().to(delete_table))
+            .service(
+                web::resource("/tables")
+                    .route(get().to(get_tables))
+                    .route(post().to(create_table))
+                    .route(delete().to(delete_table))
+                    .route(put().to(update_table)),
+            )
+            .service(
+                web::resource("/members")
+                    .route(post().to(create_member))
+                    .route(put().to(update_member)),
+            )
             // authentication
             .route("/login", get().to(login))
             .route("/auth", post().to(authenticate))

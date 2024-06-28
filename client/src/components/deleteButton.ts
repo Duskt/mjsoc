@@ -7,7 +7,7 @@ interface DeleteButtonParameters extends Omit<ComponentParameters<'button'>, 'ta
 export default class DeleteButton extends Component<'button'> {
     constructor(params: DeleteButtonParameters) {
         let onclick = params.other?.onclick || (async (ev) => {
-            let r = await request("editTable", { "table_no": params.tableNo }, "DELETE");
+            let r = await request("/tables", { "table_no": params.tableNo }, "DELETE");
             if (!r.redirected) {
                 // button < td < tr < table
                 if (ev.target instanceof HTMLElement) ev.target.parentElement?.parentElement?.parentElement?.remove();

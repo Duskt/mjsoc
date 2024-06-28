@@ -11,15 +11,15 @@ use crate::{
 };
 
 #[derive(Deserialize)]
-pub struct PlayerNamePostRequest {
+pub struct UpdateMemberPutRequest {
     id: MemberId,
     new_name: String,
 }
 
-pub async fn post_player_name_edit(
+pub async fn update_member(
     session: Session,
     data: web::Data<AppState>,
-    body: web::Json<PlayerNamePostRequest>,
+    body: web::Json<UpdateMemberPutRequest>,
     req: HttpRequest,
 ) -> impl Responder {
     if !is_authenticated(&session, &data.authenticated_keys) {
@@ -43,14 +43,14 @@ pub async fn post_player_name_edit(
 }
 
 #[derive(Deserialize)]
-pub struct NewMemberPostRequest {
+pub struct CreateMemberPostRequest {
     name: String,
 }
 
-pub async fn post_new_member(
+pub async fn create_member(
     session: Session,
     data: web::Data<AppState>,
-    body: web::Json<NewMemberPostRequest>,
+    body: web::Json<CreateMemberPostRequest>,
     req: HttpRequest,
 ) -> impl Responder {
     if !is_authenticated(&session, &data.authenticated_keys) {

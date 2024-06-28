@@ -41,7 +41,7 @@ pub async fn get_tables(
         }
         article {
             h1 { "Tables" }
-            form action="/table" method="POST" {
+            form action="/tables" method="POST" {
                 button name="addtable" id="addtable" autofocus { "Create a table" }
             }
 
@@ -49,7 +49,7 @@ pub async fn get_tables(
         }
         dialog {
             // as far as i can tell method="dialog" does nothing since i override onsubmit
-            form method="dialog" action="/member" enctype="application/json" {
+            form method="dialog" action="/members" enctype="application/json" {
                 label for="name" { "Name:" }
                 input name="name" id="name" required {}
                 button { "Submit" }
