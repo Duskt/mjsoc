@@ -4,7 +4,7 @@ use lib::util::get_redirect_response;
 use serde::Deserialize;
 use urlencoding::encode;
 
-use crate::{auth::is_authenticated, AppState};
+use crate::{auth::is_authenticated, mahjong::Member, AppState};
 
 #[derive(Deserialize)]
 pub struct PlayerNamePostRequest {
@@ -43,4 +43,34 @@ pub async fn post_player_name_edit(
     mjdata.save_to_file();
     // no need to redirect as they already see the changes they've made
     HttpResponse::Ok().body("Edited player name")
+}
+
+#[derive(Deserialize)]
+pub struct NewMemberPostRequest {
+    name: String,
+}
+
+pub async fn post_new_member(
+    session: Session,
+    data: web::Data<AppState>,
+    body: web::Json<NewMemberPostRequest>,
+    req: HttpRequest,
+) -> impl Responder {
+    if !is_authenticated(&session, &data.authenticated_keys) {
+        // Login and redirect back here
+        // (GET to this address is routed to /table)
+        return get_redirect_response(&format!(
+            "/login?redirect={}",
+            encode(&req.uri().path_and_query().unwrap().to_string()),
+        ));
+    }
+    let mut mjdata = data.mahjong_data.lock().unwrap();
+    let id = mjdata.members.iter().map(|x| x.id).max().unwrap_or(0) + 1;
+    mjdata.members.push(Member {
+        id,
+        name: body.name.clone(),
+    });
+    mjdata.save_to_file();
+    // no need to redirect as they already see the changes they've made
+    HttpResponse::Created().body(format!("Inserted new member with id {id}"))
 }

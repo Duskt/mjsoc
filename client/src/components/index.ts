@@ -12,12 +12,14 @@ export interface ComponentParameters<K extends keyof HTMLElementTagNameMap> {
     value?: K extends 'input' ? string : never,
     other?: HTMLElementMap;
 }
+
 export default class Component<K extends keyof HTMLElementTagNameMap> {
     element: HTMLElementTagNameMap[K]
     constructor(params: ComponentParameters<K>) {
         let tag = params.tag;
         this.element = params.element ? params.element : document.createElement(tag);
-
+        // @ts-ignore (debug property)
+        this.element._ParentComponent = this;
         let parent = params.parent;
         if (parent) parent.appendChild(this.element);
 

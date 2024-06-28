@@ -5,7 +5,8 @@
     element;
     constructor(params) {
       let tag = params.tag;
-      this.element = document.createElement(tag);
+      this.element = params.element ? params.element : document.createElement(tag);
+      this.element._ParentComponent = this;
       let parent = params.parent;
       if (parent) parent.appendChild(this.element);
       let style = params.style || {};
@@ -88,7 +89,7 @@
     }
   };
 
-  // src/components/dropdown.ts
+  // src/components/focus/index.ts
   var FocusNode = class extends Component {
     exclude;
     excludeSelf;
@@ -107,11 +108,12 @@
     }
     activate() {
       this.listener = (ev) => {
+        console.log("focus listener", ev.target);
         let target = ev.target;
         if (!(target instanceof HTMLElement)) return;
         if (this.excludeSelf && target.isSameNode(this.element)) return;
         let parent = target.parentElement;
-        while (parent) {
+        while (this.excludeChildren && parent) {
           if (parent.isSameNode(this.element)) return;
           parent = parent.parentElement;
         }
@@ -147,6 +149,8 @@
       };
     }
   };
+
+  // src/components/focus/dropdown.ts
   var Dropdown = class {
     options;
     element;
@@ -292,6 +296,32 @@
     }
   };
 
+  // src/components/focus/dialog.ts
+  var Dialog = class extends FocusNode {
+    activator;
+    excludeSelf = false;
+    constructor({ activator, ...params }) {
+      super(params);
+      this.activator = activator;
+      let dialog = this;
+      if (!this.activator.onclick) {
+        this.activator.onclick = (ev) => {
+          dialog.activate();
+        };
+      }
+      this.exclude.push(this.activator);
+      this.element.style["padding"] = "0";
+    }
+    activate() {
+      this.element.showModal();
+      return super.activate();
+    }
+    deactivate() {
+      this.element.close();
+      return super.deactivate();
+    }
+  };
+
   // src/components/sidebar.ts
   function renderSidebar() {
     let sidebar = document.getElementsByClassName("sidebar")[0];
@@ -314,11 +344,36 @@
       sidebar.classList.replace("closed", "open");
       sidebarButton.textContent = "<";
     };
+    sidebar.style["transition"] = "none";
     sidebar.classList.add("closed");
+    sidebar.style["transition"] = "";
     sidebarButton.onclick = () => {
       if (sidebarButton.textContent == ">") openSidebar();
       else closeSidebar();
     };
+    let addMemberButton = document.getElementById("add-member");
+    if (!(addMemberButton instanceof HTMLButtonElement)) {
+      throw Error("no #add-member button");
+    }
+    let form = document.getElementById("name")?.parentElement;
+    if (!(form instanceof HTMLFormElement)) {
+      throw Error("no form");
+    }
+    form.onsubmit = async (ev) => {
+      ev.preventDefault();
+      let name = new FormData(form).get("name");
+      if (!name) {
+        throw Error("no name");
+      }
+      console.log(await request("/member", {
+        name
+      }, "POST"));
+    };
+    let dialog = new Dialog({
+      tag: "dialog",
+      element: document.getElementsByTagName("dialog")[0],
+      activator: addMemberButton
+    });
   }
 
   // src/pages/tables.ts

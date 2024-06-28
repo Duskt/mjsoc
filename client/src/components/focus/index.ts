@@ -1,9 +1,9 @@
-import Component, { ComponentParameters } from ".";
+import Component, { ComponentParameters } from "..";
 
-interface FocusNodeParameters<K extends keyof HTMLElementTagNameMap> extends ComponentParameters<K> {
+export interface FocusNodeParameters<K extends keyof HTMLElementTagNameMap> extends ComponentParameters<K> {
     exclude?: HTMLElement[],
     excludeSelf?: true,
-    excludeChildren?: boolean
+    excludeChildren?: boolean,
 }
 /** An "on/off switch" element node used as a superclass.
  * .activate() function is NOT IMPLICITLY CALLED ANYWHERE (e.g. on click).
@@ -12,7 +12,7 @@ interface FocusNodeParameters<K extends keyof HTMLElementTagNameMap> extends Com
  * @param {boolean} [excludeChildren=true] If true, dynamically excludes any and all children of this element from 'elsewhere'
  *  @param {HTMLElement[]} [exclude=[]] Other elements to exclude from 'elsewhere'.
 */
-abstract class FocusNode<K extends keyof HTMLElementTagNameMap> extends Component<K> {
+export default abstract class FocusNode<K extends keyof HTMLElementTagNameMap> extends Component<K> {
     exclude: HTMLElement[];
     excludeSelf: boolean;
     excludeChildren: boolean;
@@ -30,16 +30,18 @@ abstract class FocusNode<K extends keyof HTMLElementTagNameMap> extends Componen
     }
     activate() {
         this.listener = (ev: MouseEvent) => {
+            console.log("focus listener", ev.target);
             let target = ev.target;
             if (!(target instanceof HTMLElement)) return;
+            // check if excluding self
             if (this.excludeSelf && target.isSameNode(this.element)) return;
             // check if this event propagates from a child node
             let parent = target.parentElement;
-            while (parent) {
+            while (this.excludeChildren && parent) {
                 if (parent.isSameNode(this.element)) return;
                 parent = parent.parentElement;
             }
-            // ignore if target is the win button or this dropdown
+            // check if explicitly excluded
             if (this.exclude.includes(target)) return;
             this.deactivate();
         }
@@ -52,6 +54,7 @@ abstract class FocusNode<K extends keyof HTMLElementTagNameMap> extends Componen
         if (this.listener) document.removeEventListener(this.deactivation, this.listener);
         return this
     }
+
 }
 
 export type FocusButtonParameters = Omit<FocusNodeParameters<'button'>, 'tag'>;
@@ -76,45 +79,5 @@ export class FocusButton extends FocusNode<'button'> {
                 this.activate();
             }
         }
-    }
-}
-
-class Dropdown {
-    options: HTMLElement[];
-    element: HTMLElement;
-    constructor(options: HTMLElement[]) {
-        this.element = new Component({
-            tag: 'div',
-            classList: ["dropdown"]
-        }).element;
-        this.updateOptions(options);
-        // satisfies ts
-        this.options = options;
-    }
-    updateOptions(options: HTMLElement[]) {
-        this.options = options;
-        Array.from(this.element.children).forEach((c) => c.remove());
-        this.options.forEach((v) => this.element.appendChild(v));
-    }
-}
-
-export interface DropdownButtonParameters extends FocusButtonParameters {
-    options?: HTMLElement[];
-}
-export class DropdownButton extends FocusButton {
-    dropdown: Dropdown;
-    constructor(params: DropdownButtonParameters) {
-        let classList = params.classList || ["small-button", "dropdown-button"];
-        let options = params.options || [];
-        super({ ...params, classList });
-        this.dropdown = new Dropdown(options);
-    }
-    activate(): this {
-        this.element.appendChild(this.dropdown.element);
-        return super.activate()
-    }
-    deactivate(): this {
-        this.element.removeChild(this.dropdown.element);
-        return super.deactivate()
     }
 }

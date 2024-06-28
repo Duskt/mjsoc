@@ -33,7 +33,9 @@ pub async fn get_tables(
         script src="/index.js" {}
         main {
         div class="sidebar" {
-            div {}
+            div {
+                button id="add-member" { "Add a new member" }
+            }
             button { ">" }
         }
         article {
@@ -43,6 +45,13 @@ pub async fn get_tables(
             }
 
             table id="table" {}
+        }
+        dialog {
+            form method="post" action="/member" enctype="application/json" {
+                label for="name" { "Name:" }
+                input name="name" id="name" required {}
+                button { "Submit" }
+            }
         }
     }
     });

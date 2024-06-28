@@ -150,3 +150,18 @@ article {
 .sidebar.closed div * {
   display: none;
 }
+
+/*using width % values with fit-content causes problems*/
+dialog form {
+  width: auto;
+  margin: 8px;
+}
+
+dialog input {
+  width: auto;
+  margin: 4px;
+}
+
+dialog button {
+  margin: 0;
+}

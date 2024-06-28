@@ -8,7 +8,13 @@ interface TableData extends PlayerWinds {
     round_wind: RoundWind,
 }
 
+interface Member {
+    id: number,
+    name: string
+}
+
 interface MahjongData {
     week: {}
     tables: [TableData]
+    members: [Member]
 }

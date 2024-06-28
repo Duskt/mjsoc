@@ -1,6 +1,7 @@
 import { request } from "../request";
 import Component from ".";
-import { FocusButton, DropdownButton, FocusButtonParameters, DropdownButtonParameters } from "./dropdown";
+import { DropdownButton, DropdownButtonParameters } from "./focus/dropdown";
+import { FocusButton, FocusButtonParameters } from "./focus";
 
 interface WinButtonParameters extends FocusButtonParameters {
     // technically this should enforce length 3: if i can be bothered to write a ts predicate...

@@ -68,12 +68,19 @@ pub struct TableData {
     pub north: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Member {
+    pub id: u32,
+    pub name: String,
+}
+
 // player data
 // overall structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MahjongData {
     pub week: WeekData,
     pub tables: Vec<TableData>,
+    pub members: Vec<Member>,
 }
 
 impl MahjongData {
@@ -123,8 +130,9 @@ impl MahjongData {
             Err(_) => {
                 // create a new template file
                 let mahjong_template_data = Self {
-                    // no tables needed to start
+                    // no tables or members because there's no source of data
                     tables: Vec::new(),
+                    members: Vec::new(),
                     // week 1 last set now
                     week: WeekData {
                         week: 1,

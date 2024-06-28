@@ -31,7 +31,7 @@ use pages::{
     login::login,
     logo::logo,
     mahjong::{
-        players::post_player_name_edit,
+        players::{post_new_member, post_player_name_edit},
         tables::{create_table, delete_table, get_tables},
     },
     qr::page::{download_qr, generate_qr},
@@ -81,6 +81,7 @@ async fn main() -> std::io::Result<()> {
             .route("/table", post().to(create_table))
             .route("/playerNameEdit", post().to(post_player_name_edit))
             .route("/playerNameEdit", get().to(get_tables))
+            .route("/member", post().to(post_new_member))
             .route("/editTable", delete().to(delete_table))
             // authentication
             .route("/login", get().to(login))
