@@ -1,3 +1,4 @@
+import Component, { ComponentParameters } from ".";
 import { request } from "../request";
 import Dialog from "./focus/dialog";
 
@@ -28,7 +29,7 @@ export default function renderSidebar() {
     // close by default (without transition)
     sidebar.style['transition'] = "none";
     sidebar.classList.add("closed");
-    sidebar.style['transition'] = "";
+    setTimeout(() => sidebar.style['transition'] = "", 1);
 
     sidebarButton.onclick = () => {
         if (sidebarButton.textContent == ">") openSidebar()
@@ -48,15 +49,40 @@ export default function renderSidebar() {
         element: document.getElementsByTagName('dialog')[0],
         activator: addMemberButton
     });
-    form.onsubmit = async (ev) => {
+    let memberList = new MemberList({
+        tag: 'ul',
+        parent: sidebarDiv,
+    })
+    form.onsubmit = (ev) => {
         ev.preventDefault();
         let name = new FormData(form).get("name");
         if (!name) {
             throw Error("no name");
         }
-        await request('/member', {
-            name
-        }, 'POST');
+        request('/member', { name }, 'POST')
+            .then((v) => {
+                if (v.ok) v.json().then(
+                    (v: Member) => memberList.renderLi(v)
+                )
+            });
         dialog.deactivate();
+    }
+}
+
+class MemberList extends Component<'ul'> {
+    memberElems: {
+        [id: number]: HTMLLIElement;
+    };
+    constructor(params: ComponentParameters<'ul'>) {
+        super(params)
+        this.memberElems = {};
+        window.MJDATA.members.forEach((m) => this.renderLi(m));
+    }
+    renderLi(member: Member) {
+        let melem = document.createElement('li');
+        melem.textContent = `${member.name}: ${member.points}`
+        this.memberElems[member.id] = melem;
+        this.element.appendChild(melem);
+        return melem
     }
 }

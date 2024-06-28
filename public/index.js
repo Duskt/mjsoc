@@ -44,9 +44,8 @@
       let oldHref = window.location.href;
       let redirectHref = r.url;
       const observer = new MutationObserver((mutations) => {
-        console.log("mutation");
         if (redirectHref != window.location.href) {
-          console.log("redirect mutation detected, resending request");
+          console.debug("redirect mutation detected, resending request");
           fetch(url, {
             method,
             body: JSON.stringify(payload),
@@ -54,14 +53,14 @@
               "Content-Type": "application/json; charset=UTF-8"
             }
           });
-          console.log("disconnecting after going back to ", oldHref);
+          console.debug("disconnecting after going back to ", oldHref);
           observer.disconnect();
           window.location.replace(oldHref);
         }
       });
       window.location.replace(redirectHref);
     }
-    return !r.redirected;
+    return r;
   }
 
   // src/components/deleteButton.ts
@@ -69,8 +68,7 @@
     constructor(params) {
       let onclick = params.other?.onclick || (async (ev) => {
         let r = await request("editTable", { "table_no": params.tableNo }, "DELETE");
-        console.log(r);
-        if (r) {
+        if (!r.redirected) {
           if (ev.target instanceof HTMLElement) ev.target.parentElement?.parentElement?.parentElement?.remove();
         }
       });
@@ -108,7 +106,6 @@
     }
     activate() {
       this.listener = (ev) => {
-        console.log("focus listener", ev.target);
         let target = ev.target;
         if (!(target instanceof HTMLElement)) return;
         if (this.excludeSelf && target.isSameNode(this.element)) return;
@@ -346,7 +343,7 @@
     };
     sidebar.style["transition"] = "none";
     sidebar.classList.add("closed");
-    sidebar.style["transition"] = "";
+    setTimeout(() => sidebar.style["transition"] = "", 1);
     sidebarButton.onclick = () => {
       if (sidebarButton.textContent == ">") openSidebar();
       else closeSidebar();
@@ -364,18 +361,39 @@
       element: document.getElementsByTagName("dialog")[0],
       activator: addMemberButton
     });
-    form.onsubmit = async (ev) => {
+    let memberList = new MemberList({
+      tag: "ul",
+      parent: sidebarDiv
+    });
+    form.onsubmit = (ev) => {
       ev.preventDefault();
       let name = new FormData(form).get("name");
       if (!name) {
         throw Error("no name");
       }
-      await request("/member", {
-        name
-      }, "POST");
+      request("/member", { name }, "POST").then((v) => {
+        if (v.ok) v.json().then(
+          (v2) => memberList.renderLi(v2)
+        );
+      });
       dialog.deactivate();
     };
   }
+  var MemberList = class extends Component {
+    memberElems;
+    constructor(params) {
+      super(params);
+      this.memberElems = {};
+      window.MJDATA.members.forEach((m) => this.renderLi(m));
+    }
+    renderLi(member) {
+      let melem = document.createElement("li");
+      melem.textContent = `${member.name}: ${member.points}`;
+      this.memberElems[member.id] = melem;
+      this.element.appendChild(melem);
+      return melem;
+    }
+  };
 
   // src/pages/tables.ts
   function tables() {

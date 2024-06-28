@@ -30,7 +30,6 @@ export default abstract class FocusNode<K extends keyof HTMLElementTagNameMap> e
     }
     activate() {
         this.listener = (ev: MouseEvent) => {
-            console.log("focus listener", ev.target);
             let target = ev.target;
             if (!(target instanceof HTMLElement)) return;
             // check if excluding self

@@ -66,12 +66,13 @@ pub async fn post_new_member(
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
     let id = mjdata.members.iter().map(|x| x.id).max().unwrap_or(0) + 1;
-    mjdata.members.push(Member {
+    let new_member = Member {
         id,
         name: body.name.clone(),
         points: 0,
-    });
+    };
+    mjdata.members.push(new_member.clone());
     mjdata.save_to_file();
     // no need to redirect as they already see the changes they've made
-    HttpResponse::Created().body(format!("Inserted new member with id {id}"))
+    HttpResponse::Created().json(new_member)
 }

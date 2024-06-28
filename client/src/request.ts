@@ -14,9 +14,8 @@ export async function request(path: string, payload: object, method: string = "P
         let redirectHref = r.url;
         // observe for the redirect back and resend the request, then go back to starting page
         const observer = new MutationObserver(mutations => {
-            console.log("mutation");
             if (redirectHref != window.location.href) {
-                console.log("redirect mutation detected, resending request");
+                console.debug("redirect mutation detected, resending request");
                 fetch(url, {
                     method,
                     body: JSON.stringify(payload),
@@ -24,12 +23,12 @@ export async function request(path: string, payload: object, method: string = "P
                         "Content-Type": "application/json; charset=UTF-8"
                     }
                 });
-                console.log("disconnecting after going back to ", oldHref);
+                console.debug("disconnecting after going back to ", oldHref);
                 observer.disconnect();
                 window.location.replace(oldHref);
             }
         });
         window.location.replace(redirectHref);
     }
-    return !r.redirected;
+    return r;
 }
