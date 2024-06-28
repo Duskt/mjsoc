@@ -69,6 +69,7 @@ pub async fn post_new_member(
     mjdata.members.push(Member {
         id,
         name: body.name.clone(),
+        points: 0,
     });
     mjdata.save_to_file();
     // no need to redirect as they already see the changes they've made

@@ -10,7 +10,8 @@ interface TableData extends PlayerWinds {
 
 interface Member {
     id: number,
-    name: string
+    name: string,
+    points: number,
 }
 
 interface MahjongData {

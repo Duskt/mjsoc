@@ -72,6 +72,7 @@ pub struct TableData {
 pub struct Member {
     pub id: u32,
     pub name: String,
+    pub points: i32
 }
 
 // player data
