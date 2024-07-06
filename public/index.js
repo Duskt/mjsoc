@@ -2,9 +2,9 @@
 (() => {
   // src/components/index.ts
   var Component = class {
-    element;
-    constructor(params) {
+    constructor({ debug = false, ...params }) {
       let tag = params.tag;
+      this.debug = debug;
       this.element = params.element ? params.element : document.createElement(tag);
       this.element._ParentComponent = this;
       let parent = params.parent;
@@ -18,7 +18,8 @@
         this.element.style[styleTag] = styleItem;
       }
       if (params.textContent) this.element.textContent = params.textContent;
-      if (params.value) this.element.value = params.value;
+      if (params.value)
+        this.element.value = params.value;
       let classList = params.classList || [];
       for (const c of classList) {
         this.element.classList.add(c);
@@ -26,6 +27,9 @@
       for (const i in params.other) {
         this.element[i] = params.other[i];
       }
+    }
+    log(...args) {
+      if (this.debug) console.log(this, "debug message:\n", ...args);
     }
   };
 
@@ -66,26 +70,62 @@
     }
   };
 
-  // src/components/focus/index.ts
-  var FocusNode = class extends Component {
-    exclude;
-    excludeSelf;
-    excludeChildren;
-    listener;
-    active;
-    // todo: add more DocumentEventMaps
-    deactivation = "click";
-    constructor(params) {
+  // src/components/input/listener.ts
+  var Listener = class extends Component {
+    constructor({ setListener = true, ...params }) {
       super(params);
+      this.event = params.event;
+      if (setListener) {
+        this.listener = this.generateListener();
+      }
+    }
+    get listener() {
+      return this.lastListener;
+    }
+    set listener(v) {
+      if (this.listener) {
+        this.element.removeEventListener(this.event, this.listener);
+      }
+      if (!v) return;
+      this.element.addEventListener(this.event, v);
+      this.lastListener = v;
+    }
+  };
+  var ClickListener = class extends Listener {
+    constructor(params) {
+      super({
+        ...params,
+        event: "click"
+      });
+    }
+  };
+  var InputListener = class extends Listener {
+    constructor(params) {
+      super({
+        ...params,
+        event: "input"
+      });
+    }
+  };
+
+  // src/components/input/focus/focusNode.ts
+  var FocusNode = class extends ClickListener {
+    constructor(params) {
+      super({
+        ...params,
+        setListener: false
+      });
+      // todo: add more DocumentEventMaps
+      this.deactivation = "click";
       this.exclude = params.exclude || [];
       this.excludeSelf = params.excludeSelf || true;
       this.excludeChildren = params.excludeChildren || true;
       this.active = false;
       return this;
     }
-    activate() {
-      this.listener = (ev) => {
-        let target = ev.target;
+    generateListener() {
+      return (evt) => {
+        let target = evt.target;
         if (!(target instanceof HTMLElement)) return;
         if (this.excludeSelf && target.isSameNode(this.element)) return;
         let parent = target.parentElement;
@@ -96,23 +136,36 @@
         if (this.exclude.includes(target)) return;
         this.deactivate();
       };
+    }
+    get listener() {
+      return super.listener;
+    }
+    set listener(v) {
+      if (this.listener) {
+        document.removeEventListener(this.event, this.listener);
+      }
+      if (!v) return;
+      document.addEventListener(this.event, v);
+      this.lastListener = v;
+    }
+    activate() {
+      this.listener = this.generateListener();
       this.active = true;
-      document.addEventListener(this.deactivation, this.listener);
       return this;
     }
     deactivate() {
+      this.listener = void 0;
       this.active = false;
-      if (this.listener) document.removeEventListener(this.deactivation, this.listener);
       return this;
     }
   };
   var FocusButton = class extends FocusNode {
-    deactivation = "click";
     constructor(params = {}) {
       super({
         tag: "button",
         ...params
       });
+      this.deactivation = "click";
       this.element.onclick = (ev) => {
         if (this.excludeChildren && ev.target != this.element) {
           return;
@@ -126,26 +179,24 @@
     }
   };
 
-  // src/components/focus/dropdown.ts
+  // src/components/input/focus/dropdown.ts
   var Dropdown = class {
-    options;
-    element;
     constructor(options) {
       this.element = new Component({
         tag: "div",
         classList: ["dropdown"]
       }).element;
-      this.updateOptions(options);
       this.options = options;
     }
-    updateOptions(options) {
-      this.options = options;
-      Array.from(this.element.children).forEach((c) => c.remove());
-      this.options.forEach((v) => this.element.appendChild(v));
+    get options() {
+      return Array.from(this.element.children);
+    }
+    set options(value) {
+      this.options.forEach((c) => c.remove());
+      value.forEach((v) => this.element.appendChild(v));
     }
   };
   var DropdownButton = class extends FocusButton {
-    dropdown;
     constructor(params) {
       let classList = params.classList || ["small-button", "dropdown-button"];
       let options = params.options || [];
@@ -157,6 +208,10 @@
       return super.activate();
     }
     deactivate() {
+      if (!this.element.contains(this.dropdown.element))
+        throw new DOMException(
+          "DropdownButton attempted deactivation when inactive."
+        );
       this.element.removeChild(this.dropdown.element);
       return super.deactivate();
     }
@@ -164,8 +219,7 @@
 
   // src/components/nametag.ts
   var NameTag = class extends Component {
-    nameOptions;
-    constructor(params) {
+    constructor({ ...params }) {
       super({
         tag: "select",
         ...params,
@@ -177,24 +231,10 @@
       } else {
         this.renderPlaceholder();
       }
-      ;
       for (const m of window.MJDATA.members) {
         if (m.id === params.value?.id) continue;
         this.renderOption(m);
       }
-      this.element.addEventListener("input", async (ev) => {
-        console.debug("Nametag select input event:", ev.target);
-        let newMember = window.MJDATA.members.find((v) => v.name === this.element.value);
-        if (!newMember) throw Error("<option> had an unlisted member name");
-        let table = window.MJDATA.tables.find((v) => v.table_no === params.table_no);
-        if (!table) throw Error("table_no is incorrect or out of date");
-        console.debug("newMember", newMember, "new table", table);
-        table[params.seat] = newMember.id;
-        await request("/tables", {
-          table_no: params.table_no,
-          table
-        }, "PUT");
-      });
     }
     renderOption(member) {
       let optElem = document.createElement("option");
@@ -211,22 +251,56 @@
     }
   };
 
+  // src/data.ts
+  function UsesTable(target) {
+    class UsesTable2 extends target {
+      get table() {
+        let table = window.MJDATA.tables.find(
+          (table2) => table2.table_no === this.tableNo
+        );
+        if (!table)
+          throw Error(
+            `Failure to index table from tableNo ${this.tableNo}`
+          );
+        return table;
+      }
+    }
+    return UsesTable2;
+  }
+  function UsesMember(target) {
+    class UsesMember2 extends target {
+      get member() {
+        let member = window.MJDATA.members.find(
+          (member2) => member2.id === this.memberId
+        );
+        if (!member)
+          throw Error(
+            `Failure to index member from memberId ${this.memberId}`
+          );
+        return member;
+      }
+    }
+    return UsesMember2;
+  }
+  function UsesSeat(target) {
+    class UsesSeat2 extends target {
+    }
+    return UsesSeat2;
+  }
+
   // src/components/player.ts
-  var WinButton = class extends FocusButton {
-    // there are two types of wins:
-    zimo;
-    // 'self-draw' points are split between the table's other 3 players
-    dachut;
-    // 'direct hit' points are taken from one player, needing two dropdowns.
+  var WinButton = class extends UsesMember(UsesTable(FocusButton)) {
     constructor(params) {
       super(params);
+      this.tableNo = params.tableNo;
+      this.memberId = params.memberId;
       this.zimo = new FaanDropdownButton({
         textContent: "\u81EA\u6478"
       });
       this.dachut = new DropdownButton({
         textContent: "\u6253\u51FA"
       });
-      this.updatePlayers(params.otherPlayers);
+      this.updatePlayers();
     }
     activate() {
       this.element.style["width"] = "100px";
@@ -241,81 +315,169 @@
       }
       return super.deactivate();
     }
-    updatePlayers(otherPlayers) {
-      this.dachut.dropdown.updateOptions(otherPlayers.map((v) => new FaanDropdownButton({
-        textContent: window.MJDATA.members.find((m) => m.id === v)?.name,
-        classList: ["small-button"]
-      }).element));
+    updatePlayers() {
+      let table = this.table;
+      let member = this.member;
+      let otherPlayers = ["east", "south", "west", "north"].filter((seat) => table[seat] != member.id).map(
+        (seat) => window.MJDATA.members.find((m) => m.id == table[seat])
+      );
+      this.dachut.dropdown.options = otherPlayers.map(
+        (m) => new FaanDropdownButton({
+          textContent: m?.name || "",
+          classList: ["small-button"],
+          onclick: (ev, faan) => alert(
+            `${this.member.name} took ${faan} from ${m?.name}.`
+          )
+        }).element
+      );
+      this.zimo.onclick = (ev, faan) => {
+        let otherNames = otherPlayers.map((v) => v?.name || "EMPTY");
+        alert(`${this.member.name} took ${faan} faan from ${otherNames}`);
+      };
+    }
+    updateMember(memberId) {
+      this.memberId = memberId;
+      this.updatePlayers();
+    }
+    updateTable(tableNo) {
+      throw Error("not written");
+      this.tableNo = tableNo;
     }
   };
   var FaanDropdownButton = class extends DropdownButton {
-    min;
-    max;
     constructor(params) {
       let min = params.min || 3;
       let max = params.max || 13;
       let faanRange = Array.from(Array(max + 1).keys()).slice(min);
-      let options = faanRange.map((faan) => new Component({
-        tag: "button",
-        classList: ["small-button"],
-        textContent: faan.toString(),
-        other: {
-          onclick: (ev) => {
-            alert(`Took ${faan} faan!`);
+      let passedOnclick = params.onclick;
+      if (!passedOnclick) passedOnclick = () => {
+      };
+      let onclick;
+      let options = faanRange.map((faan) => {
+        onclick = (ev) => passedOnclick(ev, faan);
+        return new Component({
+          tag: "button",
+          classList: ["small-button"],
+          textContent: faan.toString(),
+          other: {
+            onclick
           }
-        }
-      }).element);
+        }).element;
+      });
       super({ ...params, options });
       this.min = min;
       this.max = max;
+      this._onclick = passedOnclick;
+    }
+    get onclick() {
+      return this._onclick;
+    }
+    set onclick(v) {
+      let faanRange = Array.from(Array(this.max + 1).keys()).slice(this.min);
+      this.dropdown.options = faanRange.map((faan) => {
+        let func = (ev) => v(ev, faan);
+        return new Component({
+          tag: "button",
+          classList: ["small-button"],
+          textContent: faan.toString(),
+          other: {
+            onclick: func
+          }
+        }).element;
+      });
+      this._onclick = v;
     }
   };
-  var PlayerTag = class {
-    constructor(parent, table, seat) {
-      this.parent = parent;
-      this.table = table;
-      this.seat = seat;
-      this.player = new Component({
-        tag: "td",
-        parent,
-        classList: ["player"]
+  var PlayerTag = class extends UsesTable(
+    UsesSeat(InputListener)
+  ) {
+    constructor(params) {
+      super({
+        ...params,
+        classList: ["player"],
+        tag: "td"
       });
+      this.tableNo = params.tableNo;
+      let table = this.table;
+      this.seat = params.seat;
       this.nameTag = new NameTag({
-        classList: ["name-tag", seat],
-        parent: this.player.element,
-        table_no: table.table_no,
-        seat,
-        value: window.MJDATA.members.find((v) => v.id === table[seat])
+        classList: ["name-tag", this.seat],
+        parent: this.element,
+        value: window.MJDATA.members.find((v) => v.id === table[this.seat])
       });
-      let otherPlayers = ["east", "south", "west", "north"].filter((v) => v != seat).map((v) => table[v]);
-      if (otherPlayers.length != 3) {
-        console.error(this.player, `got ${otherPlayers.length} other players when expecting 3:`, otherPlayers);
+      this.memberId = table[this.seat];
+      if (this.memberId === 0) {
+        this.winButton = new Component({
+          tag: "button",
+          textContent: "\u98DF",
+          parent: this.element,
+          classList: ["win-button", "small-button"],
+          other: {
+            disabled: true
+          }
+        });
+      } else {
+        this.winButton = new WinButton({
+          tableNo: this.tableNo,
+          memberId: this.memberId,
+          textContent: "\u98DF",
+          parent: this.element,
+          classList: ["win-button", "small-button"]
+        });
       }
-      this.winButton = new WinButton({
-        otherPlayers,
-        textContent: "\u98DF",
-        parent: this.player.element,
-        classList: ["win-button", "small-button"]
-      });
     }
-    // the component (a table cell element) 'player'...
-    player;
-    // contains the nametag (input) and winbutton components
-    nameTag;
-    winButton;
-    update(table) {
-      this.table = table;
-      let otherPlayers = ["east", "south", "west", "north"].filter((v) => v != this.seat).map((v) => table[v]);
-      this.winButton.updatePlayers(otherPlayers);
+    updateSeat(seat) {
+      throw Error("not written");
+      this.seat = seat;
+      this.listener = this.generateListener();
+    }
+    updateTable(tableNo) {
+      throw Error("not written");
+      this.tableNo = tableNo;
+      this.listener = this.generateListener();
+    }
+    generateListener() {
+      return async (ev) => {
+        this.log("PlayerTag select listener!");
+        let target = ev.target;
+        if (!(target instanceof HTMLSelectElement)) return;
+        let newMember = window.MJDATA.members.find(
+          (v) => v.name === target.value
+        );
+        if (!newMember) throw Error("could not find member from <option>");
+        this.memberId = newMember.id;
+        let tableCopy = this.table;
+        tableCopy[this.seat] = newMember.id;
+        await request(
+          "/tables",
+          {
+            table_no: this.tableNo,
+            table: this.table
+          },
+          "PUT"
+        );
+        window.MJDATA.tables[this.tableNo] = tableCopy;
+        if (this.winButton instanceof WinButton) {
+          this.winButton.updateMember(newMember.id);
+        } else if (this.memberId != 0) {
+          this.winButton.element.remove();
+          this.winButton = new WinButton({
+            tableNo: this.tableNo,
+            memberId: this.memberId,
+            textContent: "\u98DF",
+            parent: this.element,
+            classList: ["win-button", "small-button"]
+          });
+        }
+      };
     }
   };
 
-  // src/components/focus/dialog.ts
+  // src/components/input/focus/dialog.ts
   var Dialog = class extends FocusNode {
-    activator;
-    excludeSelf = false;
     constructor({ activator, ...params }) {
       super(params);
+      this.excludeSelf = false;
       this.activator = activator;
       let dialog = this;
       if (!this.activator.onclick) {
@@ -342,11 +504,15 @@
     if (!(sidebar instanceof HTMLElement)) {
       throw Error("Could not find sidebar");
     }
-    let sidebarButton = Array.from(sidebar.children).find((v) => v.tagName == "BUTTON");
+    let sidebarButton = Array.from(sidebar.children).find(
+      (v) => v.tagName == "BUTTON"
+    );
     if (!(sidebarButton instanceof HTMLButtonElement)) {
       throw Error("Could not find sidebarButton");
     }
-    let sidebarDiv = Array.from(sidebar.children).find((v) => v.tagName == "DIV");
+    let sidebarDiv = Array.from(sidebar.children).find(
+      (v) => v.tagName == "DIV"
+    );
     if (!(sidebarDiv instanceof HTMLElement)) {
       throw Error("Could not find sidebarDiv");
     }
@@ -389,18 +555,16 @@
         throw Error("no name");
       }
       request("/members", { name }, "POST").then((v) => {
-        if (v.ok) v.json().then(
-          (v2) => {
+        if (v.ok)
+          v.json().then((v2) => {
             window.MJDATA.members.push(v2);
             memberList.renderLi(v2);
-          }
-        );
+          });
       });
       dialog.deactivate();
     };
   }
   var MemberList = class extends Component {
-    memberElems;
     constructor(params) {
       super(params);
       this.memberElems = {};
@@ -430,54 +594,80 @@
         current_row = document.createElement("tr");
         index = 0;
       }
-      td.appendChild(renderPlayerTable(td, i));
+      let gameTable = new GameTable({
+        parent: td,
+        table: i
+      });
       current_row.appendChild(td);
       td = document.createElement("td");
     }
     table_table.appendChild(current_row);
     renderSidebar();
   }
-  function renderPlayerTable(parent, mahjongTable) {
-    let innerTable = document.createElement("table");
-    let innerRows = [document.createElement("tr"), document.createElement("tr"), document.createElement("tr")];
-    innerRows[0].appendChild(document.createElement("td"));
-    let west = new PlayerTag(innerRows[0], mahjongTable, "west");
-    innerRows[0].appendChild(document.createElement("td"));
-    let north = new PlayerTag(innerRows[1], mahjongTable, "north");
-    let inner_table_display = document.createElement("td");
-    inner_table_display.classList.add("mahjong-table-display");
-    inner_table_display.textContent = mahjongTable.table_no.toString();
-    innerRows[1].appendChild(inner_table_display);
-    let south = new PlayerTag(innerRows[1], mahjongTable, "south");
-    innerRows[2].appendChild(document.createElement("td"));
-    let east = new PlayerTag(innerRows[2], mahjongTable, "east");
-    let deleteButtonCell = document.createElement("td");
-    let deleteButton = new DeleteButton({
-      parent: deleteButtonCell,
-      tableNo: mahjongTable.table_no
-    });
-    innerRows[2].appendChild(deleteButtonCell);
-    let players = [east, south, west, north];
-    innerTable.addEventListener("input", (ev) => {
-      let target = ev.target;
-      if (!(target instanceof HTMLElement)) return;
-      let input = players.map((v) => v.nameTag.element).find((v) => v.isSameNode(target));
-      if (!input) {
-        console.error("Input registered in table outside of a nameTag input at:", ev.target);
-        throw new Error("unidentified input in table update");
-      }
-      let player = players.find((v) => v.nameTag.element == input);
-      if (!player) {
-        console.error("Could not identify the player this nameTag belongs to:", input);
-        throw new Error("undefined player in table update");
-      }
-      for (const otherPlayer of players.filter((v) => v != player)) {
-        otherPlayer.update(player.table);
-      }
-    });
-    innerRows.forEach((i) => innerTable.appendChild(i));
-    return innerTable;
-  }
+  var GameTable = class extends UsesTable(InputListener) {
+    constructor(params) {
+      super({
+        ...params,
+        tag: "table",
+        debug: true
+      });
+      this.tableNo = params.table.table_no;
+      let blank = (v) => v.appendChild(document.createElement("td"));
+      let innerRows = [
+        document.createElement("tr"),
+        document.createElement("tr"),
+        document.createElement("tr")
+      ];
+      innerRows.forEach((i) => this.element.appendChild(i));
+      blank(innerRows[0]);
+      let west = new PlayerTag({
+        parent: innerRows[0],
+        tableNo: params.table.table_no,
+        seat: "west"
+      });
+      blank(innerRows[0]);
+      let north = new PlayerTag({
+        parent: innerRows[1],
+        tableNo: params.table.table_no,
+        seat: "north"
+      });
+      this.renderTableDisplay(innerRows[1]);
+      let south = new PlayerTag({
+        parent: innerRows[1],
+        tableNo: params.table.table_no,
+        seat: "south"
+      });
+      blank(innerRows[2]);
+      let east = new PlayerTag({
+        parent: innerRows[2],
+        tableNo: params.table.table_no,
+        seat: "east"
+      });
+      this.renderDeleteCell(innerRows[2]);
+    }
+    renderDeleteCell(parent) {
+      let deleteButtonCell = document.createElement("td");
+      let deleteButton = new DeleteButton({
+        parent: deleteButtonCell,
+        tableNo: this.tableNo
+      });
+      parent.appendChild(deleteButtonCell);
+    }
+    renderTableDisplay(parent) {
+      let inner_table_display = document.createElement("td");
+      inner_table_display.classList.add("mahjong-table-display");
+      inner_table_display.textContent = this.tableNo.toString();
+      parent.appendChild(inner_table_display);
+    }
+    generateListener() {
+      return () => {
+        this.log("INPUT EVENT!");
+      };
+    }
+    updateTable(tableNo) {
+      throw Error("not imp.");
+    }
+  };
 
   // src/index.ts
   function path() {

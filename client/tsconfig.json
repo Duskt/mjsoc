@@ -6,10 +6,8 @@
         "moduleResolution": "Bundler",
         "noEmit": true,
         "allowImportingTsExtensions": true,
-        "lib": [
-            "dom",
-            "es7"
-        ],
+        "lib": ["dom", "es7"],
+        "target": "ES6",
         "strict": true
     }
 }

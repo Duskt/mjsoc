@@ -1,22 +1,21 @@
-import { FocusButton, FocusButtonParameters } from ".";
-import Component from "..";
+import { FocusButton, FocusButtonParameters } from "./focusNode";
+import Component from "../..";
 
 export default class Dropdown {
-    options: HTMLElement[];
     element: HTMLElement;
     constructor(options: HTMLElement[]) {
         this.element = new Component({
-            tag: 'div',
-            classList: ["dropdown"]
+            tag: "div",
+            classList: ["dropdown"],
         }).element;
-        this.updateOptions(options);
-        // satisfies ts
         this.options = options;
     }
-    updateOptions(options: HTMLElement[]) {
-        this.options = options;
-        Array.from(this.element.children).forEach((c) => c.remove());
-        this.options.forEach((v) => this.element.appendChild(v));
+    public get options() {
+        return Array.from(this.element.children) as HTMLElement[];
+    }
+    public set options(value: HTMLElement[]) {
+        this.options.forEach((c) => c.remove());
+        value.forEach((v) => this.element.appendChild(v));
     }
 }
 
@@ -33,10 +32,14 @@ export class DropdownButton extends FocusButton {
     }
     activate(): this {
         this.element.appendChild(this.dropdown.element);
-        return super.activate()
+        return super.activate();
     }
     deactivate(): this {
+        if (!this.element.contains(this.dropdown.element))
+            throw new DOMException(
+                "DropdownButton attempted deactivation when inactive."
+            );
         this.element.removeChild(this.dropdown.element);
-        return super.deactivate()
+        return super.deactivate();
     }
 }
