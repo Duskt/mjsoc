@@ -1,5 +1,4 @@
 import Component, { ComponentParameters } from ".";
-import { UsesTable, UsesSeat } from "../data";
 
 interface NameTagParameters
     extends Omit<Omit<ComponentParameters<"select">, "tag">, "value"> {

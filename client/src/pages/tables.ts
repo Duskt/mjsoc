@@ -1,4 +1,3 @@
-import Component, { ComponentParameters } from "../components";
 import DeleteButton from "../components/deleteButton";
 import {
     InputListener,
