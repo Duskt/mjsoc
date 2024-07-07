@@ -10,7 +10,6 @@ export interface ComponentParameters<K extends keyof HTMLElementTagNameMap> {
     textContent?: string;
     classList?: string[];
     value?: K extends "input" ? string : never;
-    debug?: boolean;
     other?: HTMLElementMap<HTMLElementTagNameMap[K]>;
 }
 
@@ -19,10 +18,8 @@ export interface ComponentParameters<K extends keyof HTMLElementTagNameMap> {
  */
 export default class Component<K extends keyof HTMLElementTagNameMap> {
     element: HTMLElementTagNameMap[K];
-    debug: boolean;
-    constructor({ debug = false, ...params }: ComponentParameters<K>) {
+    constructor(params: ComponentParameters<K>) {
         let tag = params.tag;
-        this.debug = debug;
         this.element = params.element
             ? params.element
             : document.createElement(tag);
@@ -53,8 +50,5 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
             // @ts-ignore
             this.element[i] = params.other[i];
         }
-    }
-    log(...args: any[]) {
-        if (this.debug) console.log(this, "debug message:\n", ...args);
     }
 }

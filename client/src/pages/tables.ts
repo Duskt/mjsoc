@@ -44,7 +44,6 @@ class GameTable extends UsesTable(InputListener<"table">) {
         super({
             ...params,
             tag: "table",
-            debug: true,
         });
         this.tableNo = params.table.table_no;
         let blank = (v: HTMLElement) =>

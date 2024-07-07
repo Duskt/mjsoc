@@ -213,11 +213,6 @@ export default class PlayerTag extends UsesTable(
     // called by the parent table when it receives the input event
     updateWinButton() {
         let newMemberId = this.table[this.seat];
-        console.debug(
-            "player.ts PlayerTag updateWinButton()",
-            this,
-            newMemberId
-        );
         if (newMemberId === 0) {
             // should never occur as of now
             this.winButton.element.remove();
@@ -245,7 +240,6 @@ export default class PlayerTag extends UsesTable(
     // PlayerTag should update the table data but all the WinButtons will be updated by the table
     generateListener(): EventListener {
         return async (ev) => {
-            this.log("PlayerTag select listener!");
             // find the new member from target.value as name
             let target = ev.target;
             if (!(target instanceof HTMLSelectElement)) return;
