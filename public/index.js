@@ -1,5 +1,12 @@
 "use strict";
 (() => {
+  // src/pages/qr.ts
+  function displayQR(e) {
+    e.preventDefault();
+    let nameInput = document.getElementById("nameInput");
+    window.location.href = "/qr?name=" + encodeURIComponent(nameInput.value);
+  }
+
   // src/components/index.ts
   var Component = class {
     constructor({ debug = false, ...params }) {
@@ -72,10 +79,10 @@
 
   // src/components/input/listener.ts
   var Listener = class extends Component {
-    constructor({ setListener = true, ...params }) {
+    constructor({ initListener = true, ...params }) {
       super(params);
       this.event = params.event;
-      if (setListener) {
+      if (initListener) {
         this.listener = this.generateListener();
       }
     }
@@ -113,7 +120,8 @@
     constructor(params) {
       super({
         ...params,
-        setListener: false
+        // FocusNode listeners require manual activation
+        initListener: false
       });
       // todo: add more DocumentEventMaps
       this.deactivation = "click";
@@ -137,6 +145,7 @@
         this.deactivate();
       };
     }
+    // javascript quirks: overriding one property accessor prevents inheritance of both!
     get listener() {
       return super.listener;
     }
@@ -343,6 +352,17 @@
       throw Error("not written");
       this.tableNo = tableNo;
     }
+    static empty(parent) {
+      return new Component({
+        tag: "button",
+        textContent: "\u98DF",
+        parent,
+        classList: ["win-button", "small-button"],
+        other: {
+          disabled: true
+        }
+      });
+    }
   };
   var FaanDropdownButton = class extends DropdownButton {
     constructor(params) {
@@ -407,15 +427,7 @@
       });
       this.memberId = table[this.seat];
       if (this.memberId === 0) {
-        this.winButton = new Component({
-          tag: "button",
-          textContent: "\u98DF",
-          parent: this.element,
-          classList: ["win-button", "small-button"],
-          other: {
-            disabled: true
-          }
-        });
+        this.winButton = WinButton.empty(this.element);
       } else {
         this.winButton = new WinButton({
           tableNo: this.tableNo,
@@ -436,6 +448,38 @@
       this.tableNo = tableNo;
       this.listener = this.generateListener();
     }
+    // called by the parent table when it receives the input event
+    updateWinButton() {
+      let newMemberId = this.table[this.seat];
+      console.debug(
+        "player.ts PlayerTag updateWinButton()",
+        this,
+        newMemberId
+      );
+      if (newMemberId === 0) {
+        this.winButton.element.remove();
+        this.winButton = WinButton.empty(this.element);
+      } else {
+        let newMember = window.MJDATA.members.find(
+          (v) => v.id === newMemberId
+        );
+        if (!newMember)
+          throw Error(`New member with id ${newMemberId} not found.`);
+        if (this.winButton instanceof WinButton) {
+          this.winButton.updateMember(newMember.id);
+        } else if (this.memberId != 0) {
+          this.winButton.element.remove();
+          this.winButton = new WinButton({
+            tableNo: this.tableNo,
+            memberId: this.memberId,
+            textContent: "\u98DF",
+            parent: this.element,
+            classList: ["win-button", "small-button"]
+          });
+        }
+      }
+    }
+    // PlayerTag should update the table data but all the WinButtons will be updated by the table
     generateListener() {
       return async (ev) => {
         this.log("PlayerTag select listener!");
@@ -457,18 +501,6 @@
           "PUT"
         );
         window.MJDATA.tables[this.tableNo] = tableCopy;
-        if (this.winButton instanceof WinButton) {
-          this.winButton.updateMember(newMember.id);
-        } else if (this.memberId != 0) {
-          this.winButton.element.remove();
-          this.winButton = new WinButton({
-            tableNo: this.tableNo,
-            memberId: this.memberId,
-            textContent: "\u98DF",
-            parent: this.element,
-            classList: ["win-button", "small-button"]
-          });
-        }
       };
     }
   };
@@ -644,6 +676,7 @@
         seat: "east"
       });
       this.renderDeleteCell(innerRows[2]);
+      this.players = [east, south, west, north];
     }
     renderDeleteCell(parent) {
       let deleteButtonCell = document.createElement("td");
@@ -660,8 +693,10 @@
       parent.appendChild(inner_table_display);
     }
     generateListener() {
-      return () => {
-        this.log("INPUT EVENT!");
+      return (ev) => {
+        for (const player of this.players) {
+          player.updateWinButton();
+        }
       };
     }
     updateTable(tableNo) {
@@ -673,7 +708,10 @@
   function path() {
     return window.location.href.split("/").slice(3).join("/");
   }
-  if (["tables", "table"].some((x) => x == path())) {
+  if (["tables", "table"].some((x) => x === path())) {
     document.addEventListener("DOMContentLoaded", tables);
+  }
+  if (path() === "qr") {
+    displayQR;
   }
 })();

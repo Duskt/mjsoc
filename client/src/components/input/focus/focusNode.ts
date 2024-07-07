@@ -25,7 +25,7 @@ export default abstract class FocusNode<
     constructor(params: FocusNodeParameters<T>) {
         super({
             ...params,
-            // FocusNode listeners require activation
+            // FocusNode listeners require manual activation
             initListener: false,
         });
         this.exclude = params.exclude || [];

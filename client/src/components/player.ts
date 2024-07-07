@@ -89,6 +89,17 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
         throw Error("not written");
         this.tableNo = tableNo;
     }
+    static empty(parent?: HTMLElement) {
+        return new Component({
+            tag: "button",
+            textContent: "食",
+            parent,
+            classList: ["win-button", "small-button"],
+            other: {
+                disabled: true,
+            },
+        });
+    }
 }
 
 interface FaanDropdownButtonParameters extends DropdownButtonParameters {
@@ -177,15 +188,7 @@ export default class PlayerTag extends UsesTable(
         this.memberId = table[this.seat];
         if (this.memberId === 0) {
             // EMPTY
-            this.winButton = new Component({
-                tag: "button",
-                textContent: "食",
-                parent: this.element,
-                classList: ["win-button", "small-button"],
-                other: {
-                    disabled: true,
-                },
-            });
+            this.winButton = WinButton.empty(this.element);
         } else {
             // Player
             this.winButton = new WinButton({
@@ -207,6 +210,39 @@ export default class PlayerTag extends UsesTable(
         this.tableNo = tableNo;
         this.listener = this.generateListener();
     }
+    // called by the parent table when it receives the input event
+    updateWinButton() {
+        let newMemberId = this.table[this.seat];
+        console.debug(
+            "player.ts PlayerTag updateWinButton()",
+            this,
+            newMemberId
+        );
+        if (newMemberId === 0) {
+            // should never occur as of now
+            this.winButton.element.remove();
+            this.winButton = WinButton.empty(this.element);
+        } else {
+            let newMember = window.MJDATA.members.find(
+                (v) => v.id === newMemberId
+            );
+            if (!newMember)
+                throw Error(`New member with id ${newMemberId} not found.`);
+            if (this.winButton instanceof WinButton) {
+                this.winButton.updateMember(newMember.id);
+            } else if (this.memberId != 0) {
+                this.winButton.element.remove();
+                this.winButton = new WinButton({
+                    tableNo: this.tableNo,
+                    memberId: this.memberId,
+                    textContent: "食",
+                    parent: this.element,
+                    classList: ["win-button", "small-button"],
+                });
+            }
+        }
+    }
+    // PlayerTag should update the table data but all the WinButtons will be updated by the table
     generateListener(): EventListener {
         return async (ev) => {
             this.log("PlayerTag select listener!");
@@ -230,19 +266,6 @@ export default class PlayerTag extends UsesTable(
                 "PUT"
             );
             window.MJDATA.tables[this.tableNo] = tableCopy;
-            // update winButton
-            if (this.winButton instanceof WinButton) {
-                this.winButton.updateMember(newMember.id);
-            } else if (this.memberId != 0) {
-                this.winButton.element.remove();
-                this.winButton = new WinButton({
-                    tableNo: this.tableNo,
-                    memberId: this.memberId,
-                    textContent: "食",
-                    parent: this.element,
-                    classList: ["win-button", "small-button"],
-                });
-            }
         };
     }
 }
