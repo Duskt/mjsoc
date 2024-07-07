@@ -227,7 +227,7 @@
   };
 
   // src/components/nametag.ts
-  var NameTag = class extends Component {
+  var NameTag = class extends InputListener {
     constructor({ ...params }) {
       super({
         tag: "select",
@@ -255,8 +255,15 @@
     renderPlaceholder() {
       let optElem = document.createElement("option");
       optElem.textContent = "EMPTY";
+      this.empty = optElem;
       this.element.appendChild(optElem);
       return optElem;
+    }
+    generateListener() {
+      return () => {
+        this.empty?.remove();
+        this.listener = void 0;
+      };
     }
   };
 

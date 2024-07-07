@@ -1,12 +1,14 @@
 import Component, { ComponentParameters } from ".";
+import { InputListener, InputListenerParameters } from "./input/listener";
 
 interface NameTagParameters
-    extends Omit<Omit<ComponentParameters<"select">, "tag">, "value"> {
+    extends Omit<Omit<InputListenerParameters<"select">, "tag">, "value"> {
     value?: Member;
 }
 
-export default class NameTag extends Component<"select"> {
+export default class NameTag extends InputListener<"select"> {
     nameOptions: { [id: Member["id"]]: HTMLOptionElement };
+    empty?: HTMLOptionElement;
     constructor({ ...params }: NameTagParameters) {
         super({
             tag: "select",
@@ -40,7 +42,16 @@ export default class NameTag extends Component<"select"> {
     renderPlaceholder() {
         let optElem = document.createElement("option");
         optElem.textContent = "EMPTY";
+        this.empty = optElem;
         this.element.appendChild(optElem);
         return optElem;
+    }
+
+    generateListener(): EventListener {
+        // removes EMPTY from options
+        return () => {
+            this.empty?.remove();
+            this.listener = undefined;
+        };
     }
 }
