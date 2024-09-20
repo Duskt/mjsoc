@@ -55,8 +55,9 @@ export default function renderSidebar() {
     });
     let memberList = new MemberList({
         tag: "ul",
-        parent: sidebarDiv,
     });
+    addMemberButton.insertAdjacentElement("afterend", memberList.element);
+
     form.onsubmit = (ev) => {
         ev.preventDefault();
         let name = new FormData(form).get("name");

@@ -35,7 +35,8 @@ pub async fn get_tables(
         main {
         div class="sidebar" {
             div {
-                button id="add-member" { "Add a new member" }
+                button id="add-member" class="member-button" { "Add a new member" }
+                button id="del-member" class="member-button" { "Remove a member" }
             }
             button { ">" }
         }

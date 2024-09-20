@@ -574,9 +574,9 @@
       activator: addMemberButton
     });
     let memberList = new MemberList({
-      tag: "ul",
-      parent: sidebarDiv
+      tag: "ul"
     });
+    addMemberButton.insertAdjacentElement("afterend", memberList.element);
     form.onsubmit = (ev) => {
       ev.preventDefault();
       let name = new FormData(form).get("name");

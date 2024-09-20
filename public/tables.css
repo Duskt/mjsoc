@@ -166,12 +166,17 @@ dialog button {
   margin: 0;
 }
 
-#add-member {
+.member-button {
   display: block;
-  width: 50%;
+  width: auto;
   margin: 5% auto;
   font-size: 14px;
 }
-.sidebar.closed #add-member {
+
+#add-button {
+  width: 50%;
+}
+
+.sidebar.closed .member-button {
   display: none;
 }
