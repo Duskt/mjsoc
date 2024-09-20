@@ -1,17 +1,28 @@
 A simple backend with a hashed password and cookie sessions connected to a Google Sheets API.
-Built with Rust.
-1. Generate a hashed password for the admin password:
-```bash
-echo -n "<password>" | argon2 saltItWithSalt -l 32 -e
-```
-2. Create hmac file with any random characters in
-3. Create week.json file:
-``{"week":1,"last_set_unix_seconds":1708509377}``
-4. Deposit logo file in public/assets/logo.jpg
-5. ``cargo run``
- 
+# Setup
 You may have to install libssl-dev and pkg-config (Ubuntu)
 ```bash
 sudo apt install libssl-dev
 sudo apt install pkg-config
 ```
+
+1. Generate a hash for the admin password:
+```bash
+echo -n "<password>" | argon2 saltItWithSalt -l 32 -e
+```
+2. Create hmac file with any random characters in (e.g. ``hmac.bin``)
+3. Create ``data/mahjong.json`` file:
+FORMAT TBD
+4. (Opt.) add logo file in ``public/assets/logo.jpg``
+5. Configure the ``.env`` file
+6. ``./run.sh``
+
+# Architecture
+## ./src (Server)
+Contains the Rust server and command line interface.
+- cli: Command line interface for QR code generation.
+- lib
+- web
+## client/src (Client)
+- components
+- pages

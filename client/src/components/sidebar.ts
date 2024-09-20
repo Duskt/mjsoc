@@ -68,6 +68,7 @@ export default function renderSidebar() {
                 v.json().then((v: Member) => {
                     window.MJDATA.members.push(v);
                     memberList.renderLi(v);
+                    //todo: update nameTags
                 });
         });
         dialog.deactivate();

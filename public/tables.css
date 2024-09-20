@@ -165,3 +165,13 @@ dialog input {
 dialog button {
   margin: 0;
 }
+
+#add-member {
+  display: block;
+  width: 50%;
+  margin: 5% auto;
+  font-size: 14px;
+}
+.sidebar.closed #add-member {
+  display: none;
+}

@@ -9,9 +9,8 @@
 
   // src/components/index.ts
   var Component = class {
-    constructor({ debug = false, ...params }) {
+    constructor(params) {
       let tag = params.tag;
-      this.debug = debug;
       this.element = params.element ? params.element : document.createElement(tag);
       this.element._ParentComponent = this;
       let parent = params.parent;
@@ -34,9 +33,6 @@
       for (const i in params.other) {
         this.element[i] = params.other[i];
       }
-    }
-    log(...args) {
-      if (this.debug) console.log(this, "debug message:\n", ...args);
     }
   };
 
@@ -458,11 +454,6 @@
     // called by the parent table when it receives the input event
     updateWinButton() {
       let newMemberId = this.table[this.seat];
-      console.debug(
-        "player.ts PlayerTag updateWinButton()",
-        this,
-        newMemberId
-      );
       if (newMemberId === 0) {
         this.winButton.element.remove();
         this.winButton = WinButton.empty(this.element);
@@ -489,7 +480,6 @@
     // PlayerTag should update the table data but all the WinButtons will be updated by the table
     generateListener() {
       return async (ev) => {
-        this.log("PlayerTag select listener!");
         let target = ev.target;
         if (!(target instanceof HTMLSelectElement)) return;
         let newMember = window.MJDATA.members.find(
@@ -647,8 +637,7 @@
     constructor(params) {
       super({
         ...params,
-        tag: "table",
-        debug: true
+        tag: "table"
       });
       this.tableNo = params.table.table_no;
       let blank = (v) => v.appendChild(document.createElement("td"));
