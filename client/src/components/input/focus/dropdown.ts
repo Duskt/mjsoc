@@ -22,8 +22,20 @@ export default class Dropdown {
 export interface DropdownButtonParameters extends FocusButtonParameters {
     options?: HTMLElement[];
 }
+/** A FocusButton which when clicked displays a dropdown of each element
+ * in options, hidden when focus is lost.
+ *
+ * To customise onclick functionality for each option the passed
+ * options should be modified directly. If onclick is passed into this
+ * element it will be overwritten.
+ */
 export class DropdownButton extends FocusButton {
     dropdown: Dropdown;
+    /**
+     * 
+     * @param {object} params Parameter object:
+     * @param {HTMLElement[]} params.options Dropdown children (buttons recommended)
+     */
     constructor(params: DropdownButtonParameters) {
         let classList = params.classList || ["small-button", "dropdown-button"];
         let options = params.options || [];

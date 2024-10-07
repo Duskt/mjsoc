@@ -74,3 +74,89 @@ pub async fn create_member(
     // no need to redirect as they already see the changes they've made
     HttpResponse::Created().json(new_member)
 }
+
+#[derive(Deserialize)]
+pub struct MemberDeleteRequest {
+    name: String,
+}
+
+pub async fn delete_member(
+    session: Session,
+    data: web::Data<AppState>,
+    body: web::Json<MemberDeleteRequest>,
+    req: HttpRequest,
+) -> impl Responder {
+    if !is_authenticated(&session, &data.authenticated_keys) {
+        // Login and redirect back here
+        // (GET to this address is routed to /table)
+        println!("{}, {}", &req.uri(), &req.uri().path_and_query().unwrap());
+        return get_redirect_response(&format!(
+            "/login?redirect={}",
+            encode(&req.uri().path_and_query().unwrap().to_string()),
+        ));
+    }
+    let mut mjdata = data.mahjong_data.lock().unwrap();
+
+    if let Some(index) = mjdata.members.iter().position(|x| x.name == body.name) {
+        let member_id = mjdata.members[index].id;
+        // remove references to the member
+        for t in mjdata.tables.iter_mut() {
+            // todo: surely a better way
+            if t.east == member_id {
+                t.east = 0
+            }
+            if t.south == member_id {
+                t.south = 0
+            }
+            if t.west == member_id {
+                t.west = 0
+            }
+            if t.north == member_id {
+                t.north = 0
+            }
+        }
+        // now remove the member from the members list
+        mjdata.members.swap_remove(index);
+        mjdata.save_to_file();
+        HttpResponse::ResetContent().body("Deleted member")
+    } else {
+        HttpResponse::BadRequest().body(format!(
+            "Could not find a member by the name of {}",
+            body.name
+        ))
+    }
+}
+
+#[derive(Deserialize)]
+pub struct PointsTransferRequest {
+    to: u32,
+    from: Vec<u32>,
+    points: u32,
+}
+
+pub async fn transfer_points(
+    session: Session,
+    data: web::Data<AppState>,
+    body: web::Json<PointsTransferRequest>,
+) -> impl Responder {
+    // ignoring all errors rn this is bad
+    if !is_authenticated(&session, &data.authenticated_keys) {
+        return get_redirect_response("/login?redirect=tables");
+    }
+    let mut mjdata = data.mahjong_data.lock().unwrap();
+    // take the points from...
+    for id in body.from.iter() {
+        for member in mjdata.members.iter_mut() {
+            if member.id == *id {
+                member.points -= body.points as i32;
+            }
+        }
+    }
+    // and give points*n to...
+    let points = ((body.points as usize) * body.from.len()) as i32;
+    if let Some(mem) = mjdata.members.iter_mut().find(|mem| mem.id == body.to) {
+        mem.points += points
+    }
+    mjdata.save_to_file();
+    HttpResponse::Ok().body("Updated points!")
+}

@@ -14,6 +14,33 @@ const allK = <K>(array: (K | undefined)[]): array is K[] => {
     return !array.some((v) => v === undefined);
 };
 
+function getTablemates(myId: number, table: TableData) {
+    let result = [];
+    for (let mid of [table.east, table.south, table.west, table.north]) {
+        if (mid !== myId) {
+            result.push(mid);
+        }
+    }
+    return result;
+}
+
+const TEMP_TABLE = new Map();
+TEMP_TABLE.set(3, 8);
+TEMP_TABLE.set(4, 16);
+TEMP_TABLE.set(5, 24);
+TEMP_TABLE.set(6, 32);
+TEMP_TABLE.set(7, 48);
+TEMP_TABLE.set(8, 64);
+TEMP_TABLE.set(9, 96);
+TEMP_TABLE.set(10, 128);
+TEMP_TABLE.set(11, 192);
+TEMP_TABLE.set(12, 256);
+TEMP_TABLE.set(13, 384);
+// todo: replace with an editable page with a table on
+function getPointsFromFaan(faan: number) {
+    return TEMP_TABLE.get(faan);
+}
+
 interface WinButtonParameters extends FocusButtonParameters {
     tableNo: TableNo;
     memberId: MemberId;
@@ -36,9 +63,11 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
         this.memberId = params.memberId;
         this.zimo = new FaanDropdownButton({
             textContent: "自摸",
+            // don't set onclick here - do it in updatePlayers
         });
         this.dachut = new DropdownButton({
             textContent: "打出",
+            // don't set onclick here - do it in updatePlayers
         });
         this.updatePlayers();
     }
@@ -59,26 +88,43 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
     updatePlayers() {
         let table = this.table;
         let member = this.member;
-        let otherPlayers = (["east", "south", "west", "north"] as SeatWind[])
-            .filter((seat) => table[seat] != member.id)
-            .map((seat) =>
-                window.MJDATA.members.find((m) => m.id == table[seat])
-            );
+        let otherSeats = (
+            ["east", "south", "west", "north"] as SeatWind[]
+        ).filter((seat) => table[seat] != member.id);
+        let otherPlayers = otherSeats.map((seat) =>
+            window.MJDATA.members.find((m) => m.id == table[seat])
+        );
         // deals with appending/removing children
         this.dachut.dropdown.options = otherPlayers.map(
             (m) =>
                 new FaanDropdownButton({
                     textContent: m?.name || "",
                     classList: ["small-button"],
-                    onclick: (ev, faan) =>
-                        alert(
-                            `${this.member.name} took ${faan} from ${m?.name}.`
+                    onclick: async (ev, faan) =>
+                        await request(
+                            "/members/transfer",
+                            {
+                                to: this.memberId,
+                                from: [m?.id],
+                                points: getPointsFromFaan(faan) * 2,
+                            },
+                            "POST"
                         ),
                 }).element
         );
-        this.zimo.onclick = (ev, faan) => {
+        this.zimo.onclick = async (ev, faan) => {
             let otherNames = otherPlayers.map((v) => v?.name || "EMPTY");
-            alert(`${this.member.name} took ${faan} faan from ${otherNames}`);
+            // send a transfer request with one winner and three losers
+            // the one winner will get that amount from every loser
+            await request(
+                "/members/transfer",
+                {
+                    to: this.memberId,
+                    from: getTablemates(this.memberId, this.table),
+                    points: getPointsFromFaan(faan),
+                },
+                "POST"
+            );
         };
     }
     updateMember(memberId: MemberId): void {
@@ -187,10 +233,21 @@ export default class PlayerTag extends UsesTable(
         // doesn't need to UsesMember because it controls memberId (and reacts appropriately)!
         this.memberId = table[this.seat];
         if (this.memberId === 0) {
-            // EMPTY
+            // explicitly EMPTY
+            this.winButton = WinButton.empty(this.element);
+        } else if (
+            window.MJDATA.members.find((m) => m.id == this.memberId) ===
+            undefined
+        ) {
+            // couldn't find a member with that ID
+            console.warn(
+                `Found a table ${table.table_no} with an invalid member of id ${
+                    table[this.seat]
+                }. Assuming EMPTY - the datafile might need to be manually cleaned.`
+            );
             this.winButton = WinButton.empty(this.element);
         } else {
-            // Player
+            // member exists
             this.winButton = new WinButton({
                 tableNo: this.tableNo,
                 memberId: this.memberId,

@@ -55,7 +55,10 @@
       let onclick = params.other?.onclick || (async (ev) => {
         let r = await request("/tables", { "table_no": params.tableNo }, "DELETE");
         if (!r.redirected) {
-          if (ev.target instanceof HTMLElement) ev.target.parentElement?.parentElement?.parentElement?.remove();
+          window.MJDATA.tables = window.MJDATA.tables.filter((v) => v.table_no !== params.tableNo);
+          if (params.ondelete) {
+            params.ondelete();
+          }
         }
       });
       let classList = params.classList || ["small-button", "delete-button"];
@@ -202,6 +205,11 @@
     }
   };
   var DropdownButton = class extends FocusButton {
+    /**
+     * 
+     * @param {object} params Parameter object:
+     * @param {HTMLElement[]} params.options Dropdown children (buttons recommended)
+     */
     constructor(params) {
       let classList = params.classList || ["small-button", "dropdown-button"];
       let options = params.options || [];
@@ -301,6 +309,30 @@
   }
 
   // src/components/player.ts
+  function getTablemates(myId, table) {
+    let result = [];
+    for (let mid of [table.east, table.south, table.west, table.north]) {
+      if (mid !== myId) {
+        result.push(mid);
+      }
+    }
+    return result;
+  }
+  var TEMP_TABLE = /* @__PURE__ */ new Map();
+  TEMP_TABLE.set(3, 8);
+  TEMP_TABLE.set(4, 16);
+  TEMP_TABLE.set(5, 24);
+  TEMP_TABLE.set(6, 32);
+  TEMP_TABLE.set(7, 48);
+  TEMP_TABLE.set(8, 64);
+  TEMP_TABLE.set(9, 96);
+  TEMP_TABLE.set(10, 128);
+  TEMP_TABLE.set(11, 192);
+  TEMP_TABLE.set(12, 256);
+  TEMP_TABLE.set(13, 384);
+  function getPointsFromFaan(faan) {
+    return TEMP_TABLE.get(faan);
+  }
   var WinButton = class extends UsesMember(UsesTable(FocusButton)) {
     constructor(params) {
       super(params);
@@ -308,9 +340,11 @@
       this.memberId = params.memberId;
       this.zimo = new FaanDropdownButton({
         textContent: "\u81EA\u6478"
+        // don't set onclick here - do it in updatePlayers
       });
       this.dachut = new DropdownButton({
         textContent: "\u6253\u51FA"
+        // don't set onclick here - do it in updatePlayers
       });
       this.updatePlayers();
     }
@@ -330,21 +364,36 @@
     updatePlayers() {
       let table = this.table;
       let member = this.member;
-      let otherPlayers = ["east", "south", "west", "north"].filter((seat) => table[seat] != member.id).map(
+      let otherSeats = ["east", "south", "west", "north"].filter((seat) => table[seat] != member.id);
+      let otherPlayers = otherSeats.map(
         (seat) => window.MJDATA.members.find((m) => m.id == table[seat])
       );
       this.dachut.dropdown.options = otherPlayers.map(
         (m) => new FaanDropdownButton({
           textContent: m?.name || "",
           classList: ["small-button"],
-          onclick: (ev, faan) => alert(
-            `${this.member.name} took ${faan} from ${m?.name}.`
+          onclick: async (ev, faan) => await request(
+            "/members/transfer",
+            {
+              to: this.memberId,
+              from: [m?.id],
+              points: getPointsFromFaan(faan) * 2
+            },
+            "POST"
           )
         }).element
       );
-      this.zimo.onclick = (ev, faan) => {
+      this.zimo.onclick = async (ev, faan) => {
         let otherNames = otherPlayers.map((v) => v?.name || "EMPTY");
-        alert(`${this.member.name} took ${faan} faan from ${otherNames}`);
+        await request(
+          "/members/transfer",
+          {
+            to: this.memberId,
+            from: getTablemates(this.memberId, this.table),
+            points: getPointsFromFaan(faan)
+          },
+          "POST"
+        );
       };
     }
     updateMember(memberId) {
@@ -430,6 +479,11 @@
       });
       this.memberId = table[this.seat];
       if (this.memberId === 0) {
+        this.winButton = WinButton.empty(this.element);
+      } else if (window.MJDATA.members.find((m) => m.id == this.memberId) === void 0) {
+        console.warn(
+          `Found a table ${table.table_no} with an invalid member of id ${table[this.seat]}. Assuming EMPTY - the datafile might need to be manually cleaned.`
+        );
         this.winButton = WinButton.empty(this.element);
       } else {
         this.winButton = new WinButton({
@@ -577,6 +631,34 @@
       tag: "ul"
     });
     addMemberButton.insertAdjacentElement("afterend", memberList.element);
+    let removeMemberButton = new DropdownButton({
+      textContent: "Remove a member",
+      classList: ["member-button"],
+      parent: sidebarDiv,
+      options: window.MJDATA.members.map(
+        (m) => new Component({
+          tag: "button",
+          textContent: m.name,
+          other: {
+            onclick: async (ev) => {
+              let r = await request(
+                "/members",
+                { name: m.name },
+                "DELETE"
+              );
+              if (r.ok) {
+                let index = window.MJDATA.members.indexOf(m);
+                window.MJDATA.members.splice(index, 1);
+                memberList.updateMembers();
+              }
+            }
+          }
+        }).element
+      )
+    });
+    let overrideContainer = new OverrideContainer({
+      parent: sidebarDiv
+    });
     form.onsubmit = (ev) => {
       ev.preventDefault();
       let name = new FormData(form).get("name");
@@ -606,32 +688,127 @@
       this.element.appendChild(melem);
       return melem;
     }
+    updateMembers() {
+      this.memberElems = {};
+      while (this.element.lastChild) {
+        this.element.removeChild(this.element.lastChild);
+      }
+      window.MJDATA.members.forEach((m) => this.renderLi(m));
+    }
+  };
+  var ToggleComponent = class extends Component {
+    constructor(params) {
+      super(params);
+      this.hidden = false;
+      this.mode = params.mode;
+      this.children = document.createDocumentFragment().children;
+    }
+    show() {
+      this.hidden = false;
+      for (let item of Array.from(this.children)) {
+        this.element.appendChild(item);
+      }
+      this.element.style["display"] = this.mode;
+    }
+    hide() {
+      this.hidden = true;
+      this.children = this.element.children;
+      while (this.element.lastChild) {
+        this.element.removeChild(this.element.lastChild);
+      }
+      this.element.style["display"] = "none";
+    }
+    toggle() {
+      if (this.hidden) {
+        this.show();
+      } else {
+        this.hide();
+      }
+    }
+  };
+  var OverrideContainer = class extends Component {
+    constructor(params) {
+      super({
+        tag: "div",
+        classList: ["override-panel"],
+        ...params
+      });
+      this.toggleButton = new Component({
+        tag: "button",
+        textContent: "Advanced override panel",
+        parent: this.element,
+        classList: ["override-toggle"]
+      });
+      this.overridePanel = new ToggleComponent({
+        tag: "div",
+        mode: "block",
+        parent: this.element
+      });
+      this.editContent = new Component({
+        tag: "textarea",
+        parent: this.overridePanel.element
+      });
+      this.submitButton = new Component({
+        tag: "button",
+        parent: this.overridePanel.element
+      });
+      this.overridePanel.hide();
+      this.toggleButton.element.onclick = () => this.overridePanel.toggle;
+    }
   };
 
   // src/pages/tables.ts
   function tables() {
     let table_table = document.getElementById("table");
     if (!table_table) throw Error("No element with the table id is present.");
+    renderTables(table_table);
+    renderSidebar();
+  }
+  function renderTables(parent) {
+    parent.innerHTML = "";
+    let tables2 = [];
+    let sorted_tabledata = [...window.MJDATA.tables].sort(
+      (a, b) => a.table_no - b.table_no
+    );
+    tables2 = tables2.concat(sorted_tabledata).concat([void 0]);
     let current_row = document.createElement("tr");
-    let n_cols = Math.ceil(Math.sqrt(window.MJDATA.tables.length));
+    let n_cols = Math.ceil(Math.sqrt(tables2.length));
+    console.log("ncols", n_cols);
     let index = 0;
     let td = document.createElement("td");
-    for (const i of window.MJDATA.tables) {
-      index++;
-      if (index > n_cols) {
-        table_table.appendChild(current_row);
+    for (const i of tables2) {
+      console.log(index);
+      if (index >= n_cols) {
+        console.log("new row");
+        parent.appendChild(current_row);
         current_row = document.createElement("tr");
         index = 0;
       }
-      let gameTable = new GameTable({
-        parent: td,
-        table: i
-      });
+      if (i === void 0) {
+        let createTableButton = new Component({
+          tag: "button",
+          textContent: "+",
+          parent: td,
+          classList: ["create-table"],
+          other: {
+            onclick: async (ev) => {
+              let r = await request("/tables", {}, "POST");
+              window.MJDATA.tables.push(await r.json());
+              renderTables(parent);
+            }
+          }
+        });
+      } else {
+        let gameTable = new GameTable({
+          parent: td,
+          table: i
+        });
+      }
       current_row.appendChild(td);
       td = document.createElement("td");
+      index++;
     }
-    table_table.appendChild(current_row);
-    renderSidebar();
+    parent.appendChild(current_row);
   }
   var GameTable = class extends UsesTable(InputListener) {
     constructor(params) {
@@ -678,7 +855,13 @@
       let deleteButtonCell = document.createElement("td");
       let deleteButton = new DeleteButton({
         parent: deleteButtonCell,
-        tableNo: this.tableNo
+        tableNo: this.tableNo,
+        ondelete: () => {
+          let table_table = document.getElementById("table");
+          if (table_table) {
+            renderTables(table_table);
+          }
+        }
       });
       parent.appendChild(deleteButtonCell);
     }

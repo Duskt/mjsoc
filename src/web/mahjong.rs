@@ -77,6 +77,17 @@ pub struct Member {
     pub points: i32,
 }
 
+fn get_new_index(indices: Vec<u32>) -> u32 {
+    let opt_maxi = indices.iter().max();
+    let maxi = *opt_maxi.unwrap_or(&1);
+    for i in 1..maxi {
+        if !indices.contains(&i) {
+            return i;
+        }
+    }
+    maxi + 1
+}
+
 // player data
 // overall structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -101,14 +112,9 @@ impl MahjongData {
             return &self.tables[0];
         }
         // get max index
-        let last_index = self
-            .tables
-            .iter()
-            .max_by_key(|x| x.table_no)
-            .unwrap()
-            .table_no;
+        let new_index = get_new_index(self.tables.iter().map(|x| x.table_no).collect::<Vec<u32>>());
         let new_table = TableData {
-            table_no: last_index + 1,
+            table_no: new_index,
             east: 0,
             south: 0,
             west: 0,
@@ -119,8 +125,10 @@ impl MahjongData {
         let index = self
             .tables
             .iter()
-            .position(|x| x.table_no == last_index + 1)
-            .expect("tables should contain new table with last_added.table_no incrememented");
+            .position(|x| x.table_no == new_index)
+            .expect(
+                "tables should have contained the new table with last_added.table_no incrememented",
+            );
         self.save_to_file();
         &self.tables[index]
     }

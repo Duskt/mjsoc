@@ -36,16 +36,11 @@ pub async fn get_tables(
         div class="sidebar" {
             div {
                 button id="add-member" class="member-button" { "Add a new member" }
-                button id="del-member" class="member-button" { "Remove a member" }
             }
             button { ">" }
         }
         article {
             h1 { "Tables" }
-            form action="/tables" method="POST" {
-                button name="addtable" id="addtable" autofocus { "Create a table" }
-            }
-
             table id="table" {}
         }
         dialog {
@@ -66,8 +61,8 @@ pub async fn create_table(session: Session, data: web::Data<AppState>) -> impl R
         return get_redirect_response("/login?redirect=tables");
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
-    mjdata.create_table();
-    get_redirect_response("/tables")
+    let td = mjdata.create_table();
+    HttpResponse::Created().json(td)
 }
 
 #[derive(Deserialize)]

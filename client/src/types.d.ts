@@ -20,6 +20,6 @@ interface Member {
 
 interface MahjongData {
     week: {}
-    tables: [TableData]
-    members: [Member]
+    tables: TableData[]
+    members: Member[]
 }

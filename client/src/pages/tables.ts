@@ -1,3 +1,4 @@
+import Component from "../components";
 import DeleteButton from "../components/deleteButton";
 import {
     InputListener,
@@ -6,30 +7,70 @@ import {
 import PlayerTag from "../components/player";
 import renderSidebar from "../components/sidebar";
 import { UsesTable } from "../data";
+import { request } from "../request";
 
 export default function tables() {
+    // the tables with players on are, confusingly, ordered into a table of tables
     let table_table = document.getElementById("table");
     if (!table_table) throw Error("No element with the table id is present.");
+    renderTables(table_table);
+    // the left sidebar contains leaderboard and player info
+    renderSidebar();
+}
+
+/* Renders (or updates) all of the tables at once.
+ * Order the tables into the table_table with an appropriate number of columns
+ * and rows. Prefer an extra column to an extra row when a square cannot be used.
+
+ * First get the number of columns: the ceiling of the sqrt (e.g. 2-> ?x2, 4 -> ?x2, 6 -> ?x3)
+ * then infer rows. Then fill the rows from the left!
+ * An extra table is added into n_tables, which will be used for the '+' (create table) button.
+**/
+function renderTables(parent: HTMLElement) {
+    // clear for re-render
+    parent.innerHTML = "";
+    let tables: (TableData | undefined)[] = [];
+    // mjdata.tables sorted by table_no
+    let sorted_tabledata = [...window.MJDATA.tables].sort(
+        (a, b) => a.table_no - b.table_no
+    );
+    tables = tables.concat(sorted_tabledata).concat([undefined]);
+
     let current_row = document.createElement("tr");
-    let n_cols = Math.ceil(Math.sqrt(window.MJDATA.tables.length));
+    let n_cols = Math.ceil(Math.sqrt(tables.length));
     let index = 0;
     let td = document.createElement("td");
-    for (const i of window.MJDATA.tables) {
-        index++;
-        if (index > n_cols) {
-            table_table.appendChild(current_row);
+    for (const i of tables) {
+        if (index >= n_cols) {
+            parent.appendChild(current_row);
             current_row = document.createElement("tr");
             index = 0;
         }
-        let gameTable = new GameTable({
-            parent: td,
-            table: i,
-        });
+        if (i === undefined) {
+            let createTableButton = new Component({
+                tag: "button",
+                textContent: "+",
+                parent: td,
+                classList: ["create-table"],
+                other: {
+                    onclick: async (ev) => {
+                        let r = await request("/tables", {}, "POST");
+                        window.MJDATA.tables.push(await r.json());
+                        renderTables(parent);
+                    },
+                },
+            });
+        } else {
+            let gameTable = new GameTable({
+                parent: td,
+                table: i,
+            });
+        }
         current_row.appendChild(td);
         td = document.createElement("td");
+        index++;
     }
-    table_table.appendChild(current_row);
-    renderSidebar();
+    parent.appendChild(current_row);
 }
 
 interface GameTableParameters
@@ -89,6 +130,12 @@ class GameTable extends UsesTable(InputListener<"table">) {
         let deleteButton = new DeleteButton({
             parent: deleteButtonCell,
             tableNo: this.tableNo,
+            ondelete: () => {
+                let table_table = document.getElementById("table");
+                if (table_table) {
+                    renderTables(table_table);
+                }
+            },
         });
         parent.appendChild(deleteButtonCell);
     }
