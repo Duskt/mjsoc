@@ -145,18 +145,21 @@ pub async fn transfer_points(
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
     // take the points from...
+    let mut update_members: Vec<Member> = vec![];
     for id in body.from.iter() {
         for member in mjdata.members.iter_mut() {
             if member.id == *id {
                 member.points -= body.points as i32;
+                update_members.push(member.clone());
             }
         }
     }
     // and give points*n to...
     let points = ((body.points as usize) * body.from.len()) as i32;
     if let Some(mem) = mjdata.members.iter_mut().find(|mem| mem.id == body.to) {
-        mem.points += points
+        mem.points += points;
+        update_members.push(mem.clone());
     }
     mjdata.save_to_file();
-    HttpResponse::Ok().body("Updated points!")
+    HttpResponse::Ok().json(update_members)
 }

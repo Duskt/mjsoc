@@ -84,13 +84,13 @@ async fn main() -> std::io::Result<()> {
                     .route(put().to(update_table)),
             )
             .service(
+                web::resource("/members")
+                    .route(post().to(create_member))
+                    .route(put().to(update_member))
+                    .route(delete().to(delete_member)),
+            )
+            .service(
                 web::scope("/members")
-                    .service(
-                        web::resource("/")
-                            .route(post().to(create_member))
-                            .route(put().to(update_member))
-                            .route(delete().to(delete_member)),
-                    )
                     .service(web::resource("/transfer").route(post().to(transfer_points))),
             )
             // authentication

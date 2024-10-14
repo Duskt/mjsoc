@@ -24,6 +24,17 @@
   font-size: 16px;
 }
 
+/* dropdown-button is the button summoning a dropdown */
+.win-button-popup {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 300%;
+  z-index: 1;
+}
+
 .delete-button {
   height: 24px;
   width: 24px;
@@ -64,24 +75,10 @@
   height: var(--name-tag-length);
 }
 
-/* dropdown-button is the button summoning a dropdown */
-.dropdown-button {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 50%;
-  height: 100%;
-  z-index: 1;
-}
-
-.dropdown-button:first-child {
-  left: 0;
-}
-
 /* dropdown container */
 .dropdown {
   position: absolute;
-  top: 24px;
+  left: 24px;
   display: flex;
   flex-direction: column;
   z-index: 1;
@@ -122,23 +119,36 @@ article {
   margin-left: -12px;
 }
 
-.sidebar {
+#header-bar {
+  display: flex;
+}
+
+#header-bar > button {
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  align-self: center;
+  margin: 10px;
+  padding: 0px;
+}
+
+#sidebar {
   width: 30%;
   transition: width 1s;
   display: flex;
 }
 
-.sidebar.closed {
+#sidebar.closed {
   width: 12px;
 }
 
-.sidebar>div {
+#sidebar>div {
   width: 100%;
   height: 100%;
   border-right: 2px solid rgba(0, 0, 0, 0.2);
 }
 
-.sidebar>button {
+#sidebar>button {
   border-radius: 0px 4px 4px 0px;
   font-size: 12px;
   width: 12px;
@@ -148,7 +158,7 @@ article {
   z-index: 1;
 }
 
-.sidebar.closed div * {
+#sidebar.closed div * {
   display: none;
 }
 
@@ -211,4 +221,14 @@ dialog button {
 .create-table {
   display: block;
   margin: auto;
+}
+
+.member-grid {
+  margin: auto;
+  border-collapse: collapse;
+}
+
+.member-grid td {
+  padding: 4px 8px;
+  border: 1px solid black;
 }

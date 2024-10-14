@@ -52,37 +52,47 @@ interface WinButtonParameters extends FocusButtonParameters {
  * For this purpose, the win button splits into two, which have their own dropdown(s).
  */
 class WinButton extends UsesMember(UsesTable(FocusButton)) {
+    // holds the three dropdown buttons
+    popup: Component<"div">;
     // there are two types of wins:
     zimo: FaanDropdownButton; // 'self-draw' points are split between the table's other 3 players
     dachut: DropdownButton; // 'direct hit' points are taken from one player, needing two dropdowns.
+    baozimo: DropdownButton; // edge case of self-draw where all points taken from one player
+
     tableNo: TableNo;
     memberId: MemberId;
+
     constructor(params: WinButtonParameters) {
         super(params);
+        this.popup = new Component({
+            tag: "div",
+            classList: ["win-button-popup"],
+        });
         this.tableNo = params.tableNo;
         this.memberId = params.memberId;
         this.zimo = new FaanDropdownButton({
             textContent: "自摸",
+            parent: this.popup.element,
             // don't set onclick here - do it in updatePlayers
         });
         this.dachut = new DropdownButton({
             textContent: "打出",
+            parent: this.popup.element,
             // don't set onclick here - do it in updatePlayers
+        });
+        this.baozimo = new DropdownButton({
+            textContent: "包自摸",
+            parent: this.popup.element,
         });
         this.updatePlayers();
     }
 
     activate() {
-        this.element.style["width"] = "100px";
-        this.element.appendChild(this.zimo.element);
-        this.element.appendChild(this.dachut.element);
+        this.element.appendChild(this.popup.element);
         return super.activate();
     }
     deactivate() {
-        this.element.style["width"] = "";
-        for (const c of Array.from(this.element.children)) {
-            this.element.removeChild(c);
-        }
+        this.element.removeChild(this.popup.element);
         return super.deactivate();
     }
     updatePlayers() {
@@ -112,6 +122,23 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
                         ),
                 }).element
         );
+        this.baozimo.dropdown.options = otherPlayers.map(
+            (m) =>
+                new FaanDropdownButton({
+                    textContent: m?.name || "",
+                    classList: ["small-button"],
+                    onclick: async (ev, faan) =>
+                        await request(
+                            "/members/transfer",
+                            {
+                                to: this.memberId,
+                                from: [m?.id],
+                                points: getPointsFromFaan(faan) * 3,
+                            },
+                            "POST"
+                        ),
+                }).element
+        );
         this.zimo.onclick = async (ev, faan) => {
             let otherNames = otherPlayers.map((v) => v?.name || "EMPTY");
             // send a transfer request with one winner and three losers
@@ -123,7 +150,7 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
                     from: getTablemates(this.memberId, this.table),
                     points: getPointsFromFaan(faan),
                 },
-                "POST"
+                "POST",
             );
         };
     }

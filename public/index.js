@@ -37,6 +37,7 @@
   };
 
   // src/request.ts
+  var pointTransfer = new Event("mjPointTransfer");
   async function request(path2, payload, method = "POST") {
     let url = "http://localhost:5654/" + (path2[0] != "/" ? path2 : path2.slice(1));
     let r = await fetch(url, {
@@ -46,6 +47,22 @@
         "Content-Type": "application/json; charset=UTF-8"
       }
     });
+    if (path2 === "/members/transfer") {
+      let updated_members = await r.json();
+      let new_member;
+      console.log(window.MJDATA.members, updated_members);
+      window.MJDATA.members = window.MJDATA.members.map((old_member) => {
+        new_member = updated_members.find(
+          (new_member2) => new_member2.id === old_member.id
+        );
+        if (new_member !== void 0) {
+          return new_member;
+        } else {
+          return old_member;
+        }
+      });
+      document.dispatchEvent(pointTransfer);
+    }
     return r;
   }
 
@@ -336,29 +353,34 @@
   var WinButton = class extends UsesMember(UsesTable(FocusButton)) {
     constructor(params) {
       super(params);
+      this.popup = new Component({
+        tag: "div",
+        classList: ["win-button-popup"]
+      });
       this.tableNo = params.tableNo;
       this.memberId = params.memberId;
       this.zimo = new FaanDropdownButton({
-        textContent: "\u81EA\u6478"
+        textContent: "\u81EA\u6478",
+        parent: this.popup.element
         // don't set onclick here - do it in updatePlayers
       });
       this.dachut = new DropdownButton({
-        textContent: "\u6253\u51FA"
+        textContent: "\u6253\u51FA",
+        parent: this.popup.element
         // don't set onclick here - do it in updatePlayers
+      });
+      this.baozimo = new DropdownButton({
+        textContent: "\u5305\u81EA\u6478",
+        parent: this.popup.element
       });
       this.updatePlayers();
     }
     activate() {
-      this.element.style["width"] = "100px";
-      this.element.appendChild(this.zimo.element);
-      this.element.appendChild(this.dachut.element);
+      this.element.appendChild(this.popup.element);
       return super.activate();
     }
     deactivate() {
-      this.element.style["width"] = "";
-      for (const c of Array.from(this.element.children)) {
-        this.element.removeChild(c);
-      }
+      this.element.removeChild(this.popup.element);
       return super.deactivate();
     }
     updatePlayers() {
@@ -378,6 +400,21 @@
               to: this.memberId,
               from: [m?.id],
               points: getPointsFromFaan(faan) * 2
+            },
+            "POST"
+          )
+        }).element
+      );
+      this.baozimo.dropdown.options = otherPlayers.map(
+        (m) => new FaanDropdownButton({
+          textContent: m?.name || "",
+          classList: ["small-button"],
+          onclick: async (ev, faan) => await request(
+            "/members/transfer",
+            {
+              to: this.memberId,
+              from: [m?.id],
+              points: getPointsFromFaan(faan) * 3
             },
             "POST"
           )
@@ -556,6 +593,98 @@
     }
   };
 
+  // src/components/seatingUtils.ts
+  function isSat(mem) {
+    for (let t of window.MJDATA.tables) {
+      if (mem.id == t.east) return true;
+      if (mem.id == t.south) return true;
+      if (mem.id == t.west) return true;
+      if (mem.id == t.north) return true;
+    }
+    return false;
+  }
+  async function seatMemberLast(mem) {
+    for (let t of window.MJDATA.tables.sort(
+      (a, b) => a.table_no - b.table_no
+    )) {
+      if (t.east === 0) {
+        t.east = mem.id;
+      } else if (t.south === 0) {
+        t.south = mem.id;
+      } else if (t.west === 0) {
+        t.west = mem.id;
+      } else if (t.north === 0) {
+        t.north = mem.id;
+      } else {
+        continue;
+      }
+      return await request(
+        "/tables",
+        {
+          table_no: t.table_no,
+          table: t
+        },
+        "PUT"
+      );
+    }
+  }
+  async function allocateSeats() {
+    for (let mem of window.MJDATA.members) {
+      if (!isSat(mem)) {
+        if (await seatMemberLast(mem) === void 0) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i >= 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+  async function shuffleSeats() {
+    let flatTables = [];
+    let tableOrders = [];
+    for (let t of window.MJDATA.tables) {
+      tableOrders.push(t.table_no);
+      flatTables.push(t.east);
+      flatTables.push(t.south);
+      flatTables.push(t.west);
+      flatTables.push(t.north);
+    }
+    shuffleArray(flatTables);
+    let index = 0;
+    let tablen;
+    let seatn;
+    let table;
+    while (index < flatTables.length) {
+      tablen = tableOrders[Math.floor(index / 4)];
+      seatn = index % 4;
+      table = window.MJDATA.tables.find((v) => v.table_no == tablen);
+      if (table === void 0) throw Error("how was table undefined!!!");
+      if (seatn === 0) {
+        table.east = flatTables[index];
+      } else if (seatn === 1) {
+        table.south = flatTables[index];
+      } else if (seatn === 2) {
+        table.west = flatTables[index];
+      } else if (seatn === 3) {
+        table.north = flatTables[index];
+        await request(
+          "/tables",
+          {
+            table_no: tablen,
+            table
+          },
+          "PUT"
+        );
+      }
+      index++;
+    }
+  }
+
   // src/components/input/focus/dialog.ts
   var Dialog = class extends FocusNode {
     constructor({ activator, ...params }) {
@@ -582,42 +711,60 @@
   };
 
   // src/components/sidebar.ts
-  function renderSidebar() {
-    let sidebar = document.getElementsByClassName("sidebar")[0];
+  async function removeMember(mem) {
+    let r = await request("/members", { name: mem.name }, "DELETE");
+    if (r.ok) {
+      let index = window.MJDATA.members.indexOf(mem);
+      window.MJDATA.members.splice(index, 1);
+      for (let t of window.MJDATA.tables) {
+        if (t.east === mem.id) t.east = 0;
+        if (t.south === mem.id) t.south = 0;
+        if (t.west === mem.id) t.west = 0;
+        if (t.north === mem.id) t.north = 0;
+      }
+      return true;
+    }
+    return false;
+  }
+  function renderSidebar(onMemberChange = () => {
+  }) {
+    let sidebar = document.getElementById("sidebar");
     if (!(sidebar instanceof HTMLElement)) {
       throw Error("Could not find sidebar");
     }
-    let sidebarButton = Array.from(sidebar.children).find(
-      (v) => v.tagName == "BUTTON"
-    );
-    if (!(sidebarButton instanceof HTMLButtonElement)) {
-      throw Error("Could not find sidebarButton");
-    }
-    let sidebarDiv = Array.from(sidebar.children).find(
-      (v) => v.tagName == "DIV"
-    );
-    if (!(sidebarDiv instanceof HTMLElement)) {
-      throw Error("Could not find sidebarDiv");
-    }
+    let innerSidebar = new Component({
+      tag: "div",
+      parent: sidebar
+    });
+    let sidebarButton = new Component({
+      tag: "button",
+      textContent: ">",
+      parent: sidebar
+    });
     let closeSidebar = () => {
       sidebar.classList.replace("open", "closed");
-      sidebarButton.textContent = ">";
+      sidebarButton.element.textContent = ">";
     };
     let openSidebar = () => {
       sidebar.classList.replace("closed", "open");
-      sidebarButton.textContent = "<";
+      sidebarButton.element.textContent = "<";
     };
     sidebar.style["transition"] = "none";
     sidebar.classList.add("closed");
     setTimeout(() => sidebar.style["transition"] = "", 1);
-    sidebarButton.onclick = () => {
-      if (sidebarButton.textContent == ">") openSidebar();
+    sidebarButton.element.onclick = () => {
+      if (sidebarButton.element.textContent == ">") openSidebar();
       else closeSidebar();
     };
-    let addMemberButton = document.getElementById("add-member");
-    if (!(addMemberButton instanceof HTMLButtonElement)) {
-      throw Error("no #add-member button");
-    }
+    let addMemberButton = new Component({
+      tag: "button",
+      classList: ["member-button"],
+      parent: innerSidebar.element,
+      textContent: "Add a new member",
+      other: {
+        id: "add-member"
+      }
+    });
     let form = document.getElementById("name")?.parentElement;
     if (!(form instanceof HTMLFormElement)) {
       throw Error("no form");
@@ -625,39 +772,39 @@
     let dialog = new Dialog({
       tag: "dialog",
       element: document.getElementsByTagName("dialog")[0],
-      activator: addMemberButton
+      activator: addMemberButton.element
     });
-    let memberList = new MemberList({
-      tag: "ul"
+    let memberList = new MemberGrid({
+      tag: "table",
+      classList: ["member-grid"]
     });
-    addMemberButton.insertAdjacentElement("afterend", memberList.element);
+    addMemberButton.element.insertAdjacentElement(
+      "afterend",
+      memberList.element
+    );
     let removeMemberButton = new DropdownButton({
       textContent: "Remove a member",
       classList: ["member-button"],
-      parent: sidebarDiv,
-      options: window.MJDATA.members.map(
-        (m) => new Component({
-          tag: "button",
-          textContent: m.name,
-          other: {
-            onclick: async (ev) => {
-              let r = await request(
-                "/members",
-                { name: m.name },
-                "DELETE"
-              );
-              if (r.ok) {
-                let index = window.MJDATA.members.indexOf(m);
-                window.MJDATA.members.splice(index, 1);
-                memberList.updateMembers();
-              }
+      parent: innerSidebar.element,
+      options: []
+    });
+    let updateRemoveMemberButton = () => removeMemberButton.dropdown.options = window.MJDATA.members.map(
+      (m) => new Component({
+        tag: "button",
+        textContent: m.name,
+        other: {
+          onclick: async (ev) => {
+            if (await removeMember(m)) {
+              memberList.updateMembers();
+              onMemberChange();
             }
           }
-        }).element
-      )
-    });
+        }
+      }).element
+    );
+    updateRemoveMemberButton();
     let overrideContainer = new OverrideContainer({
-      parent: sidebarDiv
+      parent: innerSidebar.element
     });
     form.onsubmit = (ev) => {
       ev.preventDefault();
@@ -670,6 +817,8 @@
           v.json().then((v2) => {
             window.MJDATA.members.push(v2);
             memberList.renderLi(v2);
+            onMemberChange();
+            updateRemoveMemberButton();
           });
       });
       dialog.deactivate();
@@ -679,21 +828,37 @@
     constructor(params) {
       super(params);
       this.memberElems = {};
-      window.MJDATA.members.forEach((m) => this.renderLi(m));
-    }
-    renderLi(member) {
-      let melem = document.createElement("li");
-      melem.textContent = `${member.name}: ${member.points}`;
-      this.memberElems[member.id] = melem;
-      this.element.appendChild(melem);
-      return melem;
+      this.updateMembers();
+      document.addEventListener("mjPointTransfer", () => {
+        this.updateMembers();
+      });
     }
     updateMembers() {
       this.memberElems = {};
       while (this.element.lastChild) {
         this.element.removeChild(this.element.lastChild);
       }
-      window.MJDATA.members.forEach((m) => this.renderLi(m));
+      [...window.MJDATA.members].sort((a, b) => b.points - a.points).forEach((m) => this.renderLi(m));
+    }
+  };
+  var MemberGrid = class extends MemberList {
+    renderLi(member) {
+      let row = new Component({
+        tag: "tr",
+        parent: this.element
+      });
+      let name = new Component({
+        tag: "td",
+        textContent: member.name,
+        parent: row.element
+      });
+      let highlight = member.points > 0 ? "green" : member.points === 0 ? "yellow" : "red";
+      let points = new Component({
+        tag: "td",
+        textContent: member.points.toString(),
+        parent: row.element
+      });
+      points.element.style["backgroundColor"] = highlight;
     }
   };
   var ToggleComponent = class extends Component {
@@ -759,13 +924,44 @@
 
   // src/pages/tables.ts
   function tables() {
+    renderTables();
+    renderSidebar(() => {
+      renderTables();
+    });
+    renderHeader();
+  }
+  function renderHeader() {
+    let headerBar = document.getElementById("header-bar");
+    if (headerBar == void 0) {
+      throw Error("No element with header-bar id");
+    }
+    let sit = new Component({
+      tag: "button",
+      textContent: "S",
+      other: {
+        onclick: async (ev) => {
+          await allocateSeats();
+          renderTables();
+        }
+      }
+    });
+    headerBar.children[0].insertAdjacentElement("beforebegin", sit.element);
+    let shuffle = new Component({
+      tag: "button",
+      textContent: "R",
+      parent: headerBar,
+      other: {
+        onclick: async (ev) => {
+          await shuffleSeats();
+          renderTables();
+        }
+      }
+    });
+  }
+  function renderTables() {
     let table_table = document.getElementById("table");
     if (!table_table) throw Error("No element with the table id is present.");
-    renderTables(table_table);
-    renderSidebar();
-  }
-  function renderTables(parent) {
-    parent.innerHTML = "";
+    table_table.innerHTML = "";
     let tables2 = [];
     let sorted_tabledata = [...window.MJDATA.tables].sort(
       (a, b) => a.table_no - b.table_no
@@ -773,14 +969,11 @@
     tables2 = tables2.concat(sorted_tabledata).concat([void 0]);
     let current_row = document.createElement("tr");
     let n_cols = Math.ceil(Math.sqrt(tables2.length));
-    console.log("ncols", n_cols);
     let index = 0;
     let td = document.createElement("td");
     for (const i of tables2) {
-      console.log(index);
       if (index >= n_cols) {
-        console.log("new row");
-        parent.appendChild(current_row);
+        table_table.appendChild(current_row);
         current_row = document.createElement("tr");
         index = 0;
       }
@@ -794,7 +987,7 @@
             onclick: async (ev) => {
               let r = await request("/tables", {}, "POST");
               window.MJDATA.tables.push(await r.json());
-              renderTables(parent);
+              renderTables();
             }
           }
         });
@@ -808,7 +1001,7 @@
       td = document.createElement("td");
       index++;
     }
-    parent.appendChild(current_row);
+    table_table.appendChild(current_row);
   }
   var GameTable = class extends UsesTable(InputListener) {
     constructor(params) {
@@ -857,10 +1050,7 @@
         parent: deleteButtonCell,
         tableNo: this.tableNo,
         ondelete: () => {
-          let table_table = document.getElementById("table");
-          if (table_table) {
-            renderTables(table_table);
-          }
+          renderTables();
         }
       });
       parent.appendChild(deleteButtonCell);

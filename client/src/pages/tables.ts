@@ -5,17 +5,48 @@ import {
     InputListenerParameters,
 } from "../components/input/listener";
 import PlayerTag from "../components/player";
+import { allocateSeats, shuffleSeats } from "../components/seatingUtils";
 import renderSidebar from "../components/sidebar";
 import { UsesTable } from "../data";
 import { request } from "../request";
 
 export default function tables() {
     // the tables with players on are, confusingly, ordered into a table of tables
-    let table_table = document.getElementById("table");
-    if (!table_table) throw Error("No element with the table id is present.");
-    renderTables(table_table);
+    renderTables();
     // the left sidebar contains leaderboard and player info
-    renderSidebar();
+    renderSidebar(() => {
+        renderTables();
+    });
+    renderHeader();
+}
+
+function renderHeader() {
+    let headerBar = document.getElementById("header-bar");
+    if (headerBar == undefined) {
+        throw Error("No element with header-bar id");
+    }
+    let sit = new Component({
+        tag: "button",
+        textContent: "S",
+        other: {
+            onclick: async (ev) => {
+                await allocateSeats();
+                renderTables();
+            },
+        },
+    });
+    headerBar.children[0].insertAdjacentElement("beforebegin", sit.element);
+    let shuffle = new Component({
+        tag: "button",
+        textContent: "R",
+        parent: headerBar,
+        other: {
+            onclick: async (ev) => {
+                await shuffleSeats();
+                renderTables();
+            },
+        },
+    });
 }
 
 /* Renders (or updates) all of the tables at once.
@@ -26,9 +57,11 @@ export default function tables() {
  * then infer rows. Then fill the rows from the left!
  * An extra table is added into n_tables, which will be used for the '+' (create table) button.
 **/
-function renderTables(parent: HTMLElement) {
+function renderTables() {
+    let table_table = document.getElementById("table");
+    if (!table_table) throw Error("No element with the table id is present.");
     // clear for re-render
-    parent.innerHTML = "";
+    table_table.innerHTML = "";
     let tables: (TableData | undefined)[] = [];
     // mjdata.tables sorted by table_no
     let sorted_tabledata = [...window.MJDATA.tables].sort(
@@ -42,7 +75,7 @@ function renderTables(parent: HTMLElement) {
     let td = document.createElement("td");
     for (const i of tables) {
         if (index >= n_cols) {
-            parent.appendChild(current_row);
+            table_table.appendChild(current_row);
             current_row = document.createElement("tr");
             index = 0;
         }
@@ -56,7 +89,7 @@ function renderTables(parent: HTMLElement) {
                     onclick: async (ev) => {
                         let r = await request("/tables", {}, "POST");
                         window.MJDATA.tables.push(await r.json());
-                        renderTables(parent);
+                        renderTables();
                     },
                 },
             });
@@ -70,7 +103,7 @@ function renderTables(parent: HTMLElement) {
         td = document.createElement("td");
         index++;
     }
-    parent.appendChild(current_row);
+    table_table.appendChild(current_row);
 }
 
 interface GameTableParameters
@@ -131,10 +164,7 @@ class GameTable extends UsesTable(InputListener<"table">) {
             parent: deleteButtonCell,
             tableNo: this.tableNo,
             ondelete: () => {
-                let table_table = document.getElementById("table");
-                if (table_table) {
-                    renderTables(table_table);
-                }
+                renderTables();
             },
         });
         parent.appendChild(deleteButtonCell);

@@ -33,14 +33,10 @@ pub async fn get_tables(
         }
         script src="/index.js" {}
         main {
-        div class="sidebar" {
-            div {
-                button id="add-member" class="member-button" { "Add a new member" }
-            }
-            button { ">" }
-        }
+        div id="sidebar" {}
         article {
-            h1 { "Tables" }
+            // table and header-bar are both filled with js on frontend
+            div id="header-bar" { h1 { "Tables" } }
             table id="table" {}
         }
         dialog {

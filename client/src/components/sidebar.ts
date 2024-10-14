@@ -3,32 +3,47 @@ import { request } from "../request";
 import Dialog from "./input/focus/dialog";
 import { DropdownButton } from "./input/focus/dropdown";
 
-export default function renderSidebar() {
-    let sidebar = document.getElementsByClassName("sidebar")[0];
+async function removeMember(mem: Member) {
+    let r = await request("/members", { name: mem.name }, "DELETE");
+    if (r.ok) {
+        let index = window.MJDATA.members.indexOf(mem);
+        window.MJDATA.members.splice(index, 1);
+        for (let t of window.MJDATA.tables) {
+            if (t.east === mem.id) t.east = 0;
+            if (t.south === mem.id) t.south = 0;
+            if (t.west === mem.id) t.west = 0;
+            if (t.north === mem.id) t.north = 0;
+        }
+        return true;
+    }
+    return false;
+}
+
+export default function renderSidebar(onMemberChange: () => void = () => {}) {
+    // container of sidebar and the button which opens it
+    let sidebar = document.getElementById("sidebar");
     if (!(sidebar instanceof HTMLElement)) {
         throw Error("Could not find sidebar");
     }
-    let sidebarButton = Array.from(sidebar.children).find(
-        (v) => v.tagName == "BUTTON"
-    );
-    if (!(sidebarButton instanceof HTMLButtonElement)) {
-        throw Error("Could not find sidebarButton");
-    }
-    let sidebarDiv = Array.from(sidebar.children).find(
-        (v) => v.tagName == "DIV"
-    );
-    if (!(sidebarDiv instanceof HTMLElement)) {
-        throw Error("Could not find sidebarDiv");
-    }
+    // the actual inner part of the sidebar
+    let innerSidebar = new Component({
+        tag: "div",
+        parent: sidebar,
+    });
+    let sidebarButton = new Component({
+        tag: "button",
+        textContent: ">",
+        parent: sidebar,
+    });
 
     let closeSidebar = () => {
         sidebar.classList.replace("open", "closed");
-        sidebarButton.textContent = ">";
+        sidebarButton.element.textContent = ">";
     };
 
     let openSidebar = () => {
         sidebar.classList.replace("closed", "open");
-        sidebarButton.textContent = "<";
+        sidebarButton.element.textContent = "<";
     };
 
     // close by default (without transition)
@@ -36,15 +51,20 @@ export default function renderSidebar() {
     sidebar.classList.add("closed");
     setTimeout(() => (sidebar.style["transition"] = ""), 1);
 
-    sidebarButton.onclick = () => {
-        if (sidebarButton.textContent == ">") openSidebar();
+    sidebarButton.element.onclick = () => {
+        if (sidebarButton.element.textContent == ">") openSidebar();
         else closeSidebar();
     };
 
-    let addMemberButton = document.getElementById("add-member");
-    if (!(addMemberButton instanceof HTMLButtonElement)) {
-        throw Error("no #add-member button");
-    }
+    let addMemberButton = new Component({
+        tag: "button",
+        classList: ["member-button"],
+        parent: innerSidebar.element,
+        textContent: "Add a new member",
+        other: {
+            id: "add-member",
+        },
+    });
     let form = document.getElementById("name")?.parentElement;
     if (!(form instanceof HTMLFormElement)) {
         throw Error("no form");
@@ -52,43 +72,43 @@ export default function renderSidebar() {
     let dialog = new Dialog({
         tag: "dialog",
         element: document.getElementsByTagName("dialog")[0],
-        activator: addMemberButton,
+        activator: addMemberButton.element,
     });
-    let memberList = new MemberList({
-        tag: "ul",
+    let memberList = new MemberGrid({
+        tag: "table",
+        classList: ["member-grid"],
     });
-    addMemberButton.insertAdjacentElement("afterend", memberList.element);
+    addMemberButton.element.insertAdjacentElement(
+        "afterend",
+        memberList.element
+    );
 
     let removeMemberButton = new DropdownButton({
         textContent: "Remove a member",
         classList: ["member-button"],
-        parent: sidebarDiv,
-        options: window.MJDATA.members.map(
+        parent: innerSidebar.element,
+        options: [],
+    });
+    let updateRemoveMemberButton = () =>
+        (removeMemberButton.dropdown.options = window.MJDATA.members.map(
             (m) =>
                 new Component({
                     tag: "button",
                     textContent: m.name,
                     other: {
                         onclick: async (ev: MouseEvent) => {
-                            let r = await request(
-                                "/members",
-                                { name: m.name },
-                                "DELETE"
-                            );
-                            if (r.ok) {
-                                let index = window.MJDATA.members.indexOf(m);
-                                window.MJDATA.members.splice(index, 1);
+                            if (await removeMember(m)) {
                                 memberList.updateMembers();
-                                // todo: update tables with delete
+                                onMemberChange();
                             }
                         },
                     },
                 }).element
-        ),
-    });
+        ));
+    updateRemoveMemberButton();
 
     let overrideContainer = new OverrideContainer({
-        parent: sidebarDiv,
+        parent: innerSidebar.element,
     });
 
     form.onsubmit = (ev) => {
@@ -102,22 +122,42 @@ export default function renderSidebar() {
                 v.json().then((v: Member) => {
                     window.MJDATA.members.push(v);
                     memberList.renderLi(v);
-                    //todo: update tables with addition
+                    onMemberChange();
+                    updateRemoveMemberButton();
                 });
         });
         dialog.deactivate();
     };
 }
 
-class MemberList extends Component<"ul"> {
+abstract class MemberList<
+    K extends keyof HTMLElementTagNameMap
+> extends Component<K> {
     memberElems: {
         [id: Member["id"]]: HTMLLIElement;
     };
-    constructor(params: ComponentParameters<"ul">) {
+    constructor(params: ComponentParameters<K>) {
         super(params);
         this.memberElems = {};
-        window.MJDATA.members.forEach((m) => this.renderLi(m));
+        this.updateMembers();
+        document.addEventListener("mjPointTransfer", () => {
+            this.updateMembers();
+        });
     }
+    abstract renderLi(member: Member): void;
+    updateMembers() {
+        // clear
+        this.memberElems = {};
+        while (this.element.lastChild) {
+            this.element.removeChild(this.element.lastChild);
+        }
+        [...window.MJDATA.members]
+            .sort((a, b) => b.points - a.points)
+            .forEach((m) => this.renderLi(m));
+    }
+}
+
+class UlMemberList extends MemberList<"ul"> {
     renderLi(member: Member) {
         let melem = document.createElement("li");
         melem.textContent = `${member.name}: ${member.points}`;
@@ -125,13 +165,31 @@ class MemberList extends Component<"ul"> {
         this.element.appendChild(melem);
         return melem;
     }
-    updateMembers() {
-        // clear
-        this.memberElems = {};
-        while (this.element.lastChild) {
-            this.element.removeChild(this.element.lastChild);
-        }
-        window.MJDATA.members.forEach((m) => this.renderLi(m));
+}
+
+class MemberGrid extends MemberList<"table"> {
+    renderLi(member: Member) {
+        let row = new Component({
+            tag: "tr",
+            parent: this.element,
+        });
+        let name = new Component({
+            tag: "td",
+            textContent: member.name,
+            parent: row.element,
+        });
+        let highlight =
+            member.points > 0
+                ? "green"
+                : member.points === 0
+                ? "yellow"
+                : "red";
+        let points = new Component({
+            tag: "td",
+            textContent: member.points.toString(),
+            parent: row.element,
+        });
+        points.element.style["backgroundColor"] = highlight;
     }
 }
 
