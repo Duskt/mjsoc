@@ -34,7 +34,7 @@ pub async fn get_tables(
         script src="/index.js" {}
         main {
         div id="sidebar" {}
-        article {
+        article id="tables" {
             // table and header-bar are both filled with js on frontend
             div id="header-bar" { h1 { "Tables" } }
             table id="table" {}

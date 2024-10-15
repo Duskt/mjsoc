@@ -22,8 +22,12 @@ async function removeMember(mem: Member) {
 export default function renderSidebar(onMemberChange: () => void = () => {}) {
     // container of sidebar and the button which opens it
     let sidebar = document.getElementById("sidebar");
+    let main_article = document.getElementById("tables");
     if (!(sidebar instanceof HTMLElement)) {
         throw Error("Could not find sidebar");
+    }
+    if (!(main_article instanceof HTMLElement)) {
+        throw Error("Could not find main tables article");
     }
     // the actual inner part of the sidebar
     let innerSidebar = new Component({
@@ -37,12 +41,20 @@ export default function renderSidebar(onMemberChange: () => void = () => {}) {
     });
 
     let closeSidebar = () => {
+        main_article.removeAttribute("style");
+        sidebar.removeAttribute("style"); // source of disgrace
         sidebar.classList.replace("open", "closed");
         sidebarButton.element.textContent = ">";
     };
 
     let openSidebar = () => {
         sidebar.classList.replace("closed", "open");
+        if (window.innerWidth < 800) {
+            sidebar.style["width"] = "100%";
+            main_article.style["display"] = "none";
+        } else {
+            sidebar.style["width"] = "30%";
+        }
         sidebarButton.element.textContent = "<";
     };
 
