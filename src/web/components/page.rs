@@ -13,6 +13,7 @@ pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
                 nav {
                     a href="/" { img src="/assets/logo.jpg" class="home-icon" {} }
                     a href="/tables" class="nav-link" { "Tables" }
+                    a href="/log" class="nav-link" { "Log" }
                 }
                 div class="centre-container" {
                     (inner)

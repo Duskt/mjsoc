@@ -729,8 +729,12 @@
   function renderSidebar(onMemberChange = () => {
   }) {
     let sidebar = document.getElementById("sidebar");
+    let main_article = document.getElementById("tables");
     if (!(sidebar instanceof HTMLElement)) {
       throw Error("Could not find sidebar");
+    }
+    if (!(main_article instanceof HTMLElement)) {
+      throw Error("Could not find main tables article");
     }
     let innerSidebar = new Component({
       tag: "div",
@@ -742,11 +746,19 @@
       parent: sidebar
     });
     let closeSidebar = () => {
+      main_article.removeAttribute("style");
+      sidebar.removeAttribute("style");
       sidebar.classList.replace("open", "closed");
       sidebarButton.element.textContent = ">";
     };
     let openSidebar = () => {
       sidebar.classList.replace("closed", "open");
+      if (window.innerWidth < 800) {
+        sidebar.style["width"] = "100%";
+        main_article.style["display"] = "none";
+      } else {
+        sidebar.style["width"] = "30%";
+      }
       sidebarButton.element.textContent = "<";
     };
     sidebar.style["transition"] = "none";

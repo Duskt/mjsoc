@@ -31,6 +31,7 @@ use pages::{
     login::login,
     logo::logo,
     mahjong::{
+        log::get_log_page,
         players::{create_member, delete_member, transfer_points, update_member},
         tables::{create_table, delete_table, get_tables, update_table},
     },
@@ -75,6 +76,12 @@ async fn main() -> std::io::Result<()> {
             // session week page routing
             .route("/week", get().to(get_week))
             .route("/week", post().to(change_week))
+            // authentication
+            .route("/login", get().to(login))
+            .route("/auth", post().to(authenticate))
+            .route("/register_attendance", get().to(register_attendance))
+            .route("/assets/logo.jpg", get().to(logo))
+            // mahjong client
             // table page routing
             .service(
                 web::resource("/tables")
@@ -93,11 +100,7 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/members")
                     .service(web::resource("/transfer").route(post().to(transfer_points))),
             )
-            // authentication
-            .route("/login", get().to(login))
-            .route("/auth", post().to(authenticate))
-            .route("/register_attendance", get().to(register_attendance))
-            .route("/assets/logo.jpg", get().to(logo))
+            .route("/log", get().to(get_log_page))
             //.service(fs::Files::new("/assets", "./data/assets"))
             // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.
             .service(fs::Files::new("/", "public"))

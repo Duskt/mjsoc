@@ -39,7 +39,7 @@ Contains the Rust server and command line interface.
 
 todo:
 
--   dynamic update playerlist
--   mobile view
 -   logging
 -   unauthorised page
+    (low prio)
+-   clean up the css, particularly transition sidebar
