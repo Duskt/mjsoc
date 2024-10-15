@@ -6,7 +6,7 @@ use serde_json;
 use urlencoding::encode;
 
 use crate::{
-    auth::is_authenticated, components::page::page, mahjong::TableData,
+    auth::is_authenticated, components::page::page, mahjongdata::TableData,
     util::get_redirect_response, AppState,
 };
 

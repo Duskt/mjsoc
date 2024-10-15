@@ -48,9 +48,13 @@
       }
     });
     if (path2 === "/members/transfer") {
+      if (!r.ok) {
+        console.warn("Invalid transfer: ", payload);
+        return r;
+      }
+      window.MJDATA.log.push(payload);
       let updated_members = await r.json();
       let new_member;
-      console.log(window.MJDATA.members, updated_members);
       window.MJDATA.members = window.MJDATA.members.map((old_member) => {
         new_member = updated_members.find(
           (new_member2) => new_member2.id === old_member.id
@@ -788,7 +792,7 @@
     });
     let memberList = new MemberGrid({
       tag: "table",
-      classList: ["member-grid"]
+      classList: ["info-grid"]
     });
     addMemberButton.element.insertAdjacentElement(
       "afterend",
@@ -1085,14 +1089,72 @@
     }
   };
 
+  // src/pages/log.ts
+  function logPage() {
+    let logTable = document.getElementById("log-table");
+    if (!(logTable instanceof HTMLTableElement)) {
+      throw Error("Couldn't get log-table <table> element.");
+    }
+    logTable.classList.add("info-grid");
+    renderLogsTable(logTable);
+  }
+  function renderLogsTable(parent) {
+    parent.innerHTML = "";
+    let headerRow = document.createElement("tr");
+    parent.appendChild(headerRow);
+    let points = document.createElement("th");
+    points.textContent = "Points won (per loser)";
+    points.style["width"] = "20%";
+    headerRow.appendChild(points);
+    let winner = document.createElement("th");
+    winner.textContent = "Winner";
+    headerRow.appendChild(winner);
+    let losers = document.createElement("th");
+    losers.textContent = "Loser(s)";
+    headerRow.appendChild(losers);
+    for (let pt of window.MJDATA.log) {
+      let logRow = new LogRow({
+        parent,
+        transfer: pt
+      });
+    }
+  }
+  var LogRow = class extends Component {
+    constructor(params) {
+      super({
+        tag: "tr",
+        ...params
+      });
+      this.points = new Component({
+        tag: "td",
+        parent: this.element,
+        textContent: params.transfer.points.toString()
+      });
+      this.to = new Component({
+        tag: "td",
+        parent: this.element,
+        textContent: memberNameFromId(params.transfer.to)
+      });
+      this.from = new Component({
+        tag: "td",
+        parent: this.element,
+        textContent: params.transfer.from.map((mId) => memberNameFromId(mId)).join(",")
+      });
+    }
+  };
+  function memberNameFromId(id, fallback = "ERROR") {
+    return window.MJDATA.members.find((m) => m.id === id)?.name || fallback;
+  }
+
   // src/index.ts
   function path() {
     return window.location.href.split("/").slice(3).join("/");
   }
   if (["tables", "table"].some((x) => x === path())) {
     document.addEventListener("DOMContentLoaded", tables);
-  }
-  if (path() === "qr") {
+  } else if (path() === "qr") {
     displayQR;
+  } else if (path() === "log") {
+    document.addEventListener("DOMContentLoaded", logPage);
   }
 })();

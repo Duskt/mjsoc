@@ -2,12 +2,6 @@ type RequestMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 const pointTransfer = new Event("mjPointTransfer");
 
-interface PointTransferRequest {
-    to: MemberId;
-    from: MemberId[];
-    points: number;
-}
-
 export async function request(
     path: string,
     payload: any,
@@ -24,9 +18,14 @@ export async function request(
         },
     });
     if (path === "/members/transfer") {
+        if (!r.ok) {
+            console.warn("Invalid transfer: ", payload);
+            return r;
+        }
+        window.MJDATA.log.push(payload);
         let updated_members: Member[] = await r.json();
         let new_member: Member | undefined;
-        console.log(window.MJDATA.members, updated_members);
+        // todo: verify that the server correctly found updated members?
         window.MJDATA.members = window.MJDATA.members.map((old_member) => {
             new_member = updated_members.find(
                 (new_member) => new_member.id === old_member.id

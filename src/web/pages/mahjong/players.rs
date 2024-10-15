@@ -6,7 +6,7 @@ use urlencoding::encode;
 
 use crate::{
     auth::is_authenticated,
-    mahjong::{Member, MemberId},
+    mahjongdata::{Member, MemberId, PointTransfer},
     AppState,
 };
 
@@ -127,17 +127,10 @@ pub async fn delete_member(
     }
 }
 
-#[derive(Deserialize)]
-pub struct PointsTransferRequest {
-    to: u32,
-    from: Vec<u32>,
-    points: u32,
-}
-
 pub async fn transfer_points(
     session: Session,
     data: web::Data<AppState>,
-    body: web::Json<PointsTransferRequest>,
+    body: web::Json<PointTransfer>,
 ) -> impl Responder {
     // ignoring all errors rn this is bad
     if !is_authenticated(&session, &data.authenticated_keys) {
@@ -149,7 +142,7 @@ pub async fn transfer_points(
     for id in body.from.iter() {
         for member in mjdata.members.iter_mut() {
             if member.id == *id {
-                member.points -= body.points as i32;
+                member.points -= body.points;
                 update_members.push(member.clone());
             }
         }
@@ -160,6 +153,9 @@ pub async fn transfer_points(
         mem.points += points;
         update_members.push(mem.clone());
     }
+    // log the PointTransfer request
+    mjdata.log.push(body.to_owned());
     mjdata.save_to_file();
+    // send back the affected members as confirmation
     HttpResponse::Ok().json(update_members)
 }

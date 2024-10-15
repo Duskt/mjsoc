@@ -39,7 +39,14 @@ Contains the Rust server and command line interface.
 
 todo:
 
--   logging
+-   sqlite3 migration
 -   unauthorised page
     (low prio)
--   clean up the css, particularly transition sidebar
+-   increase font-sizes for tables
+-   style the log page
+-   refactor the css, particularly for sidebar transitions
+
+bugs:
+
+-   new player ordering
+-   that weird glitch i saw once where player was allocated two seats?

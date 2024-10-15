@@ -2,7 +2,7 @@ mod auth;
 mod components;
 mod errors;
 mod google;
-mod mahjong;
+mod mahjongdata;
 mod notification;
 mod pages;
 mod rate_limit;
@@ -24,7 +24,7 @@ use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
 use std::sync::{Arc, Mutex, RwLock};
 
-use mahjong::MahjongData;
+use mahjongdata::MahjongData;
 use pages::{
     auth::authenticate,
     index::index,

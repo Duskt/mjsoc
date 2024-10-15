@@ -88,7 +88,7 @@ export default function renderSidebar(onMemberChange: () => void = () => {}) {
     });
     let memberList = new MemberGrid({
         tag: "table",
-        classList: ["member-grid"],
+        classList: ["info-grid"],
     });
     addMemberButton.element.insertAdjacentElement(
         "afterend",

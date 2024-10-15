@@ -223,12 +223,17 @@ dialog button {
   margin: auto;
 }
 
-.member-grid {
+.info-grid {
   margin: auto;
   border-collapse: collapse;
 }
 
-.member-grid td {
+.info-grid td {
   padding: 4px 8px;
   border: 1px solid black;
+}
+
+#log-table {
+  width: 80%;
+  margin-top: 10px;
 }

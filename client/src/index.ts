@@ -1,5 +1,6 @@
 import displayQR from "./pages/qr.ts";
 import tables from "./pages/tables.ts";
+import logPage from "./pages/log.ts";
 
 declare global {
     interface Window {
@@ -14,8 +15,9 @@ function path() {
 
 if (["tables", "table"].some((x) => x === path())) {
     document.addEventListener("DOMContentLoaded", tables);
-}
-if (path() === "qr") {
+} else if (path() === "qr") {
     // just declare it is needed for import
     displayQR;
+} else if (path() === "log") {
+    document.addEventListener("DOMContentLoaded", logPage);
 }

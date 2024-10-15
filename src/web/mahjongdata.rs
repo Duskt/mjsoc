@@ -77,6 +77,13 @@ pub struct Member {
     pub points: i32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PointTransfer {
+    pub to: MemberId,
+    pub from: Vec<MemberId>,
+    pub points: i32,
+}
+
 fn get_new_index(indices: Vec<u32>) -> u32 {
     let opt_maxi = indices.iter().max();
     let maxi = *opt_maxi.unwrap_or(&1);
@@ -95,6 +102,7 @@ pub struct MahjongData {
     pub week: WeekData,
     pub tables: Vec<TableData>,
     pub members: Vec<Member>,
+    pub log: Vec<PointTransfer>,
 }
 
 impl MahjongData {
@@ -153,6 +161,7 @@ impl MahjongData {
                             .unwrap()
                             .as_secs(),
                     },
+                    log: Vec::new(),
                 };
 
                 mahjong_template_data.save_to_file();

@@ -18,8 +18,16 @@ interface Member {
     points: number,
 }
 
+interface PointTransfer {
+    to: MemberId,
+    from: MemberId[],
+    // x points will be taken from n players in 'from', and x*n awarded to 'to'
+    points: number
+}
+
 interface MahjongData {
     week: {}
     tables: TableData[]
     members: Member[]
+    log: PointTransfer[]
 }
