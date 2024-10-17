@@ -8,8 +8,7 @@ export async function request(
     method: RequestMethod = "POST"
 ): Promise<Response> {
     // todo: configure hostname
-    let url =
-        "http://localhost:5654/" + (path[0] != "/" ? path : path.slice(1));
+    let url = `${window.origin}/` + (path[0] != "/" ? path : path.slice(1));
     let r = await fetch(url, {
         method,
         body: JSON.stringify(payload),
