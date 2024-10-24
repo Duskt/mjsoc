@@ -8,9 +8,9 @@ mod pages;
 mod rate_limit;
 
 use actix_files as fs;
-use actix_session::{storage::CookieSessionStore, SessionMiddleware};
+use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
-    cookie,
+    cookie::{self, time::Duration},
     web::{self, delete, get, post, put},
     App, HttpServer,
 };
@@ -19,7 +19,7 @@ use lib::{
     util::{self, get_file_bytes},
 };
 
-use chrono::Duration;
+use chrono::Duration as chronoDuration;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
 use std::sync::{Arc, Mutex, RwLock};
@@ -66,10 +66,11 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(state.clone())
             .wrap(RateLimit::new(quotas_mtx.clone()))
-            .wrap(SessionMiddleware::new(
-                CookieSessionStore::default(),
-                key.clone(),
-            ))
+            .wrap(
+                SessionMiddleware::builder(CookieSessionStore::default(), key.clone())
+                    .session_lifecycle(PersistentSession::default().session_ttl(Duration::days(2)))
+                    .build(),
+            )
             .route("/qr", get().to(generate_qr))
             .route("/download", get().to(download_qr))
             .route("/", get().to(index))
@@ -129,7 +130,7 @@ fn get_intial_state() -> AppState {
 fn get_quota() -> Quota {
     // If quota is less than burst_size, replenish 1 every period
     let burst_size = parsed_env!("RATE_LIMIT_BURST_SIZE", i32);
-    let period = Duration::seconds(parsed_env!("RATE_LIMIT_PERIOD_SECONDS", i64));
+    let period = chronoDuration::seconds(parsed_env!("RATE_LIMIT_PERIOD_SECONDS", i64));
 
     Quota::new(burst_size, period)
 }

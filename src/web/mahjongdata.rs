@@ -1,5 +1,5 @@
 use std::{
-    fs::File,
+    fs::{rename, File},
     io::{BufReader, Write},
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -145,29 +145,54 @@ impl MahjongData {
         match File::open(path) {
             Ok(f) => {
                 let reader = BufReader::new(f);
-                serde_json::from_reader(reader).expect("Failed to read Mahjong data file format")
+                match serde_json::from_reader(reader) {
+                    Ok(r) => r,
+                    Err(_) => {
+                        println!(
+                            "JSON deserialize error - saving file as *_OLD.json and remaking it..."
+                        );
+                        MahjongData::save_backup();
+                        MahjongData::new()
+                    }
+                }
             }
             Err(_) => {
-                // create a new template file
-                let mahjong_template_data = Self {
-                    // no tables or members because there's no source of data
-                    tables: Vec::new(),
-                    members: Vec::new(),
-                    // week 1 last set now
-                    week: WeekData {
-                        week: 1,
-                        last_set_unix_seconds: SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs(),
-                    },
-                    log: Vec::new(),
-                };
-
-                mahjong_template_data.save_to_file();
-                mahjong_template_data
+                // File not found error - create empty
+                MahjongData::new()
             }
         }
+    }
+
+    pub fn save_backup() {
+        let path = expect_env!("MAHJONG_DATA_PATH");
+        let mut backup_path = path.clone();
+        // remove ".json" ending
+        backup_path.truncate(backup_path.len() - 5);
+        backup_path += "_OLD.json";
+        rename(path, backup_path).expect("Failed to save backup file; crashing...")
+    }
+
+    pub fn create_template() -> Self {
+        Self {
+            // no tables or members because there's no source of data
+            tables: Vec::new(),
+            members: Vec::new(),
+            // week 1 last set now
+            week: WeekData {
+                week: 1,
+                last_set_unix_seconds: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+            },
+            log: Vec::new(),
+        }
+    }
+
+    pub fn new() -> Self {
+        let mahjong_template_data = MahjongData::create_template();
+        mahjong_template_data.save_to_file();
+        mahjong_template_data
     }
 
     pub fn save_to_file(&self) {
