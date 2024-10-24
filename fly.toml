@@ -36,5 +36,5 @@ PORT = '8080'
 
 HMAC_KEY_PATH = '/data/hmac_key.bin'
 GOOGLE_PRIVATE_KEY_FILE = '/data/google_key.json'
-MAHJONG_DATA_FILE = '/data/mahjong.json'
+MAHJONG_DATA_PATH = '/data/mahjong.json'
 LOGO_PATH = '/data/logo.jpg'

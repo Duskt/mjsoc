@@ -37,16 +37,32 @@ Contains the Rust server and command line interface.
 -   components
 -   pages
 
-todo:
+# Todo
 
--   sqlite3 migration
--   unauthorised page
-    (low prio)
+## High priority
+
+-   Extend the re-sign-in duration and have an alert pop-up.
+-   Autocomplete member list
+-   Confirmation of actions
+-   Add a frontend way to enter points from a table that doesn't exist
+-   Rename table no.
+
+## Medium priority
+
+-   Indicate round wind on-screen (and have a table map?)
+
+## Low priority
+
 -   increase font-sizes for tables
 -   style the log page
 -   refactor the css, particularly for sidebar transitions
+-   Allow multiple clients to interact instantaneously:
+-           sqlite3 migration
+-           unauthorised page
 
-bugs:
+# Bugs
 
+-   remove duplicate members
+-   remove that self-draw i acc. added
 -   new player ordering
--   that weird glitch i saw once where player was allocated two seats?
+-   duplicate tables

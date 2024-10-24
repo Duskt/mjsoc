@@ -39,7 +39,7 @@
   // src/request.ts
   var pointTransfer = new Event("mjPointTransfer");
   async function request(path2, payload, method = "POST") {
-    let url = window.origin + (path2[0] != "/" ? path2 : path2.slice(1));
+    let url = `${window.origin}/` + (path2[0] != "/" ? path2 : path2.slice(1));
     let r = await fetch(url, {
       method,
       body: JSON.stringify(payload),

@@ -172,7 +172,7 @@ impl MahjongData {
 
     pub fn save_to_file(&self) {
         let mut file = File::create(expect_env!("MAHJONG_DATA_PATH")).unwrap();
-        file.write_all(serde_json::to_string(&self).unwrap().as_bytes())
+        file.write_all(serde_json::to_string_pretty(&self).unwrap().as_bytes())
             .unwrap();
     }
 }
