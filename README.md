@@ -41,15 +41,15 @@ Contains the Rust server and command line interface.
 
 ## High priority
 
--   Extend the re-sign-in duration and have an alert pop-up.
--   Autocomplete member list
 -   Confirmation of actions
+-   Autocomplete member list
 -   Add a frontend way to enter points from a table that doesn't exist
 -   Rename table no.
 
 ## Medium priority
 
 -   Indicate round wind on-screen (and have a table map?)
+-   Have an alert pop-up when authorisation runs out.
 
 ## Low priority
 
@@ -57,12 +57,10 @@ Contains the Rust server and command line interface.
 -   style the log page
 -   refactor the css, particularly for sidebar transitions
 -   Allow multiple clients to interact instantaneously:
--           sqlite3 migration
--           unauthorised page
+-       sqlite3 migration
+-       unauthorised page
 
 # Bugs
 
--   remove duplicate members
--   remove that self-draw i acc. added
--   new player ordering
+-   new player isn't ordered into scoreboard
 -   duplicate tables
