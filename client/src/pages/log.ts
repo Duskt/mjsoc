@@ -27,7 +27,9 @@ function renderLogsTable(parent: HTMLTableElement) {
     losers.textContent = "Loser(s)";
     headerRow.appendChild(losers);
     // re-render all logs
-    for (let pt of window.MJDATA.log) {
+    let reverseLog = window.MJDATA.log;
+    reverseLog.reverse();
+    for (let pt of reverseLog) {
         let logRow = new LogRow({
             parent,
             transfer: pt,
