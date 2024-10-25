@@ -94,6 +94,7 @@ export default function renderSidebar() {
         // todo: add event info to only do this for post?
         dialog.deactivate();
     });
+    document.addEventListener("mjRegister", (ev) => memberList.updateMembers());
 
     let overrideContainer = new OverrideContainer({
         parent: innerSidebar.element,

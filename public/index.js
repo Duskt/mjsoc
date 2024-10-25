@@ -74,6 +74,12 @@
       console.error(`${r}`);
       return;
     }
+    window.MJDATA.members = window.MJDATA.members.map((member) => {
+      if (member.id === payload.memberId) {
+        member.tournament.registered = true;
+      }
+      return member;
+    });
     document.dispatchEvent(RegisterEvent);
   }
   var EditMemberEvent = new Event("mjEditMember");
@@ -1607,6 +1613,7 @@
       updateRemoveMemberButton();
       dialog.deactivate();
     });
+    document.addEventListener("mjRegister", (ev) => memberList.updateMembers());
     let overrideContainer = new OverrideContainer({
       parent: innerSidebar.element
     });

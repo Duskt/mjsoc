@@ -1,3 +1,5 @@
+import { getMember } from "./data";
+
 type RequestMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 const PointTransferEvent = new Event("mjPointTransfer");
@@ -74,6 +76,12 @@ export async function manualRegister(payload: { memberId: MemberId }) {
         console.error(`${r}`);
         return;
     }
+    window.MJDATA.members = window.MJDATA.members.map((member) => {
+        if (member.id === payload.memberId) {
+            member.tournament.registered = true;
+        }
+        return member;
+    });
     document.dispatchEvent(RegisterEvent);
 }
 
