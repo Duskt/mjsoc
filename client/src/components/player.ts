@@ -5,24 +5,21 @@ import {
 } from "./input/focus/dropdown";
 import { FocusButton, FocusButtonParameters } from "./input/focus/focusNode";
 import NameTag from "./nametag";
-import { UsesSeat, UsesTable, UsesMember } from "../data";
+import {
+    UsesSeat,
+    UsesTable,
+    UsesMember,
+    getOtherPlayersOnTable,
+    MahjongUnknownMemberError,
+    getMember,
+} from "../data";
 import { InputListener, InputListenerParameters } from "./input/listener";
-import { request } from "../request";
+import { pointTransfer, request } from "../request";
 
 // type predicate for checking list purity/homogeny
 const allK = <K>(array: (K | undefined)[]): array is K[] => {
     return !array.some((v) => v === undefined);
 };
-
-function getTablemates(myId: number, table: TableData) {
-    let result = [];
-    for (let mid of [table.east, table.south, table.west, table.north]) {
-        if (mid !== myId) {
-            result.push(mid);
-        }
-    }
-    return result;
-}
 
 const TEMP_TABLE = new Map();
 TEMP_TABLE.set(3, 8);
@@ -95,64 +92,56 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
         this.element.removeChild(this.popup.element);
         return super.deactivate();
     }
+
+    async onclickPointTransfer(losers: (Member | "EMPTY")[], points: number) {
+        let success = await pointTransfer({
+            to: this.memberId,
+            from: losers.map((m) => {
+                if (m === "EMPTY") {
+                    throw new MahjongUnknownMemberError(0);
+                }
+                return m.id;
+            }),
+            points,
+        });
+        if (success) {
+            this.deactivate();
+        } else {
+            alert("Please reload the page and try again. Sorry!");
+        }
+    }
+
     updatePlayers() {
         let table = this.table;
         let member = this.member;
-        let otherSeats = (
-            ["east", "south", "west", "north"] as SeatWind[]
-        ).filter((seat) => table[seat] != member.id);
-        let otherPlayers = otherSeats.map((seat) =>
-            window.MJDATA.members.find((m) => m.id == table[seat])
-        );
+        let otherPlayers = getOtherPlayersOnTable(member.id, table, true);
         // deals with appending/removing children
         this.dachut.dropdown.options = otherPlayers.map(
             (m) =>
                 new FaanDropdownButton({
-                    textContent: m?.name || "",
+                    textContent: m === "EMPTY" ? m : m.name,
                     classList: ["small-button"],
                     onclick: async (ev, faan) =>
-                        await request(
-                            "/members/transfer",
-                            {
-                                to: this.memberId,
-                                from: [m?.id],
-                                points: getPointsFromFaan(faan) * 2,
-                            },
-                            "POST"
+                        this.onclickPointTransfer(
+                            [m],
+                            getPointsFromFaan(faan) * 2
                         ),
                 }).element
         );
         this.baozimo.dropdown.options = otherPlayers.map(
             (m) =>
                 new FaanDropdownButton({
-                    textContent: m?.name || "",
+                    textContent: m === "EMPTY" ? m : m.name,
                     classList: ["small-button"],
                     onclick: async (ev, faan) =>
-                        await request(
-                            "/members/transfer",
-                            {
-                                to: this.memberId,
-                                from: [m?.id],
-                                points: getPointsFromFaan(faan) * 3,
-                            },
-                            "POST"
+                        this.onclickPointTransfer(
+                            [m],
+                            getPointsFromFaan(faan) * 3
                         ),
                 }).element
         );
-        this.zimo.onclick = async (ev, faan) => {
-            let otherNames = otherPlayers.map((v) => v?.name || "EMPTY");
-            // send a transfer request with one winner and three losers
-            // the one winner will get that amount from every loser
-            await request(
-                "/members/transfer",
-                {
-                    to: this.memberId,
-                    from: getTablemates(this.memberId, this.table),
-                    points: getPointsFromFaan(faan),
-                },
-                "POST",
-            );
-        };
+        this.zimo.onclick = async (ev, faan) =>
+            this.onclickPointTransfer(otherPlayers, getPointsFromFaan(faan));
     }
     updateMember(memberId: MemberId): void {
         this.memberId = memberId;
@@ -252,10 +241,11 @@ export default class PlayerTag extends UsesTable(
         this.tableNo = params.tableNo;
         let table = this.table;
         this.seat = params.seat;
+        let me = getMember(table[this.seat], true);
         this.nameTag = new NameTag({
             classList: ["name-tag", this.seat],
             parent: this.element,
-            value: window.MJDATA.members.find((v) => v.id === table[this.seat]),
+            value: me === "EMPTY" ? undefined : me,
         });
         // doesn't need to UsesMember because it controls memberId (and reacts appropriately)!
         this.memberId = table[this.seat];
@@ -302,11 +292,7 @@ export default class PlayerTag extends UsesTable(
             this.winButton.element.remove();
             this.winButton = WinButton.empty(this.element);
         } else {
-            let newMember = window.MJDATA.members.find(
-                (v) => v.id === newMemberId
-            );
-            if (!newMember)
-                throw Error(`New member with id ${newMemberId} not found.`);
+            let newMember = getMember(newMemberId);
             if (this.winButton instanceof WinButton) {
                 this.winButton.updateMember(newMember.id);
             } else if (this.memberId != 0) {

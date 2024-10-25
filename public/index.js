@@ -37,7 +37,7 @@
   };
 
   // src/request.ts
-  var pointTransfer = new Event("mjPointTransfer");
+  var PointTransferEvent = new Event("mjPointTransfer");
   async function request(path2, payload, method = "POST") {
     let url = `${window.origin}/` + (path2[0] != "/" ? path2 : path2.slice(1));
     let r = await fetch(url, {
@@ -47,27 +47,25 @@
         "Content-Type": "application/json; charset=UTF-8"
       }
     });
-    if (path2 === "/members/transfer") {
-      if (!r.ok) {
-        console.warn("Invalid transfer: ", payload);
-        return r;
-      }
-      window.MJDATA.log.push(payload);
-      let updated_members = await r.json();
-      let new_member;
-      window.MJDATA.members = window.MJDATA.members.map((old_member) => {
-        new_member = updated_members.find(
-          (new_member2) => new_member2.id === old_member.id
-        );
-        if (new_member !== void 0) {
-          return new_member;
-        } else {
-          return old_member;
-        }
-      });
-      document.dispatchEvent(pointTransfer);
-    }
     return r;
+  }
+  async function pointTransfer(payload) {
+    let r = await request("/members/transfer", payload, "POST");
+    if (!r.ok) {
+      console.error("Invalid transfer: ", payload);
+      return false;
+    }
+    window.MJDATA.log.push(payload);
+    let updated_members = await r.json();
+    let new_member;
+    window.MJDATA.members = window.MJDATA.members.map((old_member) => {
+      new_member = updated_members.find(
+        (new_member2) => new_member2.id === old_member.id
+      );
+      return new_member !== void 0 ? new_member : old_member;
+    });
+    document.dispatchEvent(PointTransferEvent);
+    return true;
   }
 
   // src/components/deleteButton.ts
@@ -328,17 +326,61 @@
     }
     return UsesSeat2;
   }
-
-  // src/components/player.ts
-  function getTablemates(myId, table) {
-    let result = [];
-    for (let mid of [table.east, table.south, table.west, table.north]) {
-      if (mid !== myId) {
-        result.push(mid);
+  var MahjongUnknownTableError = class extends Error {
+    constructor(tableNo) {
+      super(`Couldn't find table ${tableNo}`);
+      this.name = "MahjongUnknownTableError";
+    }
+  };
+  function getTable(tableNo) {
+    let table = window.MJDATA.tables.find((t) => t.table_no === tableNo);
+    if (table === void 0) {
+      throw new MahjongUnknownTableError(tableNo);
+    } else {
+      return table;
+    }
+  }
+  var MahjongUnknownMemberError = class extends Error {
+    constructor(memberId) {
+      let msg = memberId === 0 ? "Attempted to get empty member" : `Couldn't find member ${memberId}`;
+      super(msg);
+      this.name = "MahjongUnknownMemberError";
+    }
+  };
+  function getMember(memberId, allowEmpty = false) {
+    if (memberId === 0) {
+      if (allowEmpty) {
+        return "EMPTY";
+      } else {
+        throw new MahjongUnknownMemberError(0);
       }
     }
-    return result;
+    let member = window.MJDATA.members.find((m) => m.id === memberId);
+    if (member === void 0) {
+      throw new MahjongUnknownMemberError(memberId);
+    } else {
+      return member;
+    }
   }
+  function getOtherPlayersOnTable(memberId, table, allowEmpty = false) {
+    let tableData = typeof table === "number" ? getTable(table) : table;
+    let otherSeats = ["east", "south", "west", "north"].filter(
+      (seat) => tableData[seat] != memberId
+    );
+    return otherSeats.map((seat) => {
+      let mId = tableData[seat];
+      if (mId !== 0) {
+        return getMember(mId);
+      }
+      if (allowEmpty) {
+        return "EMPTY";
+      } else {
+        throw new MahjongUnknownMemberError(0);
+      }
+    });
+  }
+
+  // src/components/player.ts
   var TEMP_TABLE = /* @__PURE__ */ new Map();
   TEMP_TABLE.set(3, 8);
   TEMP_TABLE.set(4, 16);
@@ -387,55 +429,48 @@
       this.element.removeChild(this.popup.element);
       return super.deactivate();
     }
+    async onclickPointTransfer(losers, points) {
+      let success = await pointTransfer({
+        to: this.memberId,
+        from: losers.map((m) => {
+          if (m === "EMPTY") {
+            throw new MahjongUnknownMemberError(0);
+          }
+          return m.id;
+        }),
+        points
+      });
+      if (success) {
+        this.deactivate();
+      } else {
+        alert("Please reload the page and try again. Sorry!");
+      }
+    }
     updatePlayers() {
       let table = this.table;
       let member = this.member;
-      let otherSeats = ["east", "south", "west", "north"].filter((seat) => table[seat] != member.id);
-      let otherPlayers = otherSeats.map(
-        (seat) => window.MJDATA.members.find((m) => m.id == table[seat])
-      );
+      let otherPlayers = getOtherPlayersOnTable(member.id, table, true);
       this.dachut.dropdown.options = otherPlayers.map(
         (m) => new FaanDropdownButton({
-          textContent: m?.name || "",
+          textContent: m === "EMPTY" ? m : m.name,
           classList: ["small-button"],
-          onclick: async (ev, faan) => await request(
-            "/members/transfer",
-            {
-              to: this.memberId,
-              from: [m?.id],
-              points: getPointsFromFaan(faan) * 2
-            },
-            "POST"
+          onclick: async (ev, faan) => this.onclickPointTransfer(
+            [m],
+            getPointsFromFaan(faan) * 2
           )
         }).element
       );
       this.baozimo.dropdown.options = otherPlayers.map(
         (m) => new FaanDropdownButton({
-          textContent: m?.name || "",
+          textContent: m === "EMPTY" ? m : m.name,
           classList: ["small-button"],
-          onclick: async (ev, faan) => await request(
-            "/members/transfer",
-            {
-              to: this.memberId,
-              from: [m?.id],
-              points: getPointsFromFaan(faan) * 3
-            },
-            "POST"
+          onclick: async (ev, faan) => this.onclickPointTransfer(
+            [m],
+            getPointsFromFaan(faan) * 3
           )
         }).element
       );
-      this.zimo.onclick = async (ev, faan) => {
-        let otherNames = otherPlayers.map((v) => v?.name || "EMPTY");
-        await request(
-          "/members/transfer",
-          {
-            to: this.memberId,
-            from: getTablemates(this.memberId, this.table),
-            points: getPointsFromFaan(faan)
-          },
-          "POST"
-        );
-      };
+      this.zimo.onclick = async (ev, faan) => this.onclickPointTransfer(otherPlayers, getPointsFromFaan(faan));
     }
     updateMember(memberId) {
       this.memberId = memberId;
@@ -513,10 +548,11 @@
       this.tableNo = params.tableNo;
       let table = this.table;
       this.seat = params.seat;
+      let me = getMember(table[this.seat], true);
       this.nameTag = new NameTag({
         classList: ["name-tag", this.seat],
         parent: this.element,
-        value: window.MJDATA.members.find((v) => v.id === table[this.seat])
+        value: me === "EMPTY" ? void 0 : me
       });
       this.memberId = table[this.seat];
       if (this.memberId === 0) {
@@ -553,11 +589,7 @@
         this.winButton.element.remove();
         this.winButton = WinButton.empty(this.element);
       } else {
-        let newMember = window.MJDATA.members.find(
-          (v) => v.id === newMemberId
-        );
-        if (!newMember)
-          throw Error(`New member with id ${newMemberId} not found.`);
+        let newMember = getMember(newMemberId);
         if (this.winButton instanceof WinButton) {
           this.winButton.updateMember(newMember.id);
         } else if (this.memberId != 0) {
@@ -666,8 +698,7 @@
     while (index < flatTables.length) {
       tablen = tableOrders[Math.floor(index / 4)];
       seatn = index % 4;
-      table = window.MJDATA.tables.find((v) => v.table_no == tablen);
-      if (table === void 0) throw Error("how was table undefined!!!");
+      table = getTable(tablen);
       if (seatn === 0) {
         table.east = flatTables[index];
       } else if (seatn === 1) {
@@ -1133,18 +1164,15 @@
       this.to = new Component({
         tag: "td",
         parent: this.element,
-        textContent: memberNameFromId(params.transfer.to)
+        textContent: getMember(params.transfer.to).name
       });
       this.from = new Component({
         tag: "td",
         parent: this.element,
-        textContent: params.transfer.from.map((mId) => memberNameFromId(mId)).join(",")
+        textContent: params.transfer.from.map((mId) => getMember(mId).name).join(",")
       });
     }
   };
-  function memberNameFromId(id, fallback = "ERROR") {
-    return window.MJDATA.members.find((m) => m.id === id)?.name || fallback;
-  }
 
   // src/index.ts
   function path() {

@@ -48,3 +48,83 @@ export function UsesSeat<TBase extends Class>(target: TBase) {
 
 export const UsesMJData = <TBase extends Constructor>(t: TBase) =>
     UsesMember(UsesSeat(UsesTable(t)));
+
+export class MahjongUnknownTableError extends Error {
+    constructor(tableNo: number) {
+        super(`Couldn't find table ${tableNo}`);
+        this.name = "MahjongUnknownTableError";
+    }
+}
+
+export function getTable(tableNo: TableNo) {
+    let table = window.MJDATA.tables.find((t) => t.table_no === tableNo);
+    if (table === undefined) {
+        throw new MahjongUnknownTableError(tableNo);
+    } else {
+        return table;
+    }
+}
+
+export class MahjongUnknownMemberError extends Error {
+    constructor(memberId: number) {
+        let msg =
+            memberId === 0
+                ? "Attempted to get empty member"
+                : `Couldn't find member ${memberId}`;
+        super(msg);
+        this.name = "MahjongUnknownMemberError";
+    }
+}
+
+export function getMember(memberId: MemberId, allowEmpty?: false): Member;
+export function getMember(
+    memberId: MemberId | 0,
+    allowEmpty: true
+): Member | "EMPTY";
+export function getMember(memberId: MemberId | 0, allowEmpty: boolean = false) {
+    if (memberId === 0) {
+        if (allowEmpty) {
+            return "EMPTY";
+        } else {
+            throw new MahjongUnknownMemberError(0);
+        }
+    }
+    let member = window.MJDATA.members.find((m) => m.id === memberId);
+    if (member === undefined) {
+        throw new MahjongUnknownMemberError(memberId);
+    } else {
+        return member;
+    }
+}
+
+export function getOtherPlayersOnTable(
+    memberId: MemberId,
+    table: TableNo | TableData,
+    allowEmpty: true
+): ("EMPTY" | Member)[];
+export function getOtherPlayersOnTable(
+    memberId: MemberId,
+    table: TableNo | TableData,
+    allowEmpty: false
+): Member[];
+export function getOtherPlayersOnTable(
+    memberId: MemberId,
+    table: TableNo | TableData,
+    allowEmpty: boolean = false
+) {
+    let tableData = typeof table === "number" ? getTable(table) : table;
+    let otherSeats = (["east", "south", "west", "north"] as SeatWind[]).filter(
+        (seat) => tableData[seat] != memberId
+    );
+    return otherSeats.map((seat) => {
+        let mId = tableData[seat];
+        if (mId !== 0) {
+            return getMember(mId);
+        }
+        if (allowEmpty) {
+            return "EMPTY";
+        } else {
+            throw new MahjongUnknownMemberError(0);
+        }
+    });
+}

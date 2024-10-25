@@ -1,4 +1,5 @@
 import Component, { ComponentParameters } from "../components";
+import { getMember } from "../data";
 
 export default function logPage() {
     let logTable = document.getElementById("log-table");
@@ -55,19 +56,14 @@ class LogRow extends Component<"tr"> {
         this.to = new Component({
             tag: "td",
             parent: this.element,
-            textContent: memberNameFromId(params.transfer.to),
+            textContent: getMember(params.transfer.to).name,
         });
         this.from = new Component({
             tag: "td",
             parent: this.element,
             textContent: params.transfer.from
-                .map((mId) => memberNameFromId(mId))
+                .map((mId) => getMember(mId).name)
                 .join(","),
         });
     }
-}
-
-// todo: correctly localise util functions
-function memberNameFromId(id: MemberId, fallback: string = "ERROR"): string {
-    return window.MJDATA.members.find((m) => m.id === id)?.name || fallback;
 }

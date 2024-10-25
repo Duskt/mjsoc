@@ -41,7 +41,6 @@ Contains the Rust server and command line interface.
 
 ## High priority
 
--   Confirmation of actions
 -   Autocomplete member list
 -   Add a frontend way to enter points from a table that doesn't exist
 -   Rename table no.
@@ -53,12 +52,13 @@ Contains the Rust server and command line interface.
 
 ## Low priority
 
+-   finish success anim
 -   increase font-sizes for tables
 -   style the log page
 -   refactor the css, particularly for sidebar transitions
 -   Allow multiple clients to interact instantaneously:
--       sqlite3 migration
--       unauthorised page
+    -   sqlite3 migration
+    -   unauthorised page
 
 # Bugs
 

@@ -1,3 +1,4 @@
+import { getTable } from "../data";
 import { request } from "../request";
 
 function isSat(mem: Member) {
@@ -63,7 +64,7 @@ export async function shuffleSeats() {
     // load tables as [x-east, x-south, x-west, x-north, y-east...]
     // preserve table order in [x, y, ...]
     let flatTables: (MemberId | 0)[] = [];
-    let tableOrders: number[] = [];
+    let tableOrders: TableNo[] = [];
     for (let t of window.MJDATA.tables) {
         tableOrders.push(t.table_no);
         flatTables.push(t.east);
@@ -74,14 +75,13 @@ export async function shuffleSeats() {
     shuffleArray(flatTables);
     // now unpack that into MJDATA
     let index = 0;
-    let tablen: number;
+    let tablen: TableNo;
     let seatn: number;
     let table: TableData | undefined;
     while (index < flatTables.length) {
         tablen = tableOrders[Math.floor(index / 4)];
         seatn = index % 4;
-        table = window.MJDATA.tables.find((v) => v.table_no == tablen);
-        if (table === undefined) throw Error("how was table undefined!!!");
+        table = getTable(tablen);
         if (seatn === 0) {
             table.east = flatTables[index];
         } else if (seatn === 1) {
