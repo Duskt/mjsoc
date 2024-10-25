@@ -71,10 +71,17 @@ pub struct TableData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TournamentData {
+    pub total_points: i32,
+    pub session_points: i32,
+    pub registered: bool
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Member {
     pub id: MemberId,
     pub name: String,
-    pub points: i32,
+    pub tournament: TournamentData
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

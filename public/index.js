@@ -885,7 +885,7 @@
       while (this.element.lastChild) {
         this.element.removeChild(this.element.lastChild);
       }
-      [...window.MJDATA.members].sort((a, b) => b.points - a.points).forEach((m) => this.renderLi(m));
+      [...window.MJDATA.members].sort((a, b) => b.tournament.session_points - a.tournament.session_points).forEach((m) => this.renderLi(m));
     }
   };
   var MemberGrid = class extends MemberList {
@@ -899,10 +899,10 @@
         textContent: member.name,
         parent: row.element
       });
-      let highlight = member.points > 0 ? "green" : member.points === 0 ? "yellow" : "red";
+      let highlight = member.tournament.session_points > 0 ? "green" : member.tournament.session_points === 0 ? "yellow" : "red";
       let points = new Component({
         tag: "td",
-        textContent: member.points.toString(),
+        textContent: member.tournament.session_points.toString(),
         parent: row.element
       });
       points.element.style["backgroundColor"] = highlight;
@@ -1143,7 +1143,9 @@
     let losers = document.createElement("th");
     losers.textContent = "Loser(s)";
     headerRow.appendChild(losers);
-    for (let pt of window.MJDATA.log) {
+    let reverseLog = window.MJDATA.log;
+    reverseLog.reverse();
+    for (let pt of reverseLog) {
       let logRow = new LogRow({
         parent,
         transfer: pt

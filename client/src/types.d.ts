@@ -12,10 +12,16 @@ interface TableData extends PlayerWinds {
 
 type MemberId = number & {__brand: "memberId"};
 
+interface TournamentData {
+    total_points: number,
+    session_points: number,
+    registered: boolean
+}
+
 interface Member {
     id: MemberId,
     name: string,
-    points: number,
+    tournament: TournamentData
 }
 
 interface PointTransfer {

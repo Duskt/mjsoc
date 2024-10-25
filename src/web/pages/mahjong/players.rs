@@ -6,7 +6,7 @@ use urlencoding::encode;
 
 use crate::{
     auth::is_authenticated,
-    mahjongdata::{Member, MemberId, PointTransfer},
+    mahjongdata::{Member, MemberId, PointTransfer, TournamentData},
     AppState,
 };
 
@@ -67,7 +67,11 @@ pub async fn create_member(
     let new_member = Member {
         id,
         name: body.name.clone(),
-        points: 0,
+        tournament: TournamentData {
+            total_points: 0,
+            session_points: 0,
+            registered: false
+        }
     };
     mjdata.members.push(new_member.clone());
     mjdata.save_to_file();
@@ -142,7 +146,7 @@ pub async fn transfer_points(
     for id in body.from.iter() {
         for member in mjdata.members.iter_mut() {
             if member.id == *id {
-                member.points -= body.points;
+                member.tournament.session_points -= body.points;
                 update_members.push(member.clone());
             }
         }
@@ -150,7 +154,7 @@ pub async fn transfer_points(
     // and give points*n to...
     let points = ((body.points as usize) * body.from.len()) as i32;
     if let Some(mem) = mjdata.members.iter_mut().find(|mem| mem.id == body.to) {
-        mem.points += points;
+        mem.tournament.session_points += points;
         update_members.push(mem.clone());
     }
     // log the PointTransfer request

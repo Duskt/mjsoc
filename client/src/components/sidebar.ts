@@ -164,7 +164,7 @@ abstract class MemberList<
             this.element.removeChild(this.element.lastChild);
         }
         [...window.MJDATA.members]
-            .sort((a, b) => b.points - a.points)
+            .sort((a, b) => b.tournament.session_points - a.tournament.session_points)
             .forEach((m) => this.renderLi(m));
     }
 }
@@ -172,7 +172,7 @@ abstract class MemberList<
 class UlMemberList extends MemberList<"ul"> {
     renderLi(member: Member) {
         let melem = document.createElement("li");
-        melem.textContent = `${member.name}: ${member.points}`;
+        melem.textContent = `${member.name}: ${member.tournament.session_points}`;
         this.memberElems[member.id] = melem;
         this.element.appendChild(melem);
         return melem;
@@ -191,14 +191,14 @@ class MemberGrid extends MemberList<"table"> {
             parent: row.element,
         });
         let highlight =
-            member.points > 0
+            member.tournament.session_points > 0
                 ? "green"
-                : member.points === 0
+                : member.tournament.session_points === 0
                 ? "yellow"
                 : "red";
         let points = new Component({
             tag: "td",
-            textContent: member.points.toString(),
+            textContent: member.tournament.session_points.toString(),
             parent: row.element,
         });
         points.element.style["backgroundColor"] = highlight;
