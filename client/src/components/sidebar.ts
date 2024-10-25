@@ -1,25 +1,9 @@
 import Component, { ComponentParameters } from ".";
-import { manualRegister, request } from "../request";
+import { editMemberList, manualRegister, request } from "../request";
 import Dialog from "./input/focus/dialog";
 import { DropdownButton } from "./input/focus/dropdown";
 
-async function removeMember(mem: Member) {
-    let r = await request("/members", { name: mem.name }, "DELETE");
-    if (r.ok) {
-        let index = window.MJDATA.members.indexOf(mem);
-        window.MJDATA.members.splice(index, 1);
-        for (let t of window.MJDATA.tables) {
-            if (t.east === mem.id) t.east = 0;
-            if (t.south === mem.id) t.south = 0;
-            if (t.west === mem.id) t.west = 0;
-            if (t.north === mem.id) t.north = 0;
-        }
-        return true;
-    }
-    return false;
-}
-
-export default function renderSidebar(onMemberChange: () => void = () => {}) {
+export default function renderSidebar() {
     // container of sidebar and the button which opens it
     let sidebar = document.getElementById("sidebar");
     let main_article = document.getElementById("tables");
@@ -98,37 +82,30 @@ export default function renderSidebar(onMemberChange: () => void = () => {}) {
                     tag: "button",
                     textContent: m.name,
                     other: {
-                        onclick: async (ev: MouseEvent) => {
-                            if (await removeMember(m)) {
-                                memberList.updateMembers();
-                                onMemberChange();
-                            }
-                        },
+                        onclick: async (ev: MouseEvent) =>
+                            editMemberList({ name: m.name }, "DELETE"),
                     },
                 }).element
         ));
     updateRemoveMemberButton();
+    document.addEventListener("mjEditMember", (ev) => {
+        memberList.updateMembers();
+        updateRemoveMemberButton();
+        // todo: add event info to only do this for post?
+        dialog.deactivate();
+    });
 
     let overrideContainer = new OverrideContainer({
         parent: innerSidebar.element,
     });
 
-    form.onsubmit = (ev) => {
+    form.onsubmit = async (ev) => {
         ev.preventDefault();
-        let name = new FormData(form).get("name");
+        let name = new FormData(form).get("name")?.toString();
         if (!name) {
             throw Error("no name");
         }
-        request("/members", { name }, "POST").then((v) => {
-            if (v.ok)
-                v.json().then((v: Member) => {
-                    window.MJDATA.members.push(v);
-                    memberList.renderLi(v);
-                    onMemberChange();
-                    updateRemoveMemberButton();
-                });
-        });
-        dialog.deactivate();
+        await editMemberList({ name }, "POST");
     };
 }
 

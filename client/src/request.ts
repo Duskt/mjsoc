@@ -66,18 +66,50 @@ export async function pointTransfer(payload: PointTransfer) {
     return true;
 }
 
+const RegisterEvent = new Event("mjRegister");
+
 export async function manualRegister(payload: { memberId: MemberId }) {
     let r = await request("/register", { member_id: payload.memberId }, "POST");
-    //renderSidebar(() => renderTables());
+    if (!r.ok) {
+        console.error(`${r}`);
+        return;
+    }
+    document.dispatchEvent(RegisterEvent);
 }
 
 const EditMemberEvent = new Event("mjEditMember");
 
-export async function editMemberList(payload: { name: string }, mode: "POST" | "DELETE") {
+export async function editMemberList(
+    payload: { name: string },
+    mode: "POST" | "DELETE"
+) {
     let r = await request("/members", payload, mode);
     if (!r.ok) {
-        console.error(`Failed to ${mode == "POST" ? "create" : "delete"} member "${payload.name}"`);
+        console.error(
+            `Failed to ${mode == "POST" ? "create" : "delete"} member "${
+                payload.name
+            }"`
+        );
         return;
+    }
+    if (mode == "DELETE") {
+        let member = window.MJDATA.members.find((m) => m.name === payload.name);
+        if (!member) {
+            console.warn(
+                `Couldn't find the deleted member ${payload.name} before removal.`
+            );
+        } else {
+            let index = window.MJDATA.members.indexOf(member);
+            window.MJDATA.members.splice(index, 1);
+            for (let t of window.MJDATA.tables) {
+                if (t.east === member.id) t.east = 0;
+                if (t.south === member.id) t.south = 0;
+                if (t.west === member.id) t.west = 0;
+                if (t.north === member.id) t.north = 0;
+            }
+        }
+    } else {
+        window.MJDATA.members.push(await r.json());
     }
     document.dispatchEvent(EditMemberEvent);
 }

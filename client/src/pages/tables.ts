@@ -13,10 +13,9 @@ import { request } from "../request";
 export default function tables() {
     // the tables with players on are, confusingly, ordered into a table of tables
     renderTables();
+    document.addEventListener("mjEditMember", (ev) => renderTables());
     // the left sidebar contains leaderboard and player info
-    renderSidebar(() => {
-        renderTables();
-    });
+    renderSidebar();
     renderHeader();
 }
 

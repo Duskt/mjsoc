@@ -67,10 +67,45 @@
     document.dispatchEvent(PointTransferEvent);
     return true;
   }
+  var RegisterEvent = new Event("mjRegister");
   async function manualRegister(payload) {
     let r = await request("/register", { member_id: payload.memberId }, "POST");
+    if (!r.ok) {
+      console.error(`${r}`);
+      return;
+    }
+    document.dispatchEvent(RegisterEvent);
   }
   var EditMemberEvent = new Event("mjEditMember");
+  async function editMemberList(payload, mode) {
+    let r = await request("/members", payload, mode);
+    if (!r.ok) {
+      console.error(
+        `Failed to ${mode == "POST" ? "create" : "delete"} member "${payload.name}"`
+      );
+      return;
+    }
+    if (mode == "DELETE") {
+      let member = window.MJDATA.members.find((m) => m.name === payload.name);
+      if (!member) {
+        console.warn(
+          `Couldn't find the deleted member ${payload.name} before removal.`
+        );
+      } else {
+        let index = window.MJDATA.members.indexOf(member);
+        window.MJDATA.members.splice(index, 1);
+        for (let t of window.MJDATA.tables) {
+          if (t.east === member.id) t.east = 0;
+          if (t.south === member.id) t.south = 0;
+          if (t.west === member.id) t.west = 0;
+          if (t.north === member.id) t.north = 0;
+        }
+      }
+    } else {
+      window.MJDATA.members.push(await r.json());
+    }
+    document.dispatchEvent(EditMemberEvent);
+  }
 
   // src/components/deleteButton.ts
   var DeleteButton = class extends Component {
@@ -1495,23 +1530,7 @@
   };
 
   // src/components/sidebar.ts
-  async function removeMember(mem) {
-    let r = await request("/members", { name: mem.name }, "DELETE");
-    if (r.ok) {
-      let index = window.MJDATA.members.indexOf(mem);
-      window.MJDATA.members.splice(index, 1);
-      for (let t of window.MJDATA.tables) {
-        if (t.east === mem.id) t.east = 0;
-        if (t.south === mem.id) t.south = 0;
-        if (t.west === mem.id) t.west = 0;
-        if (t.north === mem.id) t.north = 0;
-      }
-      return true;
-    }
-    return false;
-  }
-  function renderSidebar(onMemberChange = () => {
-  }) {
+  function renderSidebar() {
     let sidebar = document.getElementById("sidebar");
     let main_article = document.getElementById("tables");
     if (!(sidebar instanceof HTMLElement)) {
@@ -1578,35 +1597,26 @@
         tag: "button",
         textContent: m.name,
         other: {
-          onclick: async (ev) => {
-            if (await removeMember(m)) {
-              memberList.updateMembers();
-              onMemberChange();
-            }
-          }
+          onclick: async (ev) => editMemberList({ name: m.name }, "DELETE")
         }
       }).element
     );
     updateRemoveMemberButton();
+    document.addEventListener("mjEditMember", (ev) => {
+      memberList.updateMembers();
+      updateRemoveMemberButton();
+      dialog.deactivate();
+    });
     let overrideContainer = new OverrideContainer({
       parent: innerSidebar.element
     });
-    form.onsubmit = (ev) => {
+    form.onsubmit = async (ev) => {
       ev.preventDefault();
-      let name = new FormData(form).get("name");
+      let name = new FormData(form).get("name")?.toString();
       if (!name) {
         throw Error("no name");
       }
-      request("/members", { name }, "POST").then((v) => {
-        if (v.ok)
-          v.json().then((v2) => {
-            window.MJDATA.members.push(v2);
-            memberList.renderLi(v2);
-            onMemberChange();
-            updateRemoveMemberButton();
-          });
-      });
-      dialog.deactivate();
+      await editMemberList({ name }, "POST");
     };
   }
   var MemberList = class extends Component {
@@ -1772,9 +1782,8 @@
   // src/pages/tables.ts
   function tables() {
     renderTables();
-    renderSidebar(() => {
-      renderTables();
-    });
+    document.addEventListener("mjEditMember", (ev) => renderTables());
+    renderSidebar();
     renderHeader();
   }
   function renderHeader() {
