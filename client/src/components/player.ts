@@ -15,6 +15,7 @@ import {
 } from "../data";
 import { InputListener, InputListenerParameters } from "./input/listener";
 import { pointTransfer, request } from "../request";
+import { triggerCelebration } from "./successAnim";
 
 // type predicate for checking list purity/homogeny
 const allK = <K>(array: (K | undefined)[]): array is K[] => {
@@ -105,6 +106,9 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
             points,
         });
         if (success) {
+            if (points === 256 || (points === 128 && losers.length > 1)) {
+                triggerCelebration();
+            }
             this.deactivate();
         } else {
             alert("Please reload the page and try again. Sorry!");

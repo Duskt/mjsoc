@@ -1,3 +1,5 @@
+declare module 'canvas-confetti';
+
 type Wind = "east" | "south" | "west" | "north";
 type RoundWind = Wind;
 type SeatWind = Wind;
