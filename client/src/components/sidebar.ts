@@ -91,10 +91,14 @@ export default function renderSidebar() {
     document.addEventListener("mjEditMember", (ev) => {
         memberList.updateMembers();
         updateRemoveMemberButton();
+        editMembersBar.register.updateMembers();
         // todo: add event info to only do this for post?
         dialog.deactivate();
     });
-    document.addEventListener("mjRegister", (ev) => memberList.updateMembers());
+    document.addEventListener("mjRegister", (ev) => {
+        memberList.updateMembers();
+        editMembersBar.register.input.element.value = "";
+    });
 
     let overrideContainer = new OverrideContainer({
         parent: innerSidebar.element,
@@ -302,7 +306,7 @@ class Register extends Component<"form"> {
                 id: "registerList",
             },
         });
-        // add options
+        this.updateMembers();
         this.input = new Component({
             tag: "input",
             parent: this.element,
@@ -320,5 +324,19 @@ class Register extends Component<"form"> {
             if (memberId === undefined) throw new Error("no id AJDSBFI");
             manualRegister({ memberId });
         };
+    }
+    updateMembers() {
+        this.datalist.element.innerHTML = "";
+        let member: Member;
+        for (member of window.MJDATA.members) {
+            this.renderOption(member);
+        }
+    }
+    renderOption(member: Member) {
+        let option = new Component({
+            tag: "option",
+            parent: this.datalist.element,
+            textContent: member.name,
+        });
     }
 }
