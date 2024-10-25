@@ -5,20 +5,24 @@ use crate::{
         signature_error::SignatureErr,
     },
     google::sheets::insert_new_member,
+    mahjongdata::MemberId,
     pages::register_attendance::data::flip_names,
     util::get_redirect_response,
     AppState,
 };
 
 use actix_session::Session;
-use actix_web::{web, HttpRequest, HttpResponse};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use lib::signature::verify_signature;
+use serde::Deserialize;
 use urlencoding::encode;
 
-use super::data::AttendanceQuery;
+use super::data::QrAttendanceQuery;
 
-pub async fn register_attendance(
-    info: web::Query<AttendanceQuery>,
+// This is the URL that a QR code links to, with the appropriate query.
+// When sending a GET, it uses this path.
+pub async fn register_qr_attendance(
+    info: web::Query<QrAttendanceQuery>,
     data: web::Data<AppState>,
     session: Session,
     req: HttpRequest,
@@ -50,4 +54,36 @@ pub async fn register_attendance(
         .map_err(EitherError::from_right)?;
 
     Ok(HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name)))
+}
+
+#[derive(Deserialize)]
+pub struct RegisterMemberPostRequest {
+    member_id: MemberId,
+}
+
+pub async fn manual_register_attendance(
+    session: Session,
+    data: web::Data<AppState>,
+    body: web::Json<RegisterMemberPostRequest>,
+    req: HttpRequest,
+) -> impl Responder {
+    if !is_authenticated(&session, &data.authenticated_keys) {
+        // Login and redirect back here
+        // (GET to this address is routed to /table)
+        return get_redirect_response(&format!(
+            "/login?redirect={}",
+            encode(&req.uri().path_and_query().unwrap().to_string()),
+        ));
+    }
+    let mut mjdata = data.mahjong_data.lock().unwrap();
+    {
+        let member = mjdata
+            .members
+            .iter_mut()
+            .find(|m| m.id == body.member_id)
+            .expect("No member with that id");
+        member.tournament.registered = true;
+    }
+    mjdata.save_to_file();
+    HttpResponse::Ok().body("Registered")
 }

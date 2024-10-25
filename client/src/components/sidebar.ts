@@ -1,5 +1,5 @@
 import Component, { ComponentParameters } from ".";
-import { request } from "../request";
+import { manualRegister, request } from "../request";
 import Dialog from "./input/focus/dialog";
 import { DropdownButton } from "./input/focus/dropdown";
 
@@ -68,15 +68,8 @@ export default function renderSidebar(onMemberChange: () => void = () => {}) {
         else closeSidebar();
     };
 
-    let addMemberButton = new Component({
-        tag: "button",
-        classList: ["member-button"],
-        parent: innerSidebar.element,
-        textContent: "Add a new member",
-        other: {
-            id: "add-member",
-        },
-    });
+    let editMembersBar = new EditMembersBar({ parent: innerSidebar.element });
+
     let form = document.getElementById("name")?.parentElement;
     if (!(form instanceof HTMLFormElement)) {
         throw Error("no form");
@@ -84,16 +77,13 @@ export default function renderSidebar(onMemberChange: () => void = () => {}) {
     let dialog = new Dialog({
         tag: "dialog",
         element: document.getElementsByTagName("dialog")[0],
-        activator: addMemberButton.element,
+        activator: editMembersBar.addMemberButton.element,
     });
     let memberList = new MemberGrid({
         tag: "table",
+        parent: innerSidebar.element,
         classList: ["info-grid"],
     });
-    addMemberButton.element.insertAdjacentElement(
-        "afterend",
-        memberList.element
-    );
 
     let removeMemberButton = new DropdownButton({
         textContent: "Remove a member",
@@ -164,18 +154,11 @@ abstract class MemberList<
             this.element.removeChild(this.element.lastChild);
         }
         [...window.MJDATA.members]
-            .sort((a, b) => b.tournament.session_points - a.tournament.session_points)
+            .sort(
+                (a, b) =>
+                    b.tournament.session_points - a.tournament.session_points
+            )
             .forEach((m) => this.renderLi(m));
-    }
-}
-
-class UlMemberList extends MemberList<"ul"> {
-    renderLi(member: Member) {
-        let melem = document.createElement("li");
-        melem.textContent = `${member.name}: ${member.tournament.session_points}`;
-        this.memberElems[member.id] = melem;
-        this.element.appendChild(melem);
-        return melem;
     }
 }
 
@@ -187,7 +170,8 @@ class MemberGrid extends MemberList<"table"> {
         });
         let name = new Component({
             tag: "td",
-            textContent: member.name,
+            textContent:
+                member.name + (member.tournament.registered ? "!" : ""),
             parent: row.element,
         });
         let highlight =
@@ -287,5 +271,76 @@ class OverrideContainer extends Component<"div"> {
         this.overridePanel.hide();
         // need to pass anon func otherwise the toggle's scope holds 'this' as the toggleButton
         this.toggleButton.element.onclick = () => this.overridePanel.toggle;
+    }
+}
+
+interface EditMembersBarParams
+    extends Omit<ComponentParameters<"div">, "tag"> {}
+
+class EditMembersBar extends Component<"div"> {
+    register: Register;
+    addMemberButton: Component<"button">;
+    constructor(params: EditMembersBarParams) {
+        super({
+            tag: "div",
+            ...params,
+        });
+        this.element.style["display"] = "flex";
+        this.register = new Register({ parent: this.element });
+        this.addMemberButton = new Component({
+            tag: "button",
+            classList: ["member-button"],
+            parent: this.element,
+            textContent: "+",
+            other: {
+                id: "add-member",
+            },
+        });
+    }
+}
+
+class Register extends Component<"form"> {
+    label: Component<"label">;
+    input: Component<"input">;
+    datalist: Component<"datalist">;
+    constructor(params: Omit<ComponentParameters<"form">, "tag">) {
+        super({
+            tag: "form",
+            classList: ["register"],
+            ...params,
+        });
+        this.label = new Component({
+            tag: "label",
+            textContent: "Register",
+            parent: this.element,
+            other: {
+                htmlFor: "register",
+            },
+        });
+        this.datalist = new Component({
+            tag: "datalist",
+            parent: this.element,
+            other: {
+                id: "registerList",
+            },
+        });
+        // add options
+        this.input = new Component({
+            tag: "input",
+            parent: this.element,
+            other: {
+                id: "register",
+            },
+        });
+        this.input.element.setAttribute("list", "registerList");
+        this.input.element.style["fontSize"] = "14px";
+        this.element.onsubmit = (ev) => {
+            ev.preventDefault();
+            let memberId = window.MJDATA.members.find(
+                (m) => m.name == this.input.element.value.trim()
+            )?.id;
+            if (memberId === undefined) throw new Error("no id AJDSBFI");
+            manualRegister({ memberId });
+        };
     }
 }

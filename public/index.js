@@ -67,6 +67,10 @@
     document.dispatchEvent(PointTransferEvent);
     return true;
   }
+  async function manualRegister(payload) {
+    let r = await request("/register", { member_id: payload.memberId }, "POST");
+  }
+  var EditMemberEvent = new Event("mjEditMember");
 
   // src/components/deleteButton.ts
   var DeleteButton = class extends Component {
@@ -1548,15 +1552,7 @@
       if (sidebarButton.element.textContent == ">") openSidebar();
       else closeSidebar();
     };
-    let addMemberButton = new Component({
-      tag: "button",
-      classList: ["member-button"],
-      parent: innerSidebar.element,
-      textContent: "Add a new member",
-      other: {
-        id: "add-member"
-      }
-    });
+    let editMembersBar = new EditMembersBar({ parent: innerSidebar.element });
     let form = document.getElementById("name")?.parentElement;
     if (!(form instanceof HTMLFormElement)) {
       throw Error("no form");
@@ -1564,16 +1560,13 @@
     let dialog = new Dialog({
       tag: "dialog",
       element: document.getElementsByTagName("dialog")[0],
-      activator: addMemberButton.element
+      activator: editMembersBar.addMemberButton.element
     });
     let memberList = new MemberGrid({
       tag: "table",
+      parent: innerSidebar.element,
       classList: ["info-grid"]
     });
-    addMemberButton.element.insertAdjacentElement(
-      "afterend",
-      memberList.element
-    );
     let removeMemberButton = new DropdownButton({
       textContent: "Remove a member",
       classList: ["member-button"],
@@ -1630,7 +1623,9 @@
       while (this.element.lastChild) {
         this.element.removeChild(this.element.lastChild);
       }
-      [...window.MJDATA.members].sort((a, b) => b.tournament.session_points - a.tournament.session_points).forEach((m) => this.renderLi(m));
+      [...window.MJDATA.members].sort(
+        (a, b) => b.tournament.session_points - a.tournament.session_points
+      ).forEach((m) => this.renderLi(m));
     }
   };
   var MemberGrid = class extends MemberList {
@@ -1641,7 +1636,7 @@
       });
       let name = new Component({
         tag: "td",
-        textContent: member.name,
+        textContent: member.name + (member.tournament.registered ? "!" : ""),
         parent: row.element
       });
       let highlight = member.tournament.session_points > 0 ? "green" : member.tournament.session_points === 0 ? "yellow" : "red";
@@ -1711,6 +1706,66 @@
       });
       this.overridePanel.hide();
       this.toggleButton.element.onclick = () => this.overridePanel.toggle;
+    }
+  };
+  var EditMembersBar = class extends Component {
+    constructor(params) {
+      super({
+        tag: "div",
+        ...params
+      });
+      this.element.style["display"] = "flex";
+      this.register = new Register({ parent: this.element });
+      this.addMemberButton = new Component({
+        tag: "button",
+        classList: ["member-button"],
+        parent: this.element,
+        textContent: "+",
+        other: {
+          id: "add-member"
+        }
+      });
+    }
+  };
+  var Register = class extends Component {
+    constructor(params) {
+      super({
+        tag: "form",
+        classList: ["register"],
+        ...params
+      });
+      this.label = new Component({
+        tag: "label",
+        textContent: "Register",
+        parent: this.element,
+        other: {
+          htmlFor: "register"
+        }
+      });
+      this.datalist = new Component({
+        tag: "datalist",
+        parent: this.element,
+        other: {
+          id: "registerList"
+        }
+      });
+      this.input = new Component({
+        tag: "input",
+        parent: this.element,
+        other: {
+          id: "register"
+        }
+      });
+      this.input.element.setAttribute("list", "registerList");
+      this.input.element.style["fontSize"] = "14px";
+      this.element.onsubmit = (ev) => {
+        ev.preventDefault();
+        let memberId = window.MJDATA.members.find(
+          (m) => m.name == this.input.element.value.trim()
+        )?.id;
+        if (memberId === void 0) throw new Error("no id AJDSBFI");
+        manualRegister({ memberId });
+      };
     }
   };
 

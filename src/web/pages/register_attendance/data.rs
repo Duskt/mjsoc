@@ -8,7 +8,7 @@ pub fn flip_names(name: &str) -> String {
 }
 
 #[derive(Deserialize)]
-pub struct AttendanceQuery {
+pub struct QrAttendanceQuery {
     pub name: String,
     pub signature: String,
 }

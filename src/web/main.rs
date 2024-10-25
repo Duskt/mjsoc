@@ -36,7 +36,7 @@ use pages::{
         tables::{create_table, delete_table, get_tables, update_table},
     },
     qr::page::{download_qr, generate_qr},
-    register_attendance::page::register_attendance,
+    register_attendance::page::{manual_register_attendance, register_qr_attendance},
     session_week::{change_week, get_week},
 };
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
@@ -80,7 +80,11 @@ async fn main() -> std::io::Result<()> {
             // authentication
             .route("/login", get().to(login))
             .route("/auth", post().to(authenticate))
-            .route("/register_attendance", get().to(register_attendance))
+            .service(
+                web::resource("/register")
+                    .route(get().to(register_qr_attendance))
+                    .route(post().to(manual_register_attendance))
+            )
             .route("/assets/logo.jpg", get().to(logo))
             // mahjong client
             // table page routing

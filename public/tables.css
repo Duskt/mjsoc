@@ -188,6 +188,15 @@ dialog button {
   width: 50%;
 }
 
+#add-member {
+  display: block;
+  margin: auto 0;
+  font-size: 14px;
+  padding: 4px;
+  width: 35px;
+  margin-right: 15px;
+}
+
 .sidebar.closed .member-button {
   display: none;
 }
@@ -236,4 +245,18 @@ dialog button {
 #log-table {
   width: 80%;
   margin-top: 10px;
+}
+
+.register {
+  margin: 0 15px;
+}
+
+.register input {
+  margin: 0 0 18px 0;
+}
+
+.register label {
+  font-size: 12px;
+  align-self: start;
+  margin-top: 4px;
 }

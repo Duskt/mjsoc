@@ -65,3 +65,19 @@ export async function pointTransfer(payload: PointTransfer) {
     document.dispatchEvent(PointTransferEvent);
     return true;
 }
+
+export async function manualRegister(payload: { memberId: MemberId }) {
+    let r = await request("/register", { member_id: payload.memberId }, "POST");
+    //renderSidebar(() => renderTables());
+}
+
+const EditMemberEvent = new Event("mjEditMember");
+
+export async function editMemberList(payload: { name: string }, mode: "POST" | "DELETE") {
+    let r = await request("/members", payload, mode);
+    if (!r.ok) {
+        console.error(`Failed to ${mode == "POST" ? "create" : "delete"} member "${payload.name}"`);
+        return;
+    }
+    document.dispatchEvent(EditMemberEvent);
+}
