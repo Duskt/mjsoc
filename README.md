@@ -62,5 +62,4 @@ Contains the Rust server and command line interface.
 
 # Bugs
 
--   new player isn't ordered into scoreboard
 -   duplicate tables
