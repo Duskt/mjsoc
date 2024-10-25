@@ -123,13 +123,29 @@ article {
   display: flex;
 }
 
-#header-bar > button {
-  width: 24px;
-  height: 24px;
+h1 {
+  margin-inline: 20px;
+}
+
+.icon-button {
+  width: 20px;
+  height: 20px;
   font-size: 16px;
   align-self: center;
   margin: 10px;
   padding: 0px;
+  background: none;
+  border: none;
+}
+
+.register-checkbox {
+  margin: 0;
+  width: 20px;
+}
+
+.present-checkbox {
+  margin: 0;
+  width: auto;
 }
 
 #sidebar {
@@ -178,49 +194,17 @@ dialog button {
 }
 
 .member-button {
-  display: block;
-  width: auto;
-  margin: 5% auto;
+  margin: 0 auto;
+  margin-bottom: 20px;
   font-size: 14px;
-}
-
-#add-button {
-  width: 50%;
-}
-
-#add-member {
-  display: block;
-  margin: auto 0;
-  font-size: 14px;
-  padding: 4px;
-  width: 35px;
-  margin-right: 15px;
+  padding: 5px 0;
+  width: 8rem;
 }
 
 .sidebar.closed .member-button {
   display: none;
 }
 
-.override-panel {
-  display: flex;
-  flex-direction: column;
-  height: 300px;
-}
-
-.override-panel>textarea {
-  flex-grow: 1;
-}
-
-/* The button which opens the override panel. */
-.override-toggle {
-  font-size: 12px;
-  padding: 0;
-  margin-top: auto;
-  margin-left: 4px;
-  border: none;
-  background: none;
-  width: max-content;
-}
 
 #table > tr > td {
   padding: 20px;

@@ -76,14 +76,16 @@ pub async fn manual_register_attendance(
         ));
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
+    let present: bool;
     {
         let member = mjdata
             .members
             .iter_mut()
             .find(|m| m.id == body.member_id)
             .expect("No member with that id");
-        member.tournament.registered = true;
+        present = !member.tournament.registered;
+        member.tournament.registered = present;
     }
     mjdata.save_to_file();
-    HttpResponse::Ok().body("Registered")
+    HttpResponse::Ok().json(present)
 }

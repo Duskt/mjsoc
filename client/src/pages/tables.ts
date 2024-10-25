@@ -1,5 +1,6 @@
 import Component from "../components";
 import DeleteButton from "../components/deleteButton";
+import IconButton from "../components/icons";
 import {
     InputListener,
     InputListenerParameters,
@@ -24,9 +25,8 @@ function renderHeader() {
     if (headerBar == undefined) {
         throw Error("No element with header-bar id");
     }
-    let sit = new Component({
-        tag: "button",
-        textContent: "S",
+    let sit = new IconButton({
+        icon: "fill",
         other: {
             onclick: async (ev) => {
                 await allocateSeats();
@@ -34,10 +34,10 @@ function renderHeader() {
             },
         },
     });
+    
     headerBar.children[0].insertAdjacentElement("beforebegin", sit.element);
-    let shuffle = new Component({
-        tag: "button",
-        textContent: "R",
+    let shuffle = new IconButton({
+        icon: "shuffle",
         parent: headerBar,
         other: {
             onclick: async (ev) => {

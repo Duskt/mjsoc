@@ -1,7 +1,13 @@
 import Component, { ComponentParameters } from ".";
 import { editMemberList, manualRegister, request } from "../request";
+import IconButton from "./icons";
 import Dialog from "./input/focus/dialog";
-import { DropdownButton } from "./input/focus/dropdown";
+import {
+    DropdownButton,
+    DropdownButtonParameters,
+} from "./input/focus/dropdown";
+import ToggleComponent from "./input/toggle";
+import MemberGrid from "./memberTable";
 
 export default function renderSidebar() {
     // container of sidebar and the button which opens it
@@ -61,7 +67,7 @@ export default function renderSidebar() {
     let dialog = new Dialog({
         tag: "dialog",
         element: document.getElementsByTagName("dialog")[0],
-        activator: editMembersBar.addMemberButton.element,
+        activator: editMembersBar.addButton.element,
     });
     let memberList = new MemberGrid({
         tag: "table",
@@ -69,28 +75,9 @@ export default function renderSidebar() {
         classList: ["info-grid"],
     });
 
-    let removeMemberButton = new DropdownButton({
-        textContent: "Remove a member",
-        classList: ["member-button"],
-        parent: innerSidebar.element,
-        options: [],
-    });
-    let updateRemoveMemberButton = () =>
-        (removeMemberButton.dropdown.options = window.MJDATA.members.map(
-            (m) =>
-                new Component({
-                    tag: "button",
-                    textContent: m.name,
-                    other: {
-                        onclick: async (ev: MouseEvent) =>
-                            editMemberList({ name: m.name }, "DELETE"),
-                    },
-                }).element
-        ));
-    updateRemoveMemberButton();
     document.addEventListener("mjEditMember", (ev) => {
         memberList.updateMembers();
-        updateRemoveMemberButton();
+        editMembersBar.removeButton.update();
         editMembersBar.register.updateMembers();
         // todo: add event info to only do this for post?
         dialog.deactivate();
@@ -98,10 +85,6 @@ export default function renderSidebar() {
     document.addEventListener("mjRegister", (ev) => {
         memberList.updateMembers();
         editMembersBar.register.input.element.value = "";
-    });
-
-    let overrideContainer = new OverrideContainer({
-        parent: innerSidebar.element,
     });
 
     form.onsubmit = async (ev) => {
@@ -112,148 +95,10 @@ export default function renderSidebar() {
         }
         await editMemberList({ name }, "POST");
     };
-}
-
-abstract class MemberList<
-    K extends keyof HTMLElementTagNameMap
-> extends Component<K> {
-    memberElems: {
-        [id: Member["id"]]: HTMLLIElement;
+    editMembersBar.checkbox.element.onchange = () => {
+        memberList.showAbsent = editMembersBar.checkbox.element.checked;
+        memberList.updateMembers();
     };
-    constructor(params: ComponentParameters<K>) {
-        super(params);
-        this.memberElems = {};
-        this.updateMembers();
-        document.addEventListener("mjPointTransfer", () => {
-            this.updateMembers();
-        });
-    }
-    abstract renderLi(member: Member): void;
-    updateMembers() {
-        // clear
-        this.memberElems = {};
-        while (this.element.lastChild) {
-            this.element.removeChild(this.element.lastChild);
-        }
-        [...window.MJDATA.members]
-            .sort(
-                (a, b) =>
-                    b.tournament.session_points - a.tournament.session_points
-            )
-            .forEach((m) => this.renderLi(m));
-    }
-}
-
-class MemberGrid extends MemberList<"table"> {
-    renderLi(member: Member) {
-        let row = new Component({
-            tag: "tr",
-            parent: this.element,
-        });
-        let name = new Component({
-            tag: "td",
-            textContent:
-                member.name + (member.tournament.registered ? "!" : ""),
-            parent: row.element,
-        });
-        let highlight =
-            member.tournament.session_points > 0
-                ? "green"
-                : member.tournament.session_points === 0
-                ? "yellow"
-                : "red";
-        let points = new Component({
-            tag: "td",
-            textContent: member.tournament.session_points.toString(),
-            parent: row.element,
-        });
-        points.element.style["backgroundColor"] = highlight;
-    }
-}
-
-interface ToggleComponentParameters<K extends keyof HTMLElementTagNameMap>
-    extends ComponentParameters<K> {
-    mode: "block";
-}
-
-class ToggleComponent<
-    K extends keyof HTMLElementTagNameMap
-> extends Component<K> {
-    hidden: boolean;
-    mode: ToggleComponentParameters<K>["mode"];
-    children: HTMLCollection;
-    constructor(params: ToggleComponentParameters<K>) {
-        super(params);
-        this.hidden = false;
-        this.mode = params.mode;
-        this.children = document.createDocumentFragment().children;
-    }
-
-    show() {
-        this.hidden = false;
-        for (let item of Array.from(this.children)) {
-            this.element.appendChild(item);
-        }
-        this.element.style["display"] = this.mode;
-    }
-
-    hide() {
-        this.hidden = true;
-        this.children = this.element.children;
-        while (this.element.lastChild) {
-            this.element.removeChild(this.element.lastChild);
-        }
-        this.element.style["display"] = "none";
-    }
-
-    toggle() {
-        if (this.hidden) {
-            this.show();
-        } else {
-            this.hide();
-        }
-    }
-}
-
-/** A container for the advanced option of manually overriding
- * the player data. Opens and closes with a regular toggled (not Focus)
- * button.
- */
-class OverrideContainer extends Component<"div"> {
-    toggleButton: Component<"button">;
-    overridePanel: ToggleComponent<"div">;
-    editContent: Component<"textarea">;
-    submitButton: Component<"button">;
-    constructor(params: Omit<ComponentParameters<"div">, "tag">) {
-        super({
-            tag: "div",
-            classList: ["override-panel"],
-            ...params,
-        });
-        this.toggleButton = new Component({
-            tag: "button",
-            textContent: "Advanced override panel",
-            parent: this.element,
-            classList: ["override-toggle"],
-        });
-        this.overridePanel = new ToggleComponent({
-            tag: "div",
-            mode: "block",
-            parent: this.element,
-        });
-        this.editContent = new Component({
-            tag: "textarea",
-            parent: this.overridePanel.element,
-        });
-        this.submitButton = new Component({
-            tag: "button",
-            parent: this.overridePanel.element,
-        });
-
-        this.overridePanel.hide();
-        // need to pass anon func otherwise the toggle's scope holds 'this' as the toggleButton
-        this.toggleButton.element.onclick = () => this.overridePanel.toggle;
-    }
 }
 
 interface EditMembersBarParams
@@ -261,23 +106,77 @@ interface EditMembersBarParams
 
 class EditMembersBar extends Component<"div"> {
     register: Register;
-    addMemberButton: Component<"button">;
+    topDiv: Component<"div">;
+    resetButton: Component<"button">;
+    bottomDiv: Component<"div">;
+    addButton: Component<"button">;
+    removeButton: RemoveMemberButton;
+    checkbox: Component<"input">;
     constructor(params: EditMembersBarParams) {
         super({
             tag: "div",
             ...params,
         });
-        this.element.style["display"] = "flex";
-        this.register = new Register({ parent: this.element });
-        this.addMemberButton = new Component({
+        this.topDiv = new Component({
+            tag: "div",
+            parent: this.element,
+        });
+        this.register = new Register({ parent: this.topDiv.element });
+        this.checkbox = new Component({
+            tag: "input",
+            parent: this.topDiv.element,
+            classList: ["register-checkbox"],
+            other: {
+                type: "checkbox",
+            },
+        });
+        this.resetButton = new IconButton({
+            icon: "reset",
+            parent: this.topDiv.element,
+        });
+        this.bottomDiv = new Component({
+            tag: "div",
+            parent: this.element,
+        });
+        this.addButton = new Component({
             tag: "button",
             classList: ["member-button"],
-            parent: this.element,
-            textContent: "+",
+            parent: this.bottomDiv.element,
+            textContent: "New member",
             other: {
                 id: "add-member",
             },
         });
+        this.removeButton = new RemoveMemberButton({
+            parent: this.bottomDiv.element,
+        });
+        this.topDiv.element.style["display"] = "flex";
+        this.bottomDiv.element.style["display"] = "flex";
+    }
+}
+
+class RemoveMemberButton extends DropdownButton {
+    constructor(params: DropdownButtonParameters) {
+        super({
+            textContent: "Delete member",
+            classList: ["member-button"],
+            options: [],
+            ...params,
+        });
+        this.update();
+    }
+    update() {
+        this.dropdown.options = window.MJDATA.members.map(
+            (m) =>
+                new Component({
+                    tag: "button",
+                    textContent: m.name,
+                    other: {
+                        onclick: async (ev: MouseEvent) =>
+                            editMemberList({ name: m.name }, "DELETE"),
+                    },
+                }).element
+        );
     }
 }
 

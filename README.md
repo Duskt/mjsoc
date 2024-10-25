@@ -41,17 +41,19 @@ Contains the Rust server and command line interface.
 
 ## High priority
 
--   Autocomplete member list
--   Add a frontend way to enter points from a table that doesn't exist
--   Rename table no.
+-   add clear session button functionality
+-   migrate the 'database'
 
 ## Medium priority
 
+-   icon button press focus
 -   Indicate round wind on-screen (and have a table map?)
 -   Have an alert pop-up when authorisation runs out.
 
 ## Low priority
 
+-   Add a frontend way to enter points from a table that doesn't exist
+-   Rename table no.
 -   finish success anim
 -   increase font-sizes for tables
 -   style the log page

@@ -76,9 +76,10 @@ export async function manualRegister(payload: { memberId: MemberId }) {
         console.error(`${r}`);
         return;
     }
+    let present: boolean = await r.json();
     window.MJDATA.members = window.MJDATA.members.map((member) => {
         if (member.id === payload.memberId) {
-            member.tournament.registered = true;
+            member.tournament.registered = present;
         }
         return member;
     });
