@@ -196,6 +196,19 @@
       } else {
         throw new Error(`Unknown icon type ${icon}`);
       }
+      this.element.onclick = (ev) => {
+        (params.onclick || (() => {
+        }))(ev);
+        if (ev.defaultPrevented) return;
+        this.svg.style.fill = "lime";
+        window.setTimeout(() => {
+          this.svg.style.transitionDuration = "0.3s";
+          this.svg.style.fill = "black";
+        });
+        window.setTimeout(() => {
+          this.svg.style.transitionDuration = "0s";
+        }, 300);
+      };
     }
   };
 
@@ -1239,6 +1252,7 @@
   TEMP_TABLE.set(11, 192);
   TEMP_TABLE.set(12, 256);
   TEMP_TABLE.set(13, 384);
+  TEMP_TABLE.set(-10, -128);
   function getPointsFromFaan(faan) {
     return TEMP_TABLE.get(faan);
   }
@@ -1253,6 +1267,7 @@
       this.memberId = params.memberId;
       this.zimo = new FaanDropdownButton({
         textContent: "\u81EA\u6478",
+        includePenalty: true,
         parent: this.popup.element
         // don't set onclick here - do it in updatePlayers
       });
@@ -1344,7 +1359,7 @@
   var FaanDropdownButton = class extends DropdownButton {
     constructor(params) {
       let min = params.min || 3;
-      let max = params.max || 13;
+      let max = params.max || 10;
       let faanRange = Array.from(Array(max + 1).keys()).slice(min);
       let passedOnclick = params.onclick;
       if (!passedOnclick) passedOnclick = () => {
@@ -1361,6 +1376,18 @@
           }
         }).element;
       });
+      if (params.includePenalty) {
+        options.push(
+          new Component({
+            tag: "button",
+            classList: ["small-button"],
+            textContent: "Penalty",
+            other: {
+              onclick: (ev) => passedOnclick(ev, -10)
+            }
+          }).element
+        );
+      }
       super({ ...params, options });
       this.min = min;
       this.max = max;
@@ -1584,11 +1611,9 @@
       }
       this.activator = activator;
       let dialog = this;
-      if (!this.activator.onclick) {
-        this.activator.onclick = (ev) => {
-          dialog.activate();
-        };
-      }
+      this.activator.addEventListener("click", (ev) => {
+        this.activate();
+      });
       this.exclude.push(this.activator);
       this.element.style["padding"] = "0";
     }
@@ -1948,22 +1973,22 @@
     }
     let sit = new IconButton({
       icon: "fill",
-      other: {
-        onclick: async (ev) => {
-          await allocateSeats();
-          renderTables();
-        }
+      onclick: async (ev) => {
+        await allocateSeats();
+        renderTables();
       }
     });
     headerBar.children[0].insertAdjacentElement("beforebegin", sit.element);
     let shuffle = new IconButton({
       icon: "shuffle",
       parent: headerBar,
-      other: {
-        onclick: async (ev) => {
-          await shuffleSeats();
-          renderTables();
-        }
+      onclick: async (ev) => {
+        await shuffleSeats();
+        renderTables();
+        let tablesGrid = document.getElementById("table");
+        if (!tablesGrid) throw new Error("Couldn't find #table");
+        tablesGrid.style.animation = "shake 0.2s";
+        window.setTimeout(() => tablesGrid.style.animation = "", 200);
       }
     });
   }

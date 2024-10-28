@@ -31,11 +31,9 @@ export default class Dialog extends FocusNode<"dialog"> {
         }
         this.activator = activator;
         let dialog = this;
-        if (!this.activator.onclick) {
-            this.activator.onclick = (ev) => {
-                dialog.activate();
-            };
-        }
+        this.activator.addEventListener("click", (ev) => {
+            this.activate();
+        });
         this.exclude.push(this.activator);
         // register event in children unless clicking backdrop
         this.element.style["padding"] = "0";

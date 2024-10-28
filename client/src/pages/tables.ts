@@ -31,11 +31,9 @@ function renderHeader() {
     }
     let sit = new IconButton({
         icon: "fill",
-        other: {
-            onclick: async (ev) => {
-                await allocateSeats();
-                renderTables();
-            },
+        onclick: async (ev) => {
+            await allocateSeats();
+            renderTables();
         },
     });
 
@@ -43,11 +41,13 @@ function renderHeader() {
     let shuffle = new IconButton({
         icon: "shuffle",
         parent: headerBar,
-        other: {
-            onclick: async (ev) => {
-                await shuffleSeats();
-                renderTables();
-            },
+        onclick: async (ev) => {
+            await shuffleSeats();
+            renderTables();
+            let tablesGrid = document.getElementById("table");
+            if (!tablesGrid) throw new Error("Couldn't find #table");
+            tablesGrid.style.animation = "shake 0.2s";
+            window.setTimeout(() => (tablesGrid.style.animation = ""), 200);
         },
     });
 }

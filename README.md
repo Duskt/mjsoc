@@ -39,24 +39,23 @@ Contains the Rust server and command line interface.
 
 # Todo
 
-## High priority
+## Priority
 
--   migrate the 'database'
+-   10faan penalty
+-   key for chinese characters
 
-## Medium priority
+## Feature
 
--   icon button press focus
--   Indicate round wind on-screen (and have a table map?)
--   Have an alert pop-up when authorisation runs out.
+-   display round wind
+-   finish success anim
+-   style the log page
 
-## Low priority
+## Future
 
 -   Clear up event rerenders
 -   Add a frontend way to enter points from a table that doesn't exist
 -   Rename table no.
--   finish success anim
 -   increase font-sizes for tables
--   style the log page
 -   refactor the css, particularly for sidebar transitions
 -   Allow multiple clients to interact instantaneously:
     -   sqlite3 migration

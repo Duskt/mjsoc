@@ -3,6 +3,7 @@ import Component, { ComponentParameters } from ".";
 interface IconButtonParameters
     extends Omit<ComponentParameters<"button">, "tag"> {
     icon: "fill" | "shuffle" | "reset";
+    onclick?: (ev: MouseEvent) => void;
 }
 
 // <!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
@@ -47,5 +48,17 @@ export default class IconButton extends Component<"button"> {
         } else {
             throw new Error(`Unknown icon type ${icon}`);
         }
+        this.element.onclick = (ev) => {
+            (params.onclick || (() => {}))(ev);
+            if (ev.defaultPrevented) return;
+            this.svg.style.fill = "lime";
+            window.setTimeout(() => {
+                this.svg.style.transitionDuration = "0.3s";
+                this.svg.style.fill = "black";
+            });
+            window.setTimeout(() => {
+                this.svg.style.transitionDuration = "0s";
+            }, 300);
+        };
     }
 }
