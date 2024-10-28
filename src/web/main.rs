@@ -8,7 +8,11 @@ mod pages;
 mod rate_limit;
 
 use actix_files as fs;
-use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
+use actix_session::{
+    config::{PersistentSession, TtlExtensionPolicy},
+    storage::CookieSessionStore,
+    SessionMiddleware,
+};
 use actix_web::{
     cookie::{self, time::Duration},
     web::{self, delete, get, post, put},
@@ -68,7 +72,12 @@ async fn main() -> std::io::Result<()> {
             .wrap(RateLimit::new(quotas_mtx.clone()))
             .wrap(
                 SessionMiddleware::builder(CookieSessionStore::default(), key.clone())
-                    .session_lifecycle(PersistentSession::default().session_ttl(Duration::days(2)))
+                    .session_lifecycle(
+                        // a bit much but until i can figure out why it keeps reloading
+                        PersistentSession::default()
+                            .session_ttl(Duration::days(2))
+                            .session_ttl_extension_policy(TtlExtensionPolicy::OnEveryRequest),
+                    )
                     .build(),
             )
             .route("/qr", get().to(generate_qr))

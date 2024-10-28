@@ -1936,6 +1936,10 @@
     document.addEventListener("mjEditMember", (ev) => renderTables());
     renderSidebar();
     renderHeader();
+    document.addEventListener("mjResetSession", (ev) => {
+      renderSidebar();
+      renderTables();
+    });
   }
   function renderHeader() {
     let headerBar = document.getElementById("header-bar");

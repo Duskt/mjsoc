@@ -24,7 +24,7 @@ source = "data"
 destination = "/data"
 
 [env]
-MAX_PLAYERS = '50'
+MAX_PLAYERS = '100'
 MAX_NAME_LEN = '64'
 QR_SIZE = '256'
 
