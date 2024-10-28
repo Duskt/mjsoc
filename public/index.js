@@ -37,7 +37,8 @@
   };
 
   // src/request.ts
-  var PointTransferEvent = new Event("mjPointTransfer");
+  var MJ_EVENT_PREFIX = "mj";
+  var PointTransferEvent = new Event(`${MJ_EVENT_PREFIX}PointTransfer`);
   async function request(path2, payload, method = "POST") {
     let url = `${window.origin}/` + (path2[0] != "/" ? path2 : path2.slice(1));
     let r = await fetch(url, {
@@ -67,7 +68,7 @@
     document.dispatchEvent(PointTransferEvent);
     return true;
   }
-  var RegisterEvent = new Event("mjRegister");
+  var RegisterEvent = new Event(`${MJ_EVENT_PREFIX}Register`);
   async function manualRegister(payload) {
     let r = await request("/register", { member_id: payload.memberId }, "POST");
     if (!r.ok) {
@@ -83,7 +84,7 @@
     });
     document.dispatchEvent(RegisterEvent);
   }
-  var EditMemberEvent = new Event("mjEditMember");
+  var EditMemberEvent = new Event(`${MJ_EVENT_PREFIX}EditMember`);
   async function editMemberList(payload, mode) {
     let r = await request("/members", payload, mode);
     if (!r.ok) {
@@ -112,6 +113,20 @@
       window.MJDATA.members.push(await r.json());
     }
     document.dispatchEvent(EditMemberEvent);
+  }
+  var ResetSessionEvent = new Event(`${MJ_EVENT_PREFIX}ResetSession`);
+  async function resetSession() {
+    let r = await request("/week", null, "DELETE");
+    if (!r.ok) {
+      console.error(`Failed to reset the session. ${r}`);
+    }
+    let m;
+    for (m of window.MJDATA.members) {
+      m.tournament.registered = false;
+      m.tournament.total_points += m.tournament.session_points;
+      m.tournament.session_points = 0;
+    }
+    document.dispatchEvent(ResetSessionEvent);
   }
 
   // src/components/deleteButton.ts
@@ -1557,8 +1572,16 @@
   // src/components/input/focus/dialog.ts
   var Dialog = class extends FocusNode {
     constructor({ activator, ...params }) {
-      super(params);
+      super({
+        tag: "dialog",
+        ...params
+      });
       this.excludeSelf = false;
+      if (activator === params.parent) {
+        console.warn(
+          `Setting the activator as a parent of the ${this} dialog will mean that whenever it is clicked it is reactivated. To bypass this warning, manually add the child node.`
+        );
+      }
       this.activator = activator;
       let dialog = this;
       if (!this.activator.onclick) {
@@ -1576,6 +1599,61 @@
     deactivate() {
       this.element.close();
       return super.deactivate();
+    }
+  };
+  var ConfirmationDialog = class extends Dialog {
+    constructor(params) {
+      super(params);
+      this.element.style.maxWidth = "50%";
+      this.div = new Component({
+        tag: "div",
+        parent: this.element
+      });
+      this.div.element.style.width = "100%";
+      this.div.element.style.height = "100%";
+      this.p = new Component({
+        tag: "p",
+        parent: this.div.element,
+        other: {
+          innerHTML: params.message.replace("\n", "<br/>")
+        }
+      });
+      this.p.element.style.width = "100%";
+      this.buttonsDiv = new Component({
+        tag: "div",
+        parent: this.div.element
+      });
+      this.buttonsDiv.element.style.display = "flex";
+      this.buttonsDiv.element.style.justifyContent = "center";
+      this.confirm = new Component({
+        tag: "button",
+        textContent: "Yes",
+        parent: this.buttonsDiv.element
+      });
+      this.cancel = new Component({
+        tag: "button",
+        textContent: "Cancel",
+        parent: this.buttonsDiv.element
+      });
+      this.confirm.element.style.fontSize = "16px";
+      this.cancel.element.style.fontSize = "16px";
+      this.confirm.element.style.margin = "0 1em 1em 1em";
+      this.cancel.element.style.margin = "0 1em 1em 1em";
+      this.confirm.element.style.padding = "4px";
+      this.cancel.element.style.padding = "4px";
+      this.onconfirm = params.onconfirm;
+      this.oncancel = params.oncancel === void 0 ? () => {
+      } : params.oncancel;
+      this.updateButtons();
+    }
+    updateButtons() {
+      this.cancel.element.onclick = (ev) => {
+        this.oncancel(ev);
+        if (!ev.defaultPrevented) {
+          this.deactivate();
+        }
+      };
+      this.confirm.element.onclick = this.onconfirm;
     }
   };
 
@@ -1671,7 +1749,7 @@
     };
     let openSidebar = () => {
       sidebar.classList.replace("closed", "open");
-      if (window.innerWidth < 800) {
+      if (window.innerWidth < 900) {
         sidebar.style["width"] = "100%";
         main_article.style["display"] = "none";
       } else {
@@ -1692,7 +1770,6 @@
       throw Error("no form");
     }
     let dialog = new Dialog({
-      tag: "dialog",
       element: document.getElementsByTagName("dialog")[0],
       activator: editMembersBar.addButton.element
     });
@@ -1746,6 +1823,13 @@
       this.resetButton = new IconButton({
         icon: "reset",
         parent: this.topDiv.element
+      });
+      let confirmation = new ConfirmationDialog({
+        activator: this.resetButton.element,
+        parent: this.topDiv.element,
+        // NOT INSIDE THE BUTTON otherwise it will reactivate itself
+        message: "Are you sure you want to reset the session?\n\nThis will sum the current points to each member's total points. This cannot be undone. It will also mark everyone as absent.",
+        onconfirm: (ev) => resetSession()
       });
       this.bottomDiv = new Component({
         tag: "div",

@@ -41,7 +41,6 @@ Contains the Rust server and command line interface.
 
 ## High priority
 
--   add clear session button functionality
 -   migrate the 'database'
 
 ## Medium priority
@@ -52,6 +51,7 @@ Contains the Rust server and command line interface.
 
 ## Low priority
 
+-   Clear up event rerenders
 -   Add a frontend way to enter points from a table that doesn't exist
 -   Rename table no.
 -   finish success anim
@@ -65,3 +65,4 @@ Contains the Rust server and command line interface.
 # Bugs
 
 -   duplicate tables
+-   premature session reload?

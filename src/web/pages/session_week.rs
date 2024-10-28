@@ -53,3 +53,26 @@ pub async fn change_week(
     mjdata.save_to_file();
     HttpResponse::NoContent().finish()
 }
+
+pub async fn reset_session(
+    session: Session,
+    data: web::Data<AppState>,
+    _body: web::Json<()>, // js 'null'
+    req: HttpRequest,
+) -> impl Responder {
+    if !is_authenticated(&session, &data.authenticated_keys) {
+        // Login and redirect back here
+        return get_redirect_response(&format!(
+            "/login?redirect={}",
+            encode(&req.uri().path_and_query().unwrap().to_string()),
+        ));
+    }
+    let mut mjdata = data.mahjong_data.lock().unwrap();
+    mjdata.members.iter_mut().for_each(|m| {
+        m.tournament.registered = false;
+        m.tournament.total_points += m.tournament.session_points;
+        m.tournament.session_points = 0;
+    });
+    mjdata.save_to_file();
+    HttpResponse::Ok().body("Success")
+}

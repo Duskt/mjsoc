@@ -1,8 +1,10 @@
 import { getMember } from "./data";
 
+const MJ_EVENT_PREFIX = "mj";
+
 type RequestMethod = "GET" | "POST" | "PUT" | "DELETE";
 
-const PointTransferEvent = new Event("mjPointTransfer");
+const PointTransferEvent = new Event(`${MJ_EVENT_PREFIX}PointTransfer`);
 
 export async function request(
     path: string,
@@ -68,7 +70,7 @@ export async function pointTransfer(payload: PointTransfer) {
     return true;
 }
 
-const RegisterEvent = new Event("mjRegister");
+const RegisterEvent = new Event(`${MJ_EVENT_PREFIX}Register`);
 
 export async function manualRegister(payload: { memberId: MemberId }) {
     let r = await request("/register", { member_id: payload.memberId }, "POST");
@@ -86,7 +88,7 @@ export async function manualRegister(payload: { memberId: MemberId }) {
     document.dispatchEvent(RegisterEvent);
 }
 
-const EditMemberEvent = new Event("mjEditMember");
+const EditMemberEvent = new Event(`${MJ_EVENT_PREFIX}EditMember`);
 
 export async function editMemberList(
     payload: { name: string },
@@ -121,4 +123,21 @@ export async function editMemberList(
         window.MJDATA.members.push(await r.json());
     }
     document.dispatchEvent(EditMemberEvent);
+}
+
+const ResetSessionEvent = new Event(`${MJ_EVENT_PREFIX}ResetSession`);
+
+export async function resetSession() {
+    let r = await request("/week", null, "DELETE");
+    if (!r.ok) {
+        console.error(`Failed to reset the session. ${r}`);
+    }
+    // repeated computation but its better than a big payload?
+    let m: Member;
+    for (m of window.MJDATA.members) {
+        m.tournament.registered = false;
+        m.tournament.total_points += m.tournament.session_points;
+        m.tournament.session_points = 0;
+    }
+    document.dispatchEvent(ResetSessionEvent);
 }

@@ -18,6 +18,10 @@ export default function tables() {
     // the left sidebar contains leaderboard and player info
     renderSidebar();
     renderHeader();
+    document.addEventListener("mjResetSession", (ev) => {
+        renderSidebar();
+        renderTables();
+    });
 }
 
 function renderHeader() {
@@ -34,7 +38,7 @@ function renderHeader() {
             },
         },
     });
-    
+
     headerBar.children[0].insertAdjacentElement("beforebegin", sit.element);
     let shuffle = new IconButton({
         icon: "shuffle",

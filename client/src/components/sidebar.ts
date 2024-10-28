@@ -1,12 +1,11 @@
 import Component, { ComponentParameters } from ".";
-import { editMemberList, manualRegister, request } from "../request";
+import { editMemberList, manualRegister, resetSession } from "../request";
 import IconButton from "./icons";
-import Dialog from "./input/focus/dialog";
+import Dialog, { ConfirmationDialog } from "./input/focus/dialog";
 import {
     DropdownButton,
     DropdownButtonParameters,
 } from "./input/focus/dropdown";
-import ToggleComponent from "./input/toggle";
 import MemberGrid from "./memberTable";
 
 export default function renderSidebar() {
@@ -39,7 +38,7 @@ export default function renderSidebar() {
 
     let openSidebar = () => {
         sidebar.classList.replace("closed", "open");
-        if (window.innerWidth < 800) {
+        if (window.innerWidth < 900) {
             sidebar.style["width"] = "100%";
             main_article.style["display"] = "none";
         } else {
@@ -65,7 +64,6 @@ export default function renderSidebar() {
         throw Error("no form");
     }
     let dialog = new Dialog({
-        tag: "dialog",
         element: document.getElementsByTagName("dialog")[0],
         activator: editMembersBar.addButton.element,
     });
@@ -107,7 +105,7 @@ interface EditMembersBarParams
 class EditMembersBar extends Component<"div"> {
     register: Register;
     topDiv: Component<"div">;
-    resetButton: Component<"button">;
+    resetButton: IconButton;
     bottomDiv: Component<"div">;
     addButton: Component<"button">;
     removeButton: RemoveMemberButton;
@@ -133,6 +131,13 @@ class EditMembersBar extends Component<"div"> {
         this.resetButton = new IconButton({
             icon: "reset",
             parent: this.topDiv.element,
+        });
+        let confirmation = new ConfirmationDialog({
+            activator: this.resetButton.element,
+            parent: this.topDiv.element, // NOT INSIDE THE BUTTON otherwise it will reactivate itself
+            message:
+                "Are you sure you want to reset the session?\n\nThis will sum the current points to each member's total points. This cannot be undone. It will also mark everyone as absent.",
+            onconfirm: (ev) => resetSession(),
         });
         this.bottomDiv = new Component({
             tag: "div",

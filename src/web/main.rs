@@ -37,7 +37,7 @@ use pages::{
     },
     qr::page::{download_qr, generate_qr},
     register_attendance::page::{manual_register_attendance, register_qr_attendance},
-    session_week::{change_week, get_week},
+    session_week::{change_week, get_week, reset_session},
 };
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
 
@@ -74,16 +74,19 @@ async fn main() -> std::io::Result<()> {
             .route("/qr", get().to(generate_qr))
             .route("/download", get().to(download_qr))
             .route("/", get().to(index))
-            // session week page routing
-            .route("/week", get().to(get_week))
-            .route("/week", post().to(change_week))
             // authentication
             .route("/login", get().to(login))
             .route("/auth", post().to(authenticate))
             .service(
+                web::resource("/week")
+                    .route(get().to(get_week))
+                    .route(post().to(change_week))
+                    .route(delete().to(reset_session)),
+            )
+            .service(
                 web::resource("/register")
                     .route(get().to(register_qr_attendance))
-                    .route(post().to(manual_register_attendance))
+                    .route(post().to(manual_register_attendance)),
             )
             .route("/assets/logo.jpg", get().to(logo))
             // mahjong client
