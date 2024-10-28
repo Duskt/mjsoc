@@ -34,6 +34,7 @@ TEMP_TABLE.set(10, 128);
 TEMP_TABLE.set(11, 192);
 TEMP_TABLE.set(12, 256);
 TEMP_TABLE.set(13, 384);
+TEMP_TABLE.set(-10, -128);
 // todo: replace with an editable page with a table on
 function getPointsFromFaan(faan: number) {
     return TEMP_TABLE.get(faan);
@@ -70,6 +71,7 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
         this.memberId = params.memberId;
         this.zimo = new FaanDropdownButton({
             textContent: "自摸",
+            includePenalty: true,
             parent: this.popup.element,
             // don't set onclick here - do it in updatePlayers
         });
@@ -171,17 +173,20 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
 interface FaanDropdownButtonParameters extends DropdownButtonParameters {
     min?: number;
     max?: number;
+    includePenalty?: boolean;
     onclick?: (ev: MouseEvent, faan: number) => void;
 }
 class FaanDropdownButton extends DropdownButton {
     min: number;
     max: number;
+    includePenalty: boolean;
     _onclick: (ev: MouseEvent, faan: number) => void;
     constructor(params: FaanDropdownButtonParameters) {
         let min = params.min || 3;
-        let max = params.max || 13;
+        let max = params.max || 10;
         // number range from min (incl.) to max (incl.)
         let faanRange = Array.from(Array(max + 1).keys()).slice(min);
+        if (params.includePenalty) faanRange.push(-10);
         // makes dropdown item buttons for each number in range
         let passedOnclick = params.onclick;
         if (!passedOnclick) passedOnclick = () => {};
@@ -191,7 +196,7 @@ class FaanDropdownButton extends DropdownButton {
             return new Component({
                 tag: "button",
                 classList: ["small-button"],
-                textContent: faan.toString(),
+                textContent: faan == -10 ? "Penalty" : faan.toString(),
                 other: {
                     onclick,
                 },
@@ -200,6 +205,7 @@ class FaanDropdownButton extends DropdownButton {
         super({ ...params, options });
         this.min = min;
         this.max = max;
+        this.includePenalty = params.includePenalty || false;
         this._onclick = passedOnclick;
     }
     public get onclick() {
@@ -207,12 +213,13 @@ class FaanDropdownButton extends DropdownButton {
     }
     public set onclick(v: (ev: MouseEvent, faan: number) => void) {
         let faanRange = Array.from(Array(this.max + 1).keys()).slice(this.min);
+        if (this.includePenalty) faanRange.push(-10);
         this.dropdown.options = faanRange.map((faan) => {
             let func = (ev: MouseEvent) => v(ev, faan);
             return new Component({
                 tag: "button",
                 classList: ["small-button"],
-                textContent: faan.toString(),
+                textContent: faan === -10 ? "Penalty" : faan.toString(),
                 other: {
                     onclick: func,
                 },

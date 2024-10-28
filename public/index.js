@@ -1361,6 +1361,7 @@
       let min = params.min || 3;
       let max = params.max || 10;
       let faanRange = Array.from(Array(max + 1).keys()).slice(min);
+      if (params.includePenalty) faanRange.push(-10);
       let passedOnclick = params.onclick;
       if (!passedOnclick) passedOnclick = () => {
       };
@@ -1370,27 +1371,16 @@
         return new Component({
           tag: "button",
           classList: ["small-button"],
-          textContent: faan.toString(),
+          textContent: faan == -10 ? "Penalty" : faan.toString(),
           other: {
             onclick
           }
         }).element;
       });
-      if (params.includePenalty) {
-        options.push(
-          new Component({
-            tag: "button",
-            classList: ["small-button"],
-            textContent: "Penalty",
-            other: {
-              onclick: (ev) => passedOnclick(ev, -10)
-            }
-          }).element
-        );
-      }
       super({ ...params, options });
       this.min = min;
       this.max = max;
+      this.includePenalty = params.includePenalty || false;
       this._onclick = passedOnclick;
     }
     get onclick() {
@@ -1398,12 +1388,13 @@
     }
     set onclick(v) {
       let faanRange = Array.from(Array(this.max + 1).keys()).slice(this.min);
+      if (this.includePenalty) faanRange.push(-10);
       this.dropdown.options = faanRange.map((faan) => {
         let func = (ev) => v(ev, faan);
         return new Component({
           tag: "button",
           classList: ["small-button"],
-          textContent: faan.toString(),
+          textContent: faan === -10 ? "Penalty" : faan.toString(),
           other: {
             onclick: func
           }

@@ -70,8 +70,8 @@ pub async fn create_member(
         tournament: TournamentData {
             total_points: 0,
             session_points: 0,
-            registered: false
-        }
+            registered: false,
+        },
     };
     mjdata.members.push(new_member.clone());
     mjdata.save_to_file();
@@ -152,7 +152,7 @@ pub async fn transfer_points(
         }
     }
     // and give points*n to...
-    let points = ((body.points as usize) * body.from.len()) as i32;
+    let points = ((body.points as isize) * (body.from.len() as isize)) as i32;
     if let Some(mem) = mjdata.members.iter_mut().find(|mem| mem.id == body.to) {
         mem.tournament.session_points += points;
         update_members.push(mem.clone());
