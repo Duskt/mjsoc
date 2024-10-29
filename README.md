@@ -44,21 +44,24 @@ Contains the Rust server and command line interface.
 ## Feature
 
 -   display round wind
--   finish success anim
 -   style the log page
+-   add success anim
+
+## Refactor
+
+-   Clear up event rerenders
+-   refactor the css, particularly for sidebar transitions
 
 ## Future
 
--   Clear up event rerenders
 -   Add a frontend way to enter points from a table that doesn't exist
 -   Rename table no.
 -   increase font-sizes for tables
--   refactor the css, particularly for sidebar transitions
 -   Allow multiple clients to interact instantaneously:
     -   sqlite3 migration
     -   unauthorised page
 
-# Bugs
+## Bugs
 
 -   duplicate tables
 -   premature session reload?
