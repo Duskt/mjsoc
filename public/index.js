@@ -2147,11 +2147,14 @@
   // src/pages/tables.ts
   function tables() {
     renderTables();
-    document.addEventListener("mjEditMember", (ev) => renderTables());
     renderSidebar();
     renderHeader();
+    document.addEventListener("mjEditMember", (ev) => renderTables());
     document.addEventListener("mjResetSession", (ev) => {
       renderSidebar();
+      renderTables();
+    });
+    document.addEventListener("mjRegister", (ev) => {
       renderTables();
     });
   }
