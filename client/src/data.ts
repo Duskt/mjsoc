@@ -128,3 +128,17 @@ export function getOtherPlayersOnTable(
         }
     });
 }
+
+export const POINTS: Map<number, number> = new Map();
+POINTS.set(3, 8);
+POINTS.set(4, 16);
+POINTS.set(5, 24);
+POINTS.set(6, 32);
+POINTS.set(7, 48);
+POINTS.set(8, 64);
+POINTS.set(9, 96);
+POINTS.set(10, 128);
+POINTS.set(11, 192);
+POINTS.set(12, 256);
+POINTS.set(13, 384);
+POINTS.set(-10, -128);

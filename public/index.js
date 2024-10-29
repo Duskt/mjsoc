@@ -631,6 +631,19 @@
       }
     });
   }
+  var POINTS = /* @__PURE__ */ new Map();
+  POINTS.set(3, 8);
+  POINTS.set(4, 16);
+  POINTS.set(5, 24);
+  POINTS.set(6, 32);
+  POINTS.set(7, 48);
+  POINTS.set(8, 64);
+  POINTS.set(9, 96);
+  POINTS.set(10, 128);
+  POINTS.set(11, 192);
+  POINTS.set(12, 256);
+  POINTS.set(13, 384);
+  POINTS.set(-10, -128);
 
   // node_modules/canvas-confetti/dist/confetti.module.mjs
   var module = {};
@@ -1375,21 +1388,10 @@
   }
 
   // src/components/player.ts
-  var TEMP_TABLE = /* @__PURE__ */ new Map();
-  TEMP_TABLE.set(3, 8);
-  TEMP_TABLE.set(4, 16);
-  TEMP_TABLE.set(5, 24);
-  TEMP_TABLE.set(6, 32);
-  TEMP_TABLE.set(7, 48);
-  TEMP_TABLE.set(8, 64);
-  TEMP_TABLE.set(9, 96);
-  TEMP_TABLE.set(10, 128);
-  TEMP_TABLE.set(11, 192);
-  TEMP_TABLE.set(12, 256);
-  TEMP_TABLE.set(13, 384);
-  TEMP_TABLE.set(-10, -128);
   function getPointsFromFaan(faan) {
-    return TEMP_TABLE.get(faan);
+    let pts = POINTS.get(faan);
+    if (pts === void 0) throw new Error(`Couldn't get ${faan} faan.`);
+    return pts;
   }
   var WinButton = class extends UsesMember(UsesTable(FocusButton)) {
     constructor(params) {
@@ -2179,7 +2181,6 @@
         if (!tablesGrid) throw new Error("Couldn't find #table");
         tablesGrid.style.animation = "shake 0.2s";
         window.setTimeout(() => tablesGrid.style.animation = "", 200);
-        console.log(legendPanel);
         legendPanel.roundWind.updateWind();
         legendPanel.roundWind.setLock();
       },
@@ -2315,12 +2316,24 @@
     logTable.classList.add("info-grid");
     renderLogsTable(logTable);
   }
+  function getFaanFromPoints(points, n_losers) {
+    if (n_losers == 1) {
+      points = points / 2;
+    }
+    for (let [faan, pts] of POINTS.entries()) {
+      if (pts == points) return faan;
+    }
+    return void 0;
+  }
   function renderLogsTable(parent) {
     parent.innerHTML = "";
     let headerRow = document.createElement("tr");
     parent.appendChild(headerRow);
+    let faan = document.createElement("th");
+    faan.textContent = "Faan";
+    headerRow.appendChild(faan);
     let points = document.createElement("th");
-    points.textContent = "Points won (per loser)";
+    points.textContent = "Points /n";
     points.style["width"] = "20%";
     headerRow.appendChild(points);
     let winner = document.createElement("th");
@@ -2343,6 +2356,14 @@
       super({
         tag: "tr",
         ...params
+      });
+      this.faan = new Component({
+        tag: "td",
+        parent: this.element,
+        textContent: getFaanFromPoints(
+          params.transfer.points,
+          params.transfer.from.length
+        )?.toString() || "???"
       });
       this.points = new Component({
         tag: "td",

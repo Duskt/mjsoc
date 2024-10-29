@@ -1,5 +1,5 @@
 import Component, { ComponentParameters } from "../components";
-import { getMember } from "../data";
+import { getMember, POINTS } from "../data";
 
 export default function logPage() {
     let logTable = document.getElementById("log-table");
@@ -10,14 +10,27 @@ export default function logPage() {
     renderLogsTable(logTable);
 }
 
+function getFaanFromPoints(points: number, n_losers: number) {
+    if (n_losers == 1) {
+        points = points / 2;
+    }
+    for (let [faan, pts] of POINTS.entries()) {
+        if (pts == points) return faan;
+    }
+    return undefined;
+}
+
 function renderLogsTable(parent: HTMLTableElement) {
     // clear the table
     parent.innerHTML = "";
     // render headings
     let headerRow = document.createElement("tr");
     parent.appendChild(headerRow);
+    let faan = document.createElement("th");
+    faan.textContent = "Faan";
+    headerRow.appendChild(faan);
     let points = document.createElement("th");
-    points.textContent = "Points won (per loser)";
+    points.textContent = "Points /n";
     points.style["width"] = "20%";
     headerRow.appendChild(points);
     let winner = document.createElement("th");
@@ -42,6 +55,7 @@ interface LogRowParams extends Omit<ComponentParameters<"tr">, "tag"> {
 }
 
 class LogRow extends Component<"tr"> {
+    faan: Component<"td">;
     points: Component<"td">;
     to: Component<"td">;
     from: Component<"td">;
@@ -49,6 +63,15 @@ class LogRow extends Component<"tr"> {
         super({
             tag: "tr",
             ...params,
+        });
+        this.faan = new Component({
+            tag: "td",
+            parent: this.element,
+            textContent:
+                getFaanFromPoints(
+                    params.transfer.points,
+                    params.transfer.from.length
+                )?.toString() || "???",
         });
         this.points = new Component({
             tag: "td",

@@ -12,6 +12,7 @@ import {
     getOtherPlayersOnTable,
     MahjongUnknownMemberError,
     getMember,
+    POINTS,
 } from "../data";
 import { InputListener, InputListenerParameters } from "./input/listener";
 import { pointTransfer, request } from "../request";
@@ -22,22 +23,11 @@ const allK = <K>(array: (K | undefined)[]): array is K[] => {
     return !array.some((v) => v === undefined);
 };
 
-const TEMP_TABLE = new Map();
-TEMP_TABLE.set(3, 8);
-TEMP_TABLE.set(4, 16);
-TEMP_TABLE.set(5, 24);
-TEMP_TABLE.set(6, 32);
-TEMP_TABLE.set(7, 48);
-TEMP_TABLE.set(8, 64);
-TEMP_TABLE.set(9, 96);
-TEMP_TABLE.set(10, 128);
-TEMP_TABLE.set(11, 192);
-TEMP_TABLE.set(12, 256);
-TEMP_TABLE.set(13, 384);
-TEMP_TABLE.set(-10, -128);
 // todo: replace with an editable page with a table on
 function getPointsFromFaan(faan: number) {
-    return TEMP_TABLE.get(faan);
+    let pts = POINTS.get(faan);
+    if (pts === undefined) throw new Error(`Couldn't get ${faan} faan.`);
+    return pts;
 }
 
 interface WinButtonParameters extends FocusButtonParameters {
