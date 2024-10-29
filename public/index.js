@@ -2202,7 +2202,7 @@
     );
     tables2 = tables2.concat(sorted_tabledata).concat([void 0]);
     let current_row = document.createElement("tr");
-    let n_cols = Math.ceil(Math.sqrt(tables2.length));
+    let n_cols = 3;
     let index = 0;
     let td = document.createElement("td");
     for (const i of tables2) {

@@ -85,7 +85,7 @@ function renderTables() {
     tables = tables.concat(sorted_tabledata).concat([undefined]);
 
     let current_row = document.createElement("tr");
-    let n_cols = Math.ceil(Math.sqrt(tables.length));
+    let n_cols = 3; //Math.ceil(Math.sqrt(tables.length));
     let index = 0;
     let td = document.createElement("td");
     for (const i of tables) {
