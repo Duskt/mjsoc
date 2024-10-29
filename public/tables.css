@@ -262,3 +262,26 @@ dialog button {
   90% { transform: translate(1px, 2px) rotate(0deg); }
   100% { transform: translate(1px, -2px) rotate(-1deg); }
 }
+
+.legend-panel {
+  position: absolute;
+  right: 5%;
+  width: 11em;
+  font-size: 14px;
+  z-index: 1;
+  background-color: #c5bcb5;
+  border: 1px solid black;
+}
+
+.legend-panel ul {
+  padding-left: 20px;
+}
+
+.legend-panel > p > button {
+  border: none;
+  background: none;
+}
+
+.round-wind-span {
+  font-size: 32px;
+}

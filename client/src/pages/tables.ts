@@ -5,6 +5,7 @@ import {
     InputListener,
     InputListenerParameters,
 } from "../components/input/listener";
+import Legend from "../components/legendPanel";
 import PlayerTag from "../components/player";
 import { allocateSeats, shuffleSeats } from "../components/seatingUtils";
 import renderSidebar from "../components/sidebar";
@@ -51,10 +52,15 @@ function renderHeader() {
             if (!tablesGrid) throw new Error("Couldn't find #table");
             tablesGrid.style.animation = "shake 0.2s";
             window.setTimeout(() => (tablesGrid.style.animation = ""), 200);
+            legendPanel.roundWind.updateWind();
+            legendPanel.roundWind.setLock();
         },
         other: {
             title: "Randomize seating",
         },
+    });
+    let legendPanel = new Legend({
+        parent: headerBar,
     });
 }
 

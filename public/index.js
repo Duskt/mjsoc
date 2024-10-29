@@ -366,6 +366,140 @@
     }
   };
 
+  // src/components/legendPanel.ts
+  var Legend = class extends Component {
+    constructor(params) {
+      if (params.classList === void 0) params.classList = [];
+      params.classList = params.classList.concat(["legend-panel"]);
+      super({
+        tag: "div",
+        ...params
+      });
+      this.roundWind = new RoundWind({
+        wind: "east",
+        parent: this.element
+      });
+      this.keyUl = new Component({
+        tag: "ul",
+        parent: this.element
+      });
+      this.keyLis = [
+        new Component({
+          tag: "li",
+          parent: this.keyUl.element,
+          textContent: "\u98DF: Win"
+        }),
+        new Component({
+          tag: "li",
+          parent: this.keyUl.element,
+          textContent: "\u81EA\u6478: Self-draw"
+        }),
+        new Component({
+          tag: "li",
+          parent: this.keyUl.element,
+          textContent: "\u6253\u51FA: Direct hit"
+        })
+      ];
+      makeDraggable(this.element);
+    }
+  };
+  var WindCharacters = /* @__PURE__ */ new Map();
+  WindCharacters.set("east", "\u6771");
+  WindCharacters.set("south", "\u5357");
+  WindCharacters.set("west", "\u897F");
+  WindCharacters.set("north", "\u5317");
+  var RoundWind = class extends Component {
+    constructor({ wind = "east", ...params }) {
+      super({
+        tag: "p",
+        ...params
+      });
+      this.lock = false;
+      this.wind = wind;
+      this.ddb = new DropdownButton({
+        parent: this.element,
+        options: ["east", "south", "west", "north"].map(
+          (w) => new Component({
+            tag: "button",
+            textContent: WindCharacters.get(w) || "ERR",
+            other: {
+              onclick: (ev) => {
+                this.setWind(w);
+                this.ddb.deactivate();
+              }
+            }
+          }).element
+        )
+      });
+      this.ddbSpan = new Component({
+        tag: "span",
+        textContent: WindCharacters.get(wind),
+        parent: this.ddb.element,
+        classList: ["round-wind-span"],
+        other: {
+          onclick: (ev) => this.ddb.activate()
+        }
+      });
+      this.br = document.createElement("br");
+      this.element.appendChild(this.br);
+      this.windCaption = new Component({
+        tag: "span",
+        textContent: `(${wind})`,
+        parent: this.element
+      });
+    }
+    setLock(time = 6e4) {
+      this.lock = true;
+      window.setTimeout(() => this.lock = false, time);
+    }
+    setWind(wind) {
+      this.wind = wind;
+      this.ddbSpan.element.textContent = WindCharacters.get(wind) || "ERR";
+      this.windCaption.element.textContent = `(${wind})`;
+    }
+    updateWind() {
+      if (this.lock === true) return;
+      switch (this.wind) {
+        case "east":
+          this.setWind("south");
+          return;
+        case "south":
+          this.setWind("west");
+          return;
+        case "west":
+          this.setWind("north");
+          return;
+        case "north":
+          this.setWind("east");
+          return;
+      }
+    }
+  };
+  function makeDraggable(elmnt) {
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    elmnt.onmousedown = dragMouseDown;
+    function dragMouseDown(e) {
+      e.preventDefault();
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      document.onmousemove = elementDrag;
+    }
+    function elementDrag(e) {
+      e.preventDefault();
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      elmnt.style.top = elmnt.offsetTop - pos2 + "px";
+      elmnt.style.left = elmnt.offsetLeft - pos1 + "px";
+    }
+    function closeDragElement() {
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+  }
+
   // src/components/nametag.ts
   var NameTag = class extends InputListener {
     constructor({ ...params }) {
@@ -2045,10 +2179,16 @@
         if (!tablesGrid) throw new Error("Couldn't find #table");
         tablesGrid.style.animation = "shake 0.2s";
         window.setTimeout(() => tablesGrid.style.animation = "", 200);
+        console.log(legendPanel);
+        legendPanel.roundWind.updateWind();
+        legendPanel.roundWind.setLock();
       },
       other: {
         title: "Randomize seating"
       }
+    });
+    let legendPanel = new Legend({
+      parent: headerBar
     });
   }
   function renderTables() {

@@ -43,7 +43,6 @@ Contains the Rust server and command line interface.
 
 ## Feature
 
--   display round wind
 -   style the log page
 -   add success anim
 
