@@ -27,6 +27,7 @@ export default class NameTag extends InputListener<"select"> {
         // render other options
         for (const m of window.MJDATA.members) {
             if (m.id === params.value?.id) continue;
+            if (!m.tournament.registered) continue;
             this.renderOption(m);
         }
     }

@@ -39,7 +39,7 @@ pub async fn get_tables(
             div id="header-bar" { h1 { "Tables" } }
             table id="table" {}
         }
-        dialog {
+        dialog id="add-member-dialog" {
             // as far as i can tell method="dialog" does nothing since i override onsubmit
             form method="dialog" action="/members" enctype="application/json" {
                 label for="name" { "Name:" }

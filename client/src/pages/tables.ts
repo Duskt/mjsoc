@@ -35,6 +35,9 @@ function renderHeader() {
             await allocateSeats();
             renderTables();
         },
+        other: {
+            title: "Fill seats with players",
+        },
     });
 
     headerBar.children[0].insertAdjacentElement("beforebegin", sit.element);
@@ -48,6 +51,9 @@ function renderHeader() {
             if (!tablesGrid) throw new Error("Couldn't find #table");
             tablesGrid.style.animation = "shake 0.2s";
             window.setTimeout(() => (tablesGrid.style.animation = ""), 200);
+        },
+        other: {
+            title: "Randomize seating",
         },
     });
 }

@@ -3,7 +3,7 @@ import FocusNode, { FocusNodeParameters } from "./focusNode";
 
 export interface DialogParameters
     extends Omit<FocusNodeParameters<"dialog">, "tag"> {
-    activator: HTMLElement;
+    activator: Component<any>;
 }
 
 /**
@@ -17,24 +17,24 @@ export interface DialogParameters
  * the dialog via the shadow.
  */
 export default class Dialog extends FocusNode<"dialog"> {
-    activator: HTMLElement;
+    activator: Component<any>;
     excludeSelf: boolean = false;
     constructor({ activator, ...params }: DialogParameters) {
         super({
             tag: "dialog",
             ...params,
         });
-        if (activator === params.parent) {
+        if (activator.element === params.parent) {
             console.warn(
                 `Setting the activator as a parent of the ${this} dialog will mean that whenever it is clicked it is reactivated. To bypass this warning, manually add the child node.`
             );
         }
         this.activator = activator;
         let dialog = this;
-        this.activator.addEventListener("click", (ev) => {
+        this.activator.element.addEventListener("click", (ev: MouseEvent) => {
             this.activate();
         });
-        this.exclude.push(this.activator);
+        this.exclude.push(this.activator.element);
         // register event in children unless clicking backdrop
         this.element.style["padding"] = "0";
     }

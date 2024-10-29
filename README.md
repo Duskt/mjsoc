@@ -41,9 +41,6 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
--   10faan penalty
--   key for chinese characters
-
 ## Feature
 
 -   display round wind

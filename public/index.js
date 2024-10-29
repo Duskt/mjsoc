@@ -382,6 +382,7 @@
       }
       for (const m of window.MJDATA.members) {
         if (m.id === params.value?.id) continue;
+        if (!m.tournament.registered) continue;
         this.renderOption(m);
       }
     }
@@ -1265,20 +1266,34 @@
       });
       this.tableNo = params.tableNo;
       this.memberId = params.memberId;
+      try {
+        this.element.title = `${this.member.name} won!`;
+      } catch {
+        console.warn(`Failed to get ${this.memberId}`);
+      }
       this.zimo = new FaanDropdownButton({
         textContent: "\u81EA\u6478",
         includePenalty: true,
-        parent: this.popup.element
+        parent: this.popup.element,
         // don't set onclick here - do it in updatePlayers
+        other: {
+          title: "Self-draw"
+        }
       });
       this.dachut = new DropdownButton({
         textContent: "\u6253\u51FA",
-        parent: this.popup.element
+        parent: this.popup.element,
         // don't set onclick here - do it in updatePlayers
+        other: {
+          title: "From another's tile"
+        }
       });
       this.baozimo = new DropdownButton({
         textContent: "\u5305\u81EA\u6478",
-        parent: this.popup.element
+        parent: this.popup.element,
+        other: {
+          title: "(special case)"
+        }
       });
       this.updatePlayers();
     }
@@ -1321,7 +1336,10 @@
           onclick: async (ev, faan) => this.onclickPointTransfer(
             [m],
             getPointsFromFaan(faan) * 2
-          )
+          ),
+          other: {
+            title: ""
+          }
         }).element
       );
       this.baozimo.dropdown.options = otherPlayers.map(
@@ -1331,7 +1349,10 @@
           onclick: async (ev, faan) => this.onclickPointTransfer(
             [m],
             getPointsFromFaan(faan) * 3
-          )
+          ),
+          other: {
+            title: ""
+          }
         }).element
       );
       this.zimo.onclick = async (ev, faan) => this.onclickPointTransfer(otherPlayers, getPointsFromFaan(faan));
@@ -1373,7 +1394,8 @@
           classList: ["small-button"],
           textContent: faan == -10 ? "Penalty" : faan.toString(),
           other: {
-            onclick
+            onclick,
+            title: ""
           }
         }).element;
       });
@@ -1396,7 +1418,8 @@
           classList: ["small-button"],
           textContent: faan === -10 ? "Penalty" : faan.toString(),
           other: {
-            onclick: func
+            onclick: func,
+            title: ""
           }
         }).element;
       });
@@ -1531,9 +1554,9 @@
       );
     }
   }
-  async function allocateSeats() {
+  async function allocateSeats(seatAbsent = false) {
     for (let mem of window.MJDATA.members) {
-      if (!isSat(mem)) {
+      if (!isSat(mem) && (seatAbsent || mem.tournament.registered)) {
         if (await seatMemberLast(mem) === void 0) {
           return false;
         }
@@ -1595,17 +1618,17 @@
         ...params
       });
       this.excludeSelf = false;
-      if (activator === params.parent) {
+      if (activator.element === params.parent) {
         console.warn(
           `Setting the activator as a parent of the ${this} dialog will mean that whenever it is clicked it is reactivated. To bypass this warning, manually add the child node.`
         );
       }
       this.activator = activator;
       let dialog = this;
-      this.activator.addEventListener("click", (ev) => {
+      this.activator.element.addEventListener("click", (ev) => {
         this.activate();
       });
-      this.exclude.push(this.activator);
+      this.exclude.push(this.activator.element);
       this.element.style["padding"] = "0";
     }
     activate() {
@@ -1674,9 +1697,12 @@
   };
 
   // src/components/memberTable.ts
-  var MemberList = class extends Component {
+  var MemberGrid = class extends Component {
     constructor(params) {
-      super(params);
+      super({
+        tag: "table",
+        ...params
+      });
       this.memberElems = {};
       this.updateMembers();
       document.addEventListener("mjPointTransfer", () => {
@@ -1684,17 +1710,40 @@
       });
       this.showAbsent = false;
     }
-    updateMembers() {
-      this.memberElems = {};
-      while (this.element.lastChild) {
-        this.element.removeChild(this.element.lastChild);
-      }
-      [...window.MJDATA.members].sort(
-        (a, b) => b.tournament.session_points - a.tournament.session_points
-      ).forEach((m) => this.renderLi(m));
+    renderNewHeaders() {
+      this.element.innerHTML = "";
+      let headerRow = new Component({
+        tag: "tr",
+        parent: this.element
+      });
+      let name = new Component({
+        tag: "th",
+        textContent: "Name",
+        parent: headerRow.element
+      });
+      let points = new Component({
+        tag: "th",
+        textContent: this.showAbsent ? "Total" : "Pts.",
+        parent: headerRow.element
+      });
+      if (!this.showAbsent) return;
+      let present = new Component({
+        tag: "th",
+        textContent: "Reg.",
+        parent: headerRow.element
+      });
+      present.element.style.fontSize = "12px";
     }
-  };
-  var MemberGrid = class extends MemberList {
+    updateMembers() {
+      this.renderNewHeaders();
+      [...window.MJDATA.members].sort((a, b) => {
+        if (this.showAbsent) {
+          return b.tournament.total_points - a.tournament.total_points;
+        } else {
+          return b.tournament.session_points - a.tournament.session_points;
+        }
+      }).forEach((m) => this.renderLi(m));
+    }
     renderLi(member) {
       if (!member.tournament.registered && !this.showAbsent) return;
       let row = new Component({
@@ -1709,13 +1758,10 @@
       if (this.showAbsent && member.tournament.registered) {
         name.element.style["fontWeight"] = "bold";
       }
-      let highlight = member.tournament.session_points > 0 ? "green" : member.tournament.session_points === 0 ? "yellow" : "red";
-      let points = new Component({
-        tag: "td",
-        textContent: member.tournament.session_points.toString(),
+      let pointsTd = new PointsTd({
+        points: this.showAbsent ? member.tournament.total_points : member.tournament.session_points,
         parent: row.element
       });
-      points.element.style["backgroundColor"] = highlight;
       if (!this.showAbsent) {
         return;
       }
@@ -1735,6 +1781,16 @@
           }
         }
       });
+    }
+  };
+  var PointsTd = class extends Component {
+    constructor(params) {
+      super({
+        tag: "td",
+        textContent: params.points.toString(),
+        ...params
+      });
+      this.element.style["backgroundColor"] = params.points > 0 ? "green" : params.points === 0 ? "yellow" : "red";
     }
   };
 
@@ -1785,12 +1841,14 @@
     if (!(form instanceof HTMLFormElement)) {
       throw Error("no form");
     }
+    let addMemberDialog = document.getElementById("add-member-dialog");
+    if (!(addMemberDialog instanceof HTMLDialogElement))
+      throw new Error("Couldn't find add member dialog");
     let dialog = new Dialog({
-      element: document.getElementsByTagName("dialog")[0],
-      activator: editMembersBar.addButton.element
+      element: addMemberDialog,
+      activator: editMembersBar.addButton
     });
     let memberList = new MemberGrid({
-      tag: "table",
       parent: innerSidebar.element,
       classList: ["info-grid"]
     });
@@ -1833,15 +1891,19 @@
         parent: this.topDiv.element,
         classList: ["register-checkbox"],
         other: {
+          title: "Show all members?",
           type: "checkbox"
         }
       });
       this.resetButton = new IconButton({
         icon: "reset",
-        parent: this.topDiv.element
+        parent: this.topDiv.element,
+        other: {
+          title: "Reset the session (prompted to confirm)"
+        }
       });
       let confirmation = new ConfirmationDialog({
-        activator: this.resetButton.element,
+        activator: this.resetButton,
         parent: this.topDiv.element,
         // NOT INSIDE THE BUTTON otherwise it will reactivate itself
         message: "Are you sure you want to reset the session?\n\nThis will sum the current points to each member's total points. This cannot be undone. It will also mark everyone as absent.",
@@ -1967,6 +2029,9 @@
       onclick: async (ev) => {
         await allocateSeats();
         renderTables();
+      },
+      other: {
+        title: "Fill seats with players"
       }
     });
     headerBar.children[0].insertAdjacentElement("beforebegin", sit.element);
@@ -1980,6 +2045,9 @@
         if (!tablesGrid) throw new Error("Couldn't find #table");
         tablesGrid.style.animation = "shake 0.2s";
         window.setTimeout(() => tablesGrid.style.animation = "", 200);
+      },
+      other: {
+        title: "Randomize seating"
       }
     });
   }

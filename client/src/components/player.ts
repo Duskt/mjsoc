@@ -69,20 +69,34 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
         });
         this.tableNo = params.tableNo;
         this.memberId = params.memberId;
+        try {
+            this.element.title = `${this.member.name} won!`;
+        } catch {
+            console.warn(`Failed to get ${this.memberId}`);
+        }
         this.zimo = new FaanDropdownButton({
             textContent: "自摸",
             includePenalty: true,
             parent: this.popup.element,
             // don't set onclick here - do it in updatePlayers
+            other: {
+                title: "Self-draw",
+            },
         });
         this.dachut = new DropdownButton({
             textContent: "打出",
             parent: this.popup.element,
             // don't set onclick here - do it in updatePlayers
+            other: {
+                title: "From another's tile",
+            },
         });
         this.baozimo = new DropdownButton({
             textContent: "包自摸",
             parent: this.popup.element,
+            other: {
+                title: "(special case)",
+            },
         });
         this.updatePlayers();
     }
@@ -132,6 +146,9 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
                             [m],
                             getPointsFromFaan(faan) * 2
                         ),
+                    other: {
+                        title: "",
+                    },
                 }).element
         );
         this.baozimo.dropdown.options = otherPlayers.map(
@@ -144,6 +161,9 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
                             [m],
                             getPointsFromFaan(faan) * 3
                         ),
+                    other: {
+                        title: "",
+                    },
                 }).element
         );
         this.zimo.onclick = async (ev, faan) =>
@@ -199,6 +219,7 @@ class FaanDropdownButton extends DropdownButton {
                 textContent: faan == -10 ? "Penalty" : faan.toString(),
                 other: {
                     onclick,
+                    title: "",
                 },
             }).element;
         });
@@ -222,6 +243,7 @@ class FaanDropdownButton extends DropdownButton {
                 textContent: faan === -10 ? "Penalty" : faan.toString(),
                 other: {
                     onclick: func,
+                    title: "",
                 },
             }).element;
         });

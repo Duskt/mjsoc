@@ -63,12 +63,14 @@ export default function renderSidebar() {
     if (!(form instanceof HTMLFormElement)) {
         throw Error("no form");
     }
+    let addMemberDialog = document.getElementById("add-member-dialog");
+    if (!(addMemberDialog instanceof HTMLDialogElement))
+        throw new Error("Couldn't find add member dialog");
     let dialog = new Dialog({
-        element: document.getElementsByTagName("dialog")[0],
-        activator: editMembersBar.addButton.element,
+        element: addMemberDialog,
+        activator: editMembersBar.addButton,
     });
     let memberList = new MemberGrid({
-        tag: "table",
         parent: innerSidebar.element,
         classList: ["info-grid"],
     });
@@ -125,15 +127,19 @@ class EditMembersBar extends Component<"div"> {
             parent: this.topDiv.element,
             classList: ["register-checkbox"],
             other: {
+                title: "Show all members?",
                 type: "checkbox",
             },
         });
         this.resetButton = new IconButton({
             icon: "reset",
             parent: this.topDiv.element,
+            other: {
+                title: "Reset the session (prompted to confirm)"
+            }
         });
         let confirmation = new ConfirmationDialog({
-            activator: this.resetButton.element,
+            activator: this.resetButton,
             parent: this.topDiv.element, // NOT INSIDE THE BUTTON otherwise it will reactivate itself
             message:
                 "Are you sure you want to reset the session?\n\nThis will sum the current points to each member's total points. This cannot be undone. It will also mark everyone as absent.",

@@ -1,15 +1,16 @@
 import Component, { ComponentParameters } from ".";
 import { manualRegister } from "../request";
 
-abstract class MemberList<
-    K extends keyof HTMLElementTagNameMap
-> extends Component<K> {
+export default class MemberGrid extends Component<"table"> {
     memberElems: {
         [id: Member["id"]]: HTMLLIElement;
     };
     showAbsent: boolean;
-    constructor(params: ComponentParameters<K>) {
-        super(params);
+    constructor(params: Omit<ComponentParameters<"table">, "tag">) {
+        super({
+            tag: "table",
+            ...params,
+        });
         this.memberElems = {};
         this.updateMembers();
         document.addEventListener("mjPointTransfer", () => {
@@ -17,23 +18,47 @@ abstract class MemberList<
         });
         this.showAbsent = false;
     }
-    abstract renderLi(member: Member): void;
+    renderNewHeaders() {
+        this.element.innerHTML = "";
+        let headerRow = new Component({
+            tag: "tr",
+            parent: this.element,
+        });
+        let name = new Component({
+            tag: "th",
+            textContent: "Name",
+            parent: headerRow.element,
+        });
+        let points = new Component({
+            tag: "th",
+            textContent: this.showAbsent ? "Total" : "Pts.",
+            parent: headerRow.element,
+        });
+        if (!this.showAbsent) return;
+        let present = new Component({
+            tag: "th",
+            textContent: "Reg.",
+            parent: headerRow.element,
+        });
+        present.element.style.fontSize = "12px";
+    }
     updateMembers() {
-        // clear
-        this.memberElems = {};
-        while (this.element.lastChild) {
-            this.element.removeChild(this.element.lastChild);
-        }
+        this.renderNewHeaders(); // also clears children
         [...window.MJDATA.members]
-            .sort(
-                (a, b) =>
-                    b.tournament.session_points - a.tournament.session_points
-            )
+            .sort((a, b) => {
+                if (this.showAbsent) {
+                    return (
+                        b.tournament.total_points - a.tournament.total_points
+                    );
+                } else {
+                    return (
+                        b.tournament.session_points -
+                        a.tournament.session_points
+                    );
+                }
+            })
             .forEach((m) => this.renderLi(m));
     }
-}
-
-export default class MemberGrid extends MemberList<"table"> {
     renderLi(member: Member) {
         if (!member.tournament.registered && !this.showAbsent) return;
         let row = new Component({
@@ -48,18 +73,12 @@ export default class MemberGrid extends MemberList<"table"> {
         if (this.showAbsent && member.tournament.registered) {
             name.element.style["fontWeight"] = "bold";
         }
-        let highlight =
-            member.tournament.session_points > 0
-                ? "green"
-                : member.tournament.session_points === 0
-                ? "yellow"
-                : "red";
-        let points = new Component({
-            tag: "td",
-            textContent: member.tournament.session_points.toString(),
+        let pointsTd = new PointsTd({
+            points: this.showAbsent
+                ? member.tournament.total_points
+                : member.tournament.session_points,
             parent: row.element,
         });
-        points.element.style["backgroundColor"] = highlight;
         if (!this.showAbsent) {
             return;
         }
@@ -79,5 +98,25 @@ export default class MemberGrid extends MemberList<"table"> {
                 },
             },
         });
+    }
+}
+
+interface PointsTdParams extends Omit<ComponentParameters<"td">, "tag"> {
+    points: number;
+}
+
+class PointsTd extends Component<"td"> {
+    constructor(params: PointsTdParams) {
+        super({
+            tag: "td",
+            textContent: params.points.toString(),
+            ...params,
+        });
+        this.element.style["backgroundColor"] =
+            params.points > 0
+                ? "green"
+                : params.points === 0
+                ? "yellow"
+                : "red";
     }
 }
