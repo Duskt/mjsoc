@@ -142,3 +142,19 @@ POINTS.set(11, 192);
 POINTS.set(12, 256);
 POINTS.set(13, 384);
 POINTS.set(-10, -128);
+
+export function isWind(s: string | null): s is Wind {
+    if (s && ["east", "south", "west", "north"].includes(s)) {
+        return true;
+    }
+    return false;
+}
+
+export function getSessionWind(): Wind {
+    let maybeWind = window.sessionStorage.getItem("round");
+    if (isWind(maybeWind)) {
+        return maybeWind;
+    } else {
+        return "east";
+    }
+}

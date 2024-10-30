@@ -250,6 +250,123 @@
     }
   };
 
+  // src/data.ts
+  function UsesTable(target) {
+    class UsesTable2 extends target {
+      get table() {
+        let table = window.MJDATA.tables.find(
+          (table2) => table2.table_no === this.tableNo
+        );
+        if (!table)
+          throw Error(
+            `Failure to index table from tableNo ${this.tableNo}`
+          );
+        return table;
+      }
+    }
+    return UsesTable2;
+  }
+  function UsesMember(target) {
+    class UsesMember2 extends target {
+      get member() {
+        let member = window.MJDATA.members.find(
+          (member2) => member2.id === this.memberId
+        );
+        if (!member)
+          throw Error(
+            `Failure to index member from memberId ${this.memberId}`
+          );
+        return member;
+      }
+    }
+    return UsesMember2;
+  }
+  function UsesSeat(target) {
+    class UsesSeat2 extends target {
+    }
+    return UsesSeat2;
+  }
+  var MahjongUnknownTableError = class extends Error {
+    constructor(tableNo) {
+      super(`Couldn't find table ${tableNo}`);
+      this.name = "MahjongUnknownTableError";
+    }
+  };
+  function getTable(tableNo) {
+    let table = window.MJDATA.tables.find((t) => t.table_no === tableNo);
+    if (table === void 0) {
+      throw new MahjongUnknownTableError(tableNo);
+    } else {
+      return table;
+    }
+  }
+  var MahjongUnknownMemberError = class extends Error {
+    constructor(memberId) {
+      let msg = memberId === 0 ? "Attempted to get empty member" : `Couldn't find member ${memberId}`;
+      super(msg);
+      this.name = "MahjongUnknownMemberError";
+    }
+  };
+  function getMember(memberId, allowEmpty = false) {
+    if (memberId === 0) {
+      if (allowEmpty) {
+        return "EMPTY";
+      } else {
+        throw new MahjongUnknownMemberError(0);
+      }
+    }
+    let member = window.MJDATA.members.find((m) => m.id === memberId);
+    if (member === void 0) {
+      throw new MahjongUnknownMemberError(memberId);
+    } else {
+      return member;
+    }
+  }
+  function getOtherPlayersOnTable(memberId, table, allowEmpty = false) {
+    let tableData = typeof table === "number" ? getTable(table) : table;
+    let otherSeats = ["east", "south", "west", "north"].filter(
+      (seat) => tableData[seat] != memberId
+    );
+    return otherSeats.map((seat) => {
+      let mId = tableData[seat];
+      if (mId !== 0) {
+        return getMember(mId);
+      }
+      if (allowEmpty) {
+        return "EMPTY";
+      } else {
+        throw new MahjongUnknownMemberError(0);
+      }
+    });
+  }
+  var POINTS = /* @__PURE__ */ new Map();
+  POINTS.set(3, 8);
+  POINTS.set(4, 16);
+  POINTS.set(5, 24);
+  POINTS.set(6, 32);
+  POINTS.set(7, 48);
+  POINTS.set(8, 64);
+  POINTS.set(9, 96);
+  POINTS.set(10, 128);
+  POINTS.set(11, 192);
+  POINTS.set(12, 256);
+  POINTS.set(13, 384);
+  POINTS.set(-10, -128);
+  function isWind(s) {
+    if (s && ["east", "south", "west", "north"].includes(s)) {
+      return true;
+    }
+    return false;
+  }
+  function getSessionWind() {
+    let maybeWind = window.sessionStorage.getItem("round");
+    if (isWind(maybeWind)) {
+      return maybeWind;
+    } else {
+      return "east";
+    }
+  }
+
   // src/components/input/focus/focusNode.ts
   var FocusNode = class extends ClickListener {
     constructor(params) {
@@ -376,7 +493,7 @@
         ...params
       });
       this.roundWind = new RoundWind({
-        wind: "east",
+        wind: getSessionWind(),
         parent: this.element
       });
       this.keyUl = new Component({
@@ -454,6 +571,7 @@
     }
     setWind(wind) {
       this.wind = wind;
+      window.sessionStorage.setItem("round", wind);
       this.ddbSpan.element.textContent = WindCharacters.get(wind) || "ERR";
       this.windCaption.element.textContent = `(${wind})`;
     }
@@ -541,109 +659,6 @@
       };
     }
   };
-
-  // src/data.ts
-  function UsesTable(target) {
-    class UsesTable2 extends target {
-      get table() {
-        let table = window.MJDATA.tables.find(
-          (table2) => table2.table_no === this.tableNo
-        );
-        if (!table)
-          throw Error(
-            `Failure to index table from tableNo ${this.tableNo}`
-          );
-        return table;
-      }
-    }
-    return UsesTable2;
-  }
-  function UsesMember(target) {
-    class UsesMember2 extends target {
-      get member() {
-        let member = window.MJDATA.members.find(
-          (member2) => member2.id === this.memberId
-        );
-        if (!member)
-          throw Error(
-            `Failure to index member from memberId ${this.memberId}`
-          );
-        return member;
-      }
-    }
-    return UsesMember2;
-  }
-  function UsesSeat(target) {
-    class UsesSeat2 extends target {
-    }
-    return UsesSeat2;
-  }
-  var MahjongUnknownTableError = class extends Error {
-    constructor(tableNo) {
-      super(`Couldn't find table ${tableNo}`);
-      this.name = "MahjongUnknownTableError";
-    }
-  };
-  function getTable(tableNo) {
-    let table = window.MJDATA.tables.find((t) => t.table_no === tableNo);
-    if (table === void 0) {
-      throw new MahjongUnknownTableError(tableNo);
-    } else {
-      return table;
-    }
-  }
-  var MahjongUnknownMemberError = class extends Error {
-    constructor(memberId) {
-      let msg = memberId === 0 ? "Attempted to get empty member" : `Couldn't find member ${memberId}`;
-      super(msg);
-      this.name = "MahjongUnknownMemberError";
-    }
-  };
-  function getMember(memberId, allowEmpty = false) {
-    if (memberId === 0) {
-      if (allowEmpty) {
-        return "EMPTY";
-      } else {
-        throw new MahjongUnknownMemberError(0);
-      }
-    }
-    let member = window.MJDATA.members.find((m) => m.id === memberId);
-    if (member === void 0) {
-      throw new MahjongUnknownMemberError(memberId);
-    } else {
-      return member;
-    }
-  }
-  function getOtherPlayersOnTable(memberId, table, allowEmpty = false) {
-    let tableData = typeof table === "number" ? getTable(table) : table;
-    let otherSeats = ["east", "south", "west", "north"].filter(
-      (seat) => tableData[seat] != memberId
-    );
-    return otherSeats.map((seat) => {
-      let mId = tableData[seat];
-      if (mId !== 0) {
-        return getMember(mId);
-      }
-      if (allowEmpty) {
-        return "EMPTY";
-      } else {
-        throw new MahjongUnknownMemberError(0);
-      }
-    });
-  }
-  var POINTS = /* @__PURE__ */ new Map();
-  POINTS.set(3, 8);
-  POINTS.set(4, 16);
-  POINTS.set(5, 24);
-  POINTS.set(6, 32);
-  POINTS.set(7, 48);
-  POINTS.set(8, 64);
-  POINTS.set(9, 96);
-  POINTS.set(10, 128);
-  POINTS.set(11, 192);
-  POINTS.set(12, 256);
-  POINTS.set(13, 384);
-  POINTS.set(-10, -128);
 
   // node_modules/canvas-confetti/dist/confetti.module.mjs
   var module = {};

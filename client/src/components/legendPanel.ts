@@ -1,7 +1,8 @@
 import Component, { Params } from ".";
+import { getSessionWind } from "../data";
 import { DropdownButton } from "./input/focus/dropdown";
 
-interface LegendParams extends Params<'div'> {}
+interface LegendParams extends Params<"div"> {}
 
 export default class Legend extends Component<"div"> {
     roundWind: RoundWind;
@@ -15,7 +16,7 @@ export default class Legend extends Component<"div"> {
             ...params,
         });
         this.roundWind = new RoundWind({
-            wind: "east",
+            wind: getSessionWind(),
             parent: this.element,
         });
         this.keyUl = new Component({
@@ -49,7 +50,7 @@ WindCharacters.set("south", "南");
 WindCharacters.set("west", "西");
 WindCharacters.set("north", "北");
 
-interface RoundWindParams extends Params<'p'> {
+interface RoundWindParams extends Params<"p"> {
     wind: Wind;
 }
 
@@ -106,6 +107,7 @@ class RoundWind extends Component<"p"> {
     }
     setWind(wind: Wind) {
         this.wind = wind;
+        window.sessionStorage.setItem("round", wind);
         this.ddbSpan.element.textContent = WindCharacters.get(wind) || "ERR";
         this.windCaption.element.textContent = `(${wind})`;
     }

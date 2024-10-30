@@ -41,10 +41,15 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
+-   add success confirmations and errors
+-   add undo/edit logs
+-   shuffle seats without losing previous tables
+-   seat council last
+
 ## Feature
 
 -   style the log page
--   add success anim
+-   persist auth keys
 
 ## Refactor
 
