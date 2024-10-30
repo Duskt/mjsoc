@@ -1,4 +1,4 @@
-import Component, { ComponentParameters } from "../components";
+import Component, { Params } from "../components";
 import { getMember, POINTS } from "../data";
 
 export default function logPage() {
@@ -50,7 +50,7 @@ function renderLogsTable(parent: HTMLTableElement) {
     }
 }
 
-interface LogRowParams extends Omit<ComponentParameters<"tr">, "tag"> {
+interface LogRowParams extends Params<'tr'> {
     transfer: PointTransfer;
 }
 

@@ -1,4 +1,3 @@
-import Component, { ComponentParameters } from ".";
 import { InputListener, InputListenerParameters } from "./input/listener";
 
 interface NameTagParameters

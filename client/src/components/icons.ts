@@ -1,7 +1,7 @@
-import Component, { ComponentParameters } from ".";
+import Component, { Params } from ".";
 
 interface IconButtonParameters
-    extends Omit<ComponentParameters<"button">, "tag"> {
+    extends Params<'button'> {
     icon: "fill" | "shuffle" | "reset";
     onclick?: (ev: MouseEvent) => void;
 }

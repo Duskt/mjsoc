@@ -1,4 +1,4 @@
-import Component, { ComponentParameters } from ".";
+import Component, { Params } from ".";
 import { manualRegister } from "../request";
 
 export default class MemberGrid extends Component<"table"> {
@@ -6,7 +6,7 @@ export default class MemberGrid extends Component<"table"> {
         [id: Member["id"]]: HTMLLIElement;
     };
     showAbsent: boolean;
-    constructor(params: Omit<ComponentParameters<"table">, "tag">) {
+    constructor(params: Params<'table'>) {
         super({
             tag: "table",
             ...params,
@@ -101,7 +101,7 @@ export default class MemberGrid extends Component<"table"> {
     }
 }
 
-interface PointsTdParams extends Omit<ComponentParameters<"td">, "tag"> {
+interface PointsTdParams extends Params<'td'> {
     points: number;
 }
 

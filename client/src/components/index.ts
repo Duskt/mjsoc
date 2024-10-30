@@ -52,3 +52,8 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
         }
     }
 }
+
+export type Params<K extends keyof HTMLElementTagNameMap> = Omit<
+    ComponentParameters<K>,
+    "tag"
+>;

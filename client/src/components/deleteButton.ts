@@ -1,7 +1,7 @@
-import Component, { ComponentParameters } from ".";
+import Component, { Params } from ".";
 import { request } from "../request";
 
-interface DeleteButtonParameters extends Omit<ComponentParameters<'button'>, 'tag'> {
+interface DeleteButtonParameters extends Params<'button'> {
     tableNo: number;
     ondelete?: () => void
 }

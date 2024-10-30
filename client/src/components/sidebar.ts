@@ -1,4 +1,4 @@
-import Component, { ComponentParameters } from ".";
+import Component, { Params } from ".";
 import { editMemberList, manualRegister, resetSession } from "../request";
 import IconButton from "./icons";
 import Dialog, { ConfirmationDialog } from "./input/focus/dialog";
@@ -101,9 +101,6 @@ export default function renderSidebar() {
     };
 }
 
-interface EditMembersBarParams
-    extends Omit<ComponentParameters<"div">, "tag"> {}
-
 class EditMembersBar extends Component<"div"> {
     register: Register;
     topDiv: Component<"div">;
@@ -112,7 +109,7 @@ class EditMembersBar extends Component<"div"> {
     addButton: Component<"button">;
     removeButton: RemoveMemberButton;
     checkbox: Component<"input">;
-    constructor(params: EditMembersBarParams) {
+    constructor(params: Params<'div'>) {
         super({
             tag: "div",
             ...params,
@@ -195,7 +192,7 @@ class Register extends Component<"form"> {
     label: Component<"label">;
     input: Component<"input">;
     datalist: Component<"datalist">;
-    constructor(params: Omit<ComponentParameters<"form">, "tag">) {
+    constructor(params: Params<'form'>) {
         super({
             tag: "form",
             classList: ["register"],

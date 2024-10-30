@@ -1,7 +1,7 @@
-import Component, { ComponentParameters } from ".";
+import Component, { Params } from ".";
 import { DropdownButton } from "./input/focus/dropdown";
 
-interface LegendParams extends Omit<ComponentParameters<"div">, "tag"> {}
+interface LegendParams extends Params<'div'> {}
 
 export default class Legend extends Component<"div"> {
     roundWind: RoundWind;
@@ -49,7 +49,7 @@ WindCharacters.set("south", "南");
 WindCharacters.set("west", "西");
 WindCharacters.set("north", "北");
 
-interface RoundWindParams extends Omit<ComponentParameters<"p">, "tag"> {
+interface RoundWindParams extends Params<'p'> {
     wind: Wind;
 }
 

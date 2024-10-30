@@ -1,4 +1,4 @@
-import Component, { ComponentParameters } from "../..";
+import Component from "../..";
 import FocusNode, { FocusNodeParameters } from "./focusNode";
 
 export interface DialogParameters
