@@ -38,7 +38,6 @@
 
   // src/request.ts
   var MJ_EVENT_PREFIX = "mj";
-  var PointTransferEvent = new Event(`${MJ_EVENT_PREFIX}PointTransfer`);
   async function request(path2, payload, method = "POST") {
     let url = `${window.origin}/` + (path2[0] != "/" ? path2 : path2.slice(1));
     let r = await fetch(url, {
@@ -50,7 +49,7 @@
     });
     return r;
   }
-  async function pointTransfer(payload) {
+  async function pointTransfer(payload, target = document) {
     let r = await request("/members/transfer", payload, "POST");
     if (!r.ok) {
       console.error("Invalid transfer: ", payload);
@@ -65,7 +64,11 @@
       );
       return new_member !== void 0 ? new_member : old_member;
     });
-    document.dispatchEvent(PointTransferEvent);
+    let PointTransferEvent = new CustomEvent("mjPointTransfer", {
+      detail: payload,
+      bubbles: true
+    });
+    target.dispatchEvent(PointTransferEvent);
     return true;
   }
   var RegisterEvent = new Event(`${MJ_EVENT_PREFIX}Register`);
@@ -1401,6 +1404,57 @@
       }
     })();
   }
+  function pointBounce(elem_or_comp, points, {
+    autoPosition = true,
+    wind = "east",
+    heightOffset = 110,
+    msDuration = 1e3
+  }) {
+    let orientation;
+    switch (wind) {
+      case "east":
+        orientation = 0;
+        break;
+      case "south":
+        orientation = -90;
+        break;
+      case "west":
+        orientation = 180;
+        break;
+      case "north":
+        orientation = 90;
+        break;
+    }
+    let elem = elem_or_comp instanceof HTMLElement ? elem_or_comp : elem_or_comp.element;
+    let oldPosition = elem.style.position;
+    if (autoPosition) elem.style.position = "relative";
+    let pointPopup = new Component({
+      tag: "p",
+      textContent: points.toString(),
+      parent: elem,
+      classList: ["points"]
+    });
+    pointPopup.element.style.color = points > 0 ? "green" : "red";
+    pointPopup.element.style.rotate = `${orientation}deg`;
+    if (orientation === 0) {
+      pointPopup.element.style.top = `-${heightOffset}%`;
+    } else if (orientation === 90) {
+      pointPopup.element.style.right = `-${heightOffset}%`;
+      pointPopup.element.style.top = `${Math.floor(elem.clientHeight / 4)}px`;
+    } else if (orientation === -90) {
+      pointPopup.element.style.left = `-${heightOffset}%`;
+      pointPopup.element.style.bottom = `${Math.floor(
+        elem.clientHeight / 4
+      )}px`;
+    } else {
+      pointPopup.element.style.top = `${heightOffset}%`;
+    }
+    pointPopup.element.style.animation = `bounce ${msDuration / 1e3}s ease-in-out 1 forwards`;
+    window.setTimeout(() => {
+      pointPopup.element.remove();
+      elem.style.position = oldPosition;
+    }, msDuration);
+  }
 
   // src/components/player.ts
   function getPointsFromFaan(faan) {
@@ -1457,23 +1511,29 @@
       return super.deactivate();
     }
     async onclickPointTransfer(losers, points) {
-      let success = await pointTransfer({
-        to: this.memberId,
-        from: losers.map((m) => {
-          if (m === "EMPTY") {
-            throw new MahjongUnknownMemberError(0);
-          }
-          return m.id;
-        }),
-        points
-      });
+      let success = await pointTransfer(
+        {
+          to: this.memberId,
+          from: losers.map((m) => {
+            if (m === "EMPTY") {
+              throw new MahjongUnknownMemberError(0);
+            }
+            return m.id;
+          }),
+          points
+        },
+        this.element
+      );
       if (success) {
         if (points === 256 || points === 128 && losers.length > 1) {
           triggerCelebration();
         }
         this.deactivate();
       } else {
-        alert("Please reload the page and try again. Sorry!");
+        alert(
+          "The session timed out. Please tell a committee member to sign-in again so you can enter your points. Thank you!"
+        );
+        window.location.reload();
       }
     }
     updatePlayers() {
@@ -2295,6 +2355,31 @@
       });
       this.renderDeleteCell(innerRows[2]);
       this.players = [east, south, west, north];
+      this.element.addEventListener(
+        "mjPointTransfer",
+        (ev) => this.animatePointTransfer(ev)
+      );
+    }
+    animatePointTransfer(ev) {
+      let winner = this.findPlayerTag(ev.detail.to);
+      if (!winner) return;
+      pointBounce(winner, ev.detail.points * ev.detail.from.length, {
+        wind: winner.seat
+      });
+      let loserId;
+      for (loserId of ev.detail.from) {
+        let loser = this.findPlayerTag(loserId);
+        if (!loser) continue;
+        pointBounce(loser, -ev.detail.points, { wind: loser.seat });
+      }
+    }
+    findPlayerTag(memberId) {
+      let p;
+      for (p of this.players) {
+        if (p.memberId === memberId) {
+          return p;
+        }
+      }
     }
     renderDeleteCell(parent) {
       let deleteButtonCell = document.createElement("td");

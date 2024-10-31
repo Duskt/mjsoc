@@ -136,9 +136,9 @@ pub async fn transfer_points(
     data: web::Data<AppState>,
     body: web::Json<PointTransfer>,
 ) -> impl Responder {
-    // ignoring all errors rn this is bad
     if !is_authenticated(&session, &data.authenticated_keys) {
-        return get_redirect_response("/login?redirect=tables");
+        // todo: should include WW-Authentication header...
+        return HttpResponse::Unauthorized().finish();
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
     // take the points from...

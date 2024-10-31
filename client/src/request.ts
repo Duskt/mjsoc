@@ -1,10 +1,6 @@
-import { getMember } from "./data";
-
 const MJ_EVENT_PREFIX = "mj";
 
 type RequestMethod = "GET" | "POST" | "PUT" | "DELETE";
-
-const PointTransferEvent = new Event(`${MJ_EVENT_PREFIX}PointTransfer`);
 
 export async function request(
     path: string,
@@ -49,7 +45,10 @@ export async function request(
  * @param payload
  * @returns boolean - if successful
  */
-export async function pointTransfer(payload: PointTransfer) {
+export async function pointTransfer(
+    payload: PointTransfer,
+    target: HTMLElement | Document = document
+) {
     let r = await request("/members/transfer", payload, "POST");
     if (!r.ok) {
         console.error("Invalid transfer: ", payload);
@@ -66,7 +65,11 @@ export async function pointTransfer(payload: PointTransfer) {
         return new_member !== undefined ? new_member : old_member;
     });
 
-    document.dispatchEvent(PointTransferEvent);
+    let PointTransferEvent = new CustomEvent("mjPointTransfer", {
+        detail: payload,
+        bubbles: true,
+    });
+    target.dispatchEvent(PointTransferEvent);
     return true;
 }
 

@@ -44,6 +44,7 @@ Contains the Rust server and command line interface.
 -   add success confirmations and errors
 -   add undo/edit logs
 -   shuffle seats without losing previous tables
+-   make things bigger
 -   seat council last
 
 ## Feature

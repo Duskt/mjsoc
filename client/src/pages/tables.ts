@@ -9,6 +9,7 @@ import Legend from "../components/legendPanel";
 import PlayerTag from "../components/player";
 import { allocateSeats, shuffleSeats } from "../components/seatingUtils";
 import renderSidebar from "../components/sidebar";
+import { pointBounce } from "../components/successAnim";
 import { UsesTable } from "../data";
 import { request } from "../request";
 
@@ -175,6 +176,30 @@ class GameTable extends UsesTable(InputListener<"table">) {
         });
         this.renderDeleteCell(innerRows[2]);
         this.players = [east, south, west, north];
+        this.element.addEventListener("mjPointTransfer", (ev) =>
+            this.animatePointTransfer(ev)
+        );
+    }
+    animatePointTransfer(ev: CustomEvent<PointTransfer>) {
+        let winner = this.findPlayerTag(ev.detail.to);
+        if (!winner) return;
+        pointBounce(winner, ev.detail.points * ev.detail.from.length, {
+            wind: winner.seat,
+        });
+        let loserId: MemberId;
+        for (loserId of ev.detail.from) {
+            let loser = this.findPlayerTag(loserId);
+            if (!loser) continue;
+            pointBounce(loser, -ev.detail.points, { wind: loser.seat });
+        }
+    }
+    findPlayerTag(memberId: MemberId) {
+        let p: PlayerTag;
+        for (p of this.players) {
+            if (p.memberId === memberId) {
+                return p;
+            }
+        }
     }
     renderDeleteCell(parent: HTMLElement) {
         let deleteButtonCell = document.createElement("td");

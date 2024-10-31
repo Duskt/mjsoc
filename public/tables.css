@@ -285,3 +285,15 @@ dialog button {
 .round-wind-span {
   font-size: 32px;
 }
+
+@keyframes bounce {
+  50% { transform: translateY(-30px); opacity: 0.5;}
+  100% { transform: translateY(30px); opacity: 0;}
+}
+
+.points {
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  width: 100%;
+  position: absolute;
+}

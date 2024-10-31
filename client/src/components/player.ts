@@ -101,23 +101,29 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
     }
 
     async onclickPointTransfer(losers: (Member | "EMPTY")[], points: number) {
-        let success = await pointTransfer({
-            to: this.memberId,
-            from: losers.map((m) => {
-                if (m === "EMPTY") {
-                    throw new MahjongUnknownMemberError(0);
-                }
-                return m.id;
-            }),
-            points,
-        });
+        let success = await pointTransfer(
+            {
+                to: this.memberId,
+                from: losers.map((m) => {
+                    if (m === "EMPTY") {
+                        throw new MahjongUnknownMemberError(0);
+                    }
+                    return m.id;
+                }),
+                points,
+            },
+            this.element
+        );
         if (success) {
             if (points === 256 || (points === 128 && losers.length > 1)) {
                 triggerCelebration();
             }
             this.deactivate();
         } else {
-            alert("Please reload the page and try again. Sorry!");
+            alert(
+                "The session timed out. Please tell a committee member to sign-in again so you can enter your points. Thank you!"
+            );
+            window.location.reload();
         }
     }
 
