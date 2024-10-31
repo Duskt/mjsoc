@@ -141,6 +141,7 @@ class EditMembersBar extends Component<"div"> {
                 title: "Reset the session (prompted to confirm)",
             },
         });
+        this.resetButton.element.style.margin = "10px";
         let confirmation = new ConfirmationDialog({
             activator: this.resetButton,
             parent: this.topDiv.element, // NOT INSIDE THE BUTTON otherwise it will reactivate itself

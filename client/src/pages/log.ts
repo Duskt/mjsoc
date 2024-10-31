@@ -1,4 +1,5 @@
 import Component, { Params } from "../components";
+import IconButton from "../components/icons";
 import { getMember, POINTS } from "../data";
 
 export default function logPage() {
@@ -50,7 +51,7 @@ function renderLogsTable(parent: HTMLTableElement) {
     }
 }
 
-interface LogRowParams extends Params<'tr'> {
+interface LogRowParams extends Params<"tr"> {
     transfer: PointTransfer;
 }
 
@@ -59,6 +60,7 @@ class LogRow extends Component<"tr"> {
     points: Component<"td">;
     to: Component<"td">;
     from: Component<"td">;
+    disable: Component<"td">;
     constructor(params: LogRowParams) {
         super({
             tag: "tr",
@@ -89,6 +91,17 @@ class LogRow extends Component<"tr"> {
             textContent: params.transfer.from
                 .map((mId) => getMember(mId).name)
                 .join(","),
+        });
+        this.disable = new Component({
+            tag: "td",
+            // TODO parent: this.element,
+        });
+        this.disable.element.style.paddingBottom = "0";
+        this.disable.element.style.border = "none";
+        let disableButton = new IconButton({
+            icon: "trash",
+            parent: this.disable.element,
+            onclick: (ev) => alert("del"),
         });
     }
 }
