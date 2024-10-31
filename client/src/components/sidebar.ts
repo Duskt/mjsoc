@@ -30,6 +30,7 @@ export default function renderSidebar() {
     });
 
     let closeSidebar = () => {
+        window.sessionStorage.setItem("sidebar", "closed");
         main_article.removeAttribute("style");
         sidebar.removeAttribute("style"); // source of disgrace
         sidebar.classList.replace("open", "closed");
@@ -37,6 +38,7 @@ export default function renderSidebar() {
     };
 
     let openSidebar = () => {
+        window.sessionStorage.setItem("sidebar", "open");
         sidebar.classList.replace("closed", "open");
         if (window.innerWidth < 900) {
             sidebar.style["width"] = "100%";
@@ -50,6 +52,9 @@ export default function renderSidebar() {
     // close by default (without transition)
     sidebar.style["transition"] = "none";
     sidebar.classList.add("closed");
+    if (window.sessionStorage.getItem("sidebar") === "open") {
+        openSidebar();
+    }
     setTimeout(() => (sidebar.style["transition"] = ""), 1);
 
     sidebarButton.element.onclick = () => {

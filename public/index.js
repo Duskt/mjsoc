@@ -2036,12 +2036,14 @@
       parent: sidebar
     });
     let closeSidebar = () => {
+      window.sessionStorage.setItem("sidebar", "closed");
       main_article.removeAttribute("style");
       sidebar.removeAttribute("style");
       sidebar.classList.replace("open", "closed");
       sidebarButton.element.textContent = ">";
     };
     let openSidebar = () => {
+      window.sessionStorage.setItem("sidebar", "open");
       sidebar.classList.replace("closed", "open");
       if (window.innerWidth < 900) {
         sidebar.style["width"] = "100%";
@@ -2053,6 +2055,9 @@
     };
     sidebar.style["transition"] = "none";
     sidebar.classList.add("closed");
+    if (window.sessionStorage.getItem("sidebar") === "open") {
+      openSidebar();
+    }
     setTimeout(() => sidebar.style["transition"] = "", 1);
     sidebarButton.element.onclick = () => {
       if (sidebarButton.element.textContent == ">") openSidebar();
