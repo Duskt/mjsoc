@@ -64,19 +64,18 @@
       );
       return new_member !== void 0 ? new_member : old_member;
     });
-    let PointTransferEvent = new CustomEvent("mjPointTransfer", {
+    let event = new CustomEvent("mjPointTransfer", {
       detail: payload,
       bubbles: true
     });
-    target.dispatchEvent(PointTransferEvent);
+    target.dispatchEvent(event);
     return true;
   }
-  var RegisterEvent = new Event(`${MJ_EVENT_PREFIX}Register`);
-  async function manualRegister(payload) {
+  async function manualRegister(payload, target = document) {
     let r = await request("/register", { member_id: payload.memberId }, "POST");
     if (!r.ok) {
       console.error(`${r}`);
-      return;
+      return false;
     }
     let present = await r.json();
     window.MJDATA.members = window.MJDATA.members.map((member) => {
@@ -85,7 +84,12 @@
       }
       return member;
     });
-    document.dispatchEvent(RegisterEvent);
+    let event = new CustomEvent("mjRegister", {
+      detail: payload.memberId,
+      bubbles: true
+    });
+    target.dispatchEvent(event);
+    return true;
   }
   var EditMemberEvent = new Event(`${MJ_EVENT_PREFIX}EditMember`);
   async function editMemberList(payload, mode) {
@@ -1988,7 +1992,14 @@
           type: "checkbox",
           checked: member.tournament.registered,
           onchange: async () => {
-            await manualRegister({ memberId: member.id });
+            let r = await manualRegister(
+              { memberId: member.id },
+              checkbox.element
+            );
+            if (!r) {
+              alert("Please try again.");
+              window.location.reload();
+            }
           }
         }
       });
@@ -2069,7 +2080,7 @@
       editMembersBar.register.updateMembers();
       dialog.deactivate();
     });
-    document.addEventListener("mjRegister", (ev) => {
+    sidebar.addEventListener("mjRegister", (ev) => {
       memberList.updateMembers();
       editMembersBar.register.input.element.value = "";
     });
@@ -2200,7 +2211,13 @@
           (m) => m.name == this.input.element.value.trim()
         )?.id;
         if (memberId === void 0) throw new Error("no id AJDSBFI");
-        manualRegister({ memberId });
+        let r = manualRegister({ memberId }, this.input.element);
+        r.then((success) => {
+          if (!success) {
+            alert("Please try again.");
+            window.location.reload;
+          }
+        });
       };
     }
     updateMembers() {

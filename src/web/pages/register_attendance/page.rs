@@ -65,15 +65,11 @@ pub async fn manual_register_attendance(
     session: Session,
     data: web::Data<AppState>,
     body: web::Json<RegisterMemberPostRequest>,
-    req: HttpRequest,
+    _req: HttpRequest,
 ) -> impl Responder {
     if !is_authenticated(&session, &data.authenticated_keys) {
-        // Login and redirect back here
-        // (GET to this address is routed to /table)
-        return get_redirect_response(&format!(
-            "/login?redirect={}",
-            encode(&req.uri().path_and_query().unwrap().to_string()),
-        ));
+        // should do headers
+        return HttpResponse::Unauthorized().finish();
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
     let present: bool;

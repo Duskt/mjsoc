@@ -41,7 +41,10 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
--   add success confirmations and errors
+-   add success confirmations and errors:
+    - shuffle
+    - fill
+    - add/remove members
 -   add undo/edit logs
 -   shuffle seats without losing previous tables
 -   make things bigger

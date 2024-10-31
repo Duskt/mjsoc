@@ -82,7 +82,8 @@ export default function renderSidebar() {
         // todo: add event info to only do this for post?
         dialog.deactivate();
     });
-    document.addEventListener("mjRegister", (ev) => {
+    sidebar.addEventListener("mjRegister", (ev) => {
+        // optimize
         memberList.updateMembers();
         editMembersBar.register.input.element.value = "";
     });
@@ -109,7 +110,7 @@ class EditMembersBar extends Component<"div"> {
     addButton: Component<"button">;
     removeButton: RemoveMemberButton;
     checkbox: Component<"input">;
-    constructor(params: Params<'div'>) {
+    constructor(params: Params<"div">) {
         super({
             tag: "div",
             ...params,
@@ -132,8 +133,8 @@ class EditMembersBar extends Component<"div"> {
             icon: "reset",
             parent: this.topDiv.element,
             other: {
-                title: "Reset the session (prompted to confirm)"
-            }
+                title: "Reset the session (prompted to confirm)",
+            },
         });
         let confirmation = new ConfirmationDialog({
             activator: this.resetButton,
@@ -192,7 +193,7 @@ class Register extends Component<"form"> {
     label: Component<"label">;
     input: Component<"input">;
     datalist: Component<"datalist">;
-    constructor(params: Params<'form'>) {
+    constructor(params: Params<"form">) {
         super({
             tag: "form",
             classList: ["register"],
@@ -229,7 +230,13 @@ class Register extends Component<"form"> {
                 (m) => m.name == this.input.element.value.trim()
             )?.id;
             if (memberId === undefined) throw new Error("no id AJDSBFI");
-            manualRegister({ memberId });
+            let r = manualRegister({ memberId }, this.input.element);
+            r.then((success) => {
+                if (!success) {
+                    alert("Please try again.");
+                    window.location.reload;
+                }
+            });
         };
     }
     updateMembers() {

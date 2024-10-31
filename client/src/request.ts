@@ -65,21 +65,22 @@ export async function pointTransfer(
         return new_member !== undefined ? new_member : old_member;
     });
 
-    let PointTransferEvent = new CustomEvent("mjPointTransfer", {
+    let event: PointTransferEvent = new CustomEvent("mjPointTransfer", {
         detail: payload,
         bubbles: true,
     });
-    target.dispatchEvent(PointTransferEvent);
+    target.dispatchEvent(event);
     return true;
 }
 
-const RegisterEvent = new Event(`${MJ_EVENT_PREFIX}Register`);
-
-export async function manualRegister(payload: { memberId: MemberId }) {
+export async function manualRegister(
+    payload: { memberId: MemberId },
+    target: HTMLElement | Document = document
+) {
     let r = await request("/register", { member_id: payload.memberId }, "POST");
     if (!r.ok) {
         console.error(`${r}`);
-        return;
+        return false;
     }
     let present: boolean = await r.json();
     window.MJDATA.members = window.MJDATA.members.map((member) => {
@@ -88,7 +89,12 @@ export async function manualRegister(payload: { memberId: MemberId }) {
         }
         return member;
     });
-    document.dispatchEvent(RegisterEvent);
+    let event: RegisterEvent = new CustomEvent("mjRegister", {
+        detail: payload.memberId,
+        bubbles: true,
+    });
+    target.dispatchEvent(event);
+    return true;
 }
 
 const EditMemberEvent = new Event(`${MJ_EVENT_PREFIX}EditMember`);

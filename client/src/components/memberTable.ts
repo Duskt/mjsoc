@@ -6,7 +6,7 @@ export default class MemberGrid extends Component<"table"> {
         [id: Member["id"]]: HTMLLIElement;
     };
     showAbsent: boolean;
-    constructor(params: Params<'table'>) {
+    constructor(params: Params<"table">) {
         super({
             tag: "table",
             ...params,
@@ -94,14 +94,21 @@ export default class MemberGrid extends Component<"table"> {
                 type: "checkbox",
                 checked: member.tournament.registered,
                 onchange: async () => {
-                    await manualRegister({ memberId: member.id });
+                    let r = await manualRegister(
+                        { memberId: member.id },
+                        checkbox.element
+                    );
+                    if (!r) {
+                        alert("Please try again.");
+                        window.location.reload();
+                    }
                 },
             },
         });
     }
 }
 
-interface PointsTdParams extends Params<'td'> {
+interface PointsTdParams extends Params<"td"> {
     points: number;
 }
 
