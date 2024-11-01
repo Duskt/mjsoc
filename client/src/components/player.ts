@@ -13,6 +13,8 @@ import {
     MahjongUnknownMemberError,
     getMember,
     POINTS,
+    isMember,
+    OptionMember,
 } from "../data";
 import { InputListener, InputListenerParameters } from "./input/listener";
 import { pointTransfer, request } from "../request";
@@ -100,13 +102,13 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
         return super.deactivate();
     }
 
-    async onclickPointTransfer(losers: (Member | "EMPTY")[], points: number) {
+    async onclickPointTransfer(losers: OptionMember[], points: number) {
         let success = await pointTransfer(
             {
                 to: this.memberId,
                 from: losers.map((m) => {
-                    if (m === "EMPTY") {
-                        throw new MahjongUnknownMemberError(0);
+                    if (!isMember(m)) {
+                        throw new MahjongUnknownMemberError(m.id);
                     }
                     return m.id;
                 }),
@@ -130,12 +132,12 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
     updatePlayers() {
         let table = this.table;
         let member = this.member;
-        let otherPlayers = getOtherPlayersOnTable(member.id, table, true);
+        let otherPlayers = getOtherPlayersOnTable(member.id, table);
         // deals with appending/removing children
         this.dachut.dropdown.options = otherPlayers.map(
             (m) =>
                 new FaanDropdownButton({
-                    textContent: m === "EMPTY" ? m : m.name,
+                    textContent: m.name,
                     classList: ["small-button"],
                     onclick: async (ev, faan) =>
                         this.onclickPointTransfer(
@@ -150,7 +152,7 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
         this.baozimo.dropdown.options = otherPlayers.map(
             (m) =>
                 new FaanDropdownButton({
-                    textContent: m === "EMPTY" ? m : m.name,
+                    textContent: m.name,
                     classList: ["small-button"],
                     onclick: async (ev, faan) =>
                         this.onclickPointTransfer(
@@ -270,11 +272,11 @@ export default class PlayerTag extends UsesTable(
         this.tableNo = params.tableNo;
         let table = this.table;
         this.seat = params.seat;
-        let me = getMember(table[this.seat], true);
+        let me = getMember(table[this.seat]);
         this.nameTag = new NameTag({
             classList: ["name-tag", this.seat],
             parent: this.element,
-            value: me === "EMPTY" ? undefined : me,
+            value: isMember(me) ? me : undefined,
         });
         // doesn't need to UsesMember because it controls memberId (and reacts appropriately)!
         this.memberId = table[this.seat];
@@ -316,24 +318,23 @@ export default class PlayerTag extends UsesTable(
     // called by the parent table when it receives the input event
     updateWinButton() {
         let newMemberId = this.table[this.seat];
-        if (newMemberId === 0) {
-            // should never occur as of now
+        let newMember = getMember(newMemberId);
+        if (!isMember(newMember)) {
             this.winButton.element.remove();
             this.winButton = WinButton.empty(this.element);
-        } else {
-            let newMember = getMember(newMemberId);
-            if (this.winButton instanceof WinButton) {
-                this.winButton.updateMember(newMember.id);
-            } else if (this.memberId != 0) {
-                this.winButton.element.remove();
-                this.winButton = new WinButton({
-                    tableNo: this.tableNo,
-                    memberId: this.memberId,
-                    textContent: "食",
-                    parent: this.element,
-                    classList: ["win-button", "small-button"],
-                });
-            }
+            return;
+        }
+        if (this.winButton instanceof WinButton) {
+            this.winButton.updateMember(newMember.id);
+        } else if (this.memberId != 0) {
+            this.winButton.element.remove();
+            this.winButton = new WinButton({
+                tableNo: this.tableNo,
+                memberId: this.memberId,
+                textContent: "食",
+                parent: this.element,
+                classList: ["win-button", "small-button"],
+            });
         }
     }
     // PlayerTag should update the table data but all the WinButtons will be updated by the table

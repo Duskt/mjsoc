@@ -76,22 +76,62 @@ export class MahjongUnknownMemberError extends Error {
     }
 }
 
-export function getMember(memberId: MemberId, allowEmpty?: false): Member;
+interface EmptyMember {
+    id: 0;
+    name: "EMPTY";
+    tournament: {
+        total_points: 0;
+        session_points: 0;
+        registered: false;
+    };
+}
+const emptyMember: EmptyMember = {
+    id: 0,
+    name: "EMPTY",
+    tournament: {
+        total_points: 0,
+        session_points: 0,
+        registered: false,
+    },
+};
+
+interface ErrorMember {
+    id: number;
+    name: "ERROR";
+    tournament: {
+        total_points: 0;
+        session_points: 0;
+        registered: false;
+    };
+}
+const errorMember = (id: number) =>
+    ({
+        id,
+        name: "ERROR",
+        tournament: {
+            total_points: 0,
+            session_points: 0,
+            registered: false,
+        },
+    } as ErrorMember);
+
+export type OptionMember = Member | ErrorMember | EmptyMember;
+
+export function isMember(
+    member: Member | EmptyMember | ErrorMember
+): member is Member {
+    return member.id > 0;
+}
+
 export function getMember(
-    memberId: MemberId | 0,
-    allowEmpty: true
-): Member | "EMPTY";
-export function getMember(memberId: MemberId | 0, allowEmpty: boolean = false) {
+    memberId: MemberId | 0
+): Member | EmptyMember | ErrorMember {
     if (memberId === 0) {
-        if (allowEmpty) {
-            return "EMPTY";
-        } else {
-            throw new MahjongUnknownMemberError(0);
-        }
+        return emptyMember;
     }
     let member = window.MJDATA.members.find((m) => m.id === memberId);
     if (member === undefined) {
-        throw new MahjongUnknownMemberError(memberId);
+        return errorMember(memberId);
     } else {
         return member;
     }
@@ -99,18 +139,7 @@ export function getMember(memberId: MemberId | 0, allowEmpty: boolean = false) {
 
 export function getOtherPlayersOnTable(
     memberId: MemberId,
-    table: TableNo | TableData,
-    allowEmpty: true
-): ("EMPTY" | Member)[];
-export function getOtherPlayersOnTable(
-    memberId: MemberId,
-    table: TableNo | TableData,
-    allowEmpty: false
-): Member[];
-export function getOtherPlayersOnTable(
-    memberId: MemberId,
-    table: TableNo | TableData,
-    allowEmpty: boolean = false
+    table: TableNo | TableData
 ) {
     let tableData = typeof table === "number" ? getTable(table) : table;
     let otherSeats = (["east", "south", "west", "north"] as SeatWind[]).filter(
@@ -118,14 +147,7 @@ export function getOtherPlayersOnTable(
     );
     return otherSeats.map((seat) => {
         let mId = tableData[seat];
-        if (mId !== 0) {
-            return getMember(mId);
-        }
-        if (allowEmpty) {
-            return "EMPTY";
-        } else {
-            throw new MahjongUnknownMemberError(0);
-        }
+        return getMember(mId);
     });
 }
 
