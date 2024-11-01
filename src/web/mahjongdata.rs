@@ -4,6 +4,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::expect_env;
@@ -74,21 +75,50 @@ pub struct TableData {
 pub struct TournamentData {
     pub total_points: i32,
     pub session_points: i32,
-    pub registered: bool
+    pub registered: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Member {
     pub id: MemberId,
     pub name: String,
-    pub tournament: TournamentData
+    pub tournament: TournamentData,
+    #[serde(default)]
+    pub council: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/* #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PointTransfer {
     pub to: MemberId,
     pub from: Vec<MemberId>,
     pub points: i32,
+} */
+
+pub type LogId = u32;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Wind {
+    #[serde(rename = "east")]
+    East,
+    #[serde(rename = "south")]
+    South,
+    #[serde(rename = "west")]
+    West,
+    #[serde(rename = "north")]
+    North,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Log {
+    pub id: LogId,
+    pub to: MemberId,
+    pub from: Vec<MemberId>,
+    pub points: i32,
+    pub datetime: Option<DateTime<Utc>>,
+    pub round_wind: Option<Wind>,
+    pub seat_wind: Option<Wind>,
+    #[serde(default)] // false
+    pub disabled: bool,
 }
 
 fn get_new_index(indices: Vec<u32>) -> u32 {
@@ -109,7 +139,7 @@ pub struct MahjongData {
     pub week: WeekData,
     pub tables: Vec<TableData>,
     pub members: Vec<Member>,
-    pub log: Vec<PointTransfer>,
+    pub log: Vec<Log>,
 }
 
 impl MahjongData {

@@ -200,6 +200,12 @@
           "d",
           "M105.1 202.6c7.7-21.8 20.2-42.3 37.8-59.8c62.5-62.5 163.8-62.5 226.3 0L386.3 160 352 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l111.5 0c0 0 0 0 0 0l.4 0c17.7 0 32-14.3 32-32l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 35.2L414.4 97.6c-87.5-87.5-229.3-87.5-316.8 0C73.2 122 55.6 150.7 44.8 181.4c-5.9 16.7 2.9 34.9 19.5 40.8s34.9-2.9 40.8-19.5zM39 289.3c-5 1.5-9.8 4.2-13.7 8.2c-4 4-6.7 8.8-8.1 14c-.3 1.2-.6 2.5-.8 3.8c-.3 1.7-.4 3.4-.4 5.1L16 432c0 17.7 14.3 32 32 32s32-14.3 32-32l0-35.1 17.6 17.5c0 0 0 0 0 0c87.5 87.4 229.3 87.4 316.7 0c24.4-24.4 42.1-53.1 52.9-83.8c5.9-16.7-2.9-34.9-19.5-40.8s-34.9 2.9-40.8 19.5c-7.7 21.8-20.2 42.3-37.8 59.8c-62.5 62.5-163.8 62.5-226.3 0l-.1-.1L125.6 352l34.4 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L48.4 288c-1.6 0-3.2 .1-4.8 .3s-3.1 .5-4.6 1z"
         );
+      } else if (icon == "trash") {
+        this.svg.setAttribute("viewBox", "0 0 448 512");
+        this.path.setAttribute(
+          "d",
+          "M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"
+        );
       } else {
         throw new Error(`Unknown icon type ${icon}`);
       }
@@ -314,36 +320,46 @@
       this.name = "MahjongUnknownMemberError";
     }
   };
-  function getMember(memberId, allowEmpty = false) {
+  var emptyMember = {
+    id: 0,
+    name: "EMPTY",
+    tournament: {
+      total_points: 0,
+      session_points: 0,
+      registered: false
+    }
+  };
+  var errorMember = (id) => ({
+    id: id > 0 ? -id : id,
+    name: "ERROR",
+    tournament: {
+      total_points: 0,
+      session_points: 0,
+      registered: false
+    }
+  });
+  function isMember(member) {
+    return member.id > 0;
+  }
+  function getMember(memberId) {
     if (memberId === 0) {
-      if (allowEmpty) {
-        return "EMPTY";
-      } else {
-        throw new MahjongUnknownMemberError(0);
-      }
+      return emptyMember;
     }
     let member = window.MJDATA.members.find((m) => m.id === memberId);
     if (member === void 0) {
-      throw new MahjongUnknownMemberError(memberId);
+      return errorMember(memberId);
     } else {
       return member;
     }
   }
-  function getOtherPlayersOnTable(memberId, table, allowEmpty = false) {
+  function getOtherPlayersOnTable(memberId, table) {
     let tableData = typeof table === "number" ? getTable(table) : table;
     let otherSeats = ["east", "south", "west", "north"].filter(
       (seat) => tableData[seat] != memberId
     );
     return otherSeats.map((seat) => {
       let mId = tableData[seat];
-      if (mId !== 0) {
-        return getMember(mId);
-      }
-      if (allowEmpty) {
-        return "EMPTY";
-      } else {
-        throw new MahjongUnknownMemberError(0);
-      }
+      return getMember(mId);
     });
   }
   var POINTS = /* @__PURE__ */ new Map();
@@ -1519,8 +1535,8 @@
         {
           to: this.memberId,
           from: losers.map((m) => {
-            if (m === "EMPTY") {
-              throw new MahjongUnknownMemberError(0);
+            if (!isMember(m)) {
+              throw new MahjongUnknownMemberError(m.id);
             }
             return m.id;
           }),
@@ -1543,10 +1559,10 @@
     updatePlayers() {
       let table = this.table;
       let member = this.member;
-      let otherPlayers = getOtherPlayersOnTable(member.id, table, true);
+      let otherPlayers = getOtherPlayersOnTable(member.id, table);
       this.dachut.dropdown.options = otherPlayers.map(
         (m) => new FaanDropdownButton({
-          textContent: m === "EMPTY" ? m : m.name,
+          textContent: m.name,
           classList: ["small-button"],
           onclick: async (ev, faan) => this.onclickPointTransfer(
             [m],
@@ -1559,7 +1575,7 @@
       );
       this.baozimo.dropdown.options = otherPlayers.map(
         (m) => new FaanDropdownButton({
-          textContent: m === "EMPTY" ? m : m.name,
+          textContent: m.name,
           classList: ["small-button"],
           onclick: async (ev, faan) => this.onclickPointTransfer(
             [m],
@@ -1653,11 +1669,11 @@
       this.tableNo = params.tableNo;
       let table = this.table;
       this.seat = params.seat;
-      let me = getMember(table[this.seat], true);
+      let me = getMember(table[this.seat]);
       this.nameTag = new NameTag({
         classList: ["name-tag", this.seat],
         parent: this.element,
-        value: me === "EMPTY" ? void 0 : me
+        value: isMember(me) ? me : void 0
       });
       this.memberId = table[this.seat];
       if (this.memberId === 0) {
@@ -1690,23 +1706,23 @@
     // called by the parent table when it receives the input event
     updateWinButton() {
       let newMemberId = this.table[this.seat];
-      if (newMemberId === 0) {
+      let newMember = getMember(newMemberId);
+      if (!isMember(newMember)) {
         this.winButton.element.remove();
         this.winButton = WinButton.empty(this.element);
-      } else {
-        let newMember = getMember(newMemberId);
-        if (this.winButton instanceof WinButton) {
-          this.winButton.updateMember(newMember.id);
-        } else if (this.memberId != 0) {
-          this.winButton.element.remove();
-          this.winButton = new WinButton({
-            tableNo: this.tableNo,
-            memberId: this.memberId,
-            textContent: "\u98DF",
-            parent: this.element,
-            classList: ["win-button", "small-button"]
-          });
-        }
+        return;
+      }
+      if (this.winButton instanceof WinButton) {
+        this.winButton.updateMember(newMember.id);
+      } else if (this.memberId != 0) {
+        this.winButton.element.remove();
+        this.winButton = new WinButton({
+          tableNo: this.tableNo,
+          memberId: this.memberId,
+          textContent: "\u98DF",
+          parent: this.element,
+          classList: ["win-button", "small-button"]
+        });
       }
     }
     // PlayerTag should update the table data but all the WinButtons will be updated by the table
@@ -2129,6 +2145,7 @@
           title: "Reset the session (prompted to confirm)"
         }
       });
+      this.resetButton.element.style.margin = "10px";
       let confirmation = new ConfirmationDialog({
         activator: this.resetButton,
         parent: this.topDiv.element,
@@ -2504,6 +2521,17 @@
         tag: "td",
         parent: this.element,
         textContent: params.transfer.from.map((mId) => getMember(mId).name).join(",")
+      });
+      this.disable = new Component({
+        tag: "td"
+        // TODO parent: this.element,
+      });
+      this.disable.element.style.paddingBottom = "0";
+      this.disable.element.style.border = "none";
+      let disableButton = new IconButton({
+        icon: "trash",
+        parent: this.disable.element,
+        onclick: (ev) => alert("del")
       });
     }
   };

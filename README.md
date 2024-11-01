@@ -41,14 +41,15 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
+-   go through git stash
+-   add undo/edit logs
+-   shuffle seats without losing previous tables
+-   seat council last
+-   make things bigger
 -   add success confirmations and errors:
     - shuffle
     - fill
     - add/remove members
--   add undo/edit logs
--   shuffle seats without losing previous tables
--   make things bigger
--   seat council last
 
 ## Feature
 
@@ -71,5 +72,5 @@ Contains the Rust server and command line interface.
 
 ## Bugs
 
--   duplicate tables
+-   duplicate tables: on new player, register
 -   premature session reload?

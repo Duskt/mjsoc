@@ -6,7 +6,7 @@ use urlencoding::encode;
 
 use crate::{
     auth::is_authenticated,
-    mahjongdata::{Member, MemberId, PointTransfer, TournamentData},
+    mahjongdata::{Log, Member, MemberId, TournamentData},
     AppState,
 };
 
@@ -72,6 +72,7 @@ pub async fn create_member(
             session_points: 0,
             registered: false,
         },
+        council: false,
     };
     mjdata.members.push(new_member.clone());
     mjdata.save_to_file();
@@ -134,7 +135,7 @@ pub async fn delete_member(
 pub async fn transfer_points(
     session: Session,
     data: web::Data<AppState>,
-    body: web::Json<PointTransfer>,
+    body: web::Json<Log>,
 ) -> impl Responder {
     if !is_authenticated(&session, &data.authenticated_keys) {
         // todo: should include WW-Authentication header...
