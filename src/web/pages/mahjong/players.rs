@@ -31,15 +31,15 @@ pub async fn update_member(
         ));
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
-    let member_data = mjdata
-        .members
-        .iter_mut()
-        .find(|x| x.id == body.id)
-        .expect("Post request should have a valid member id.");
-    member_data.name = body.new_name.clone();
-    mjdata.save_to_file();
-    // no need to redirect as they already see the changes they've made
-    HttpResponse::Ok().body("Edited player name")
+    let member_data = mjdata.members.iter_mut().find(|x| x.id == body.id);
+    match member_data {
+        None => HttpResponse::BadRequest().body("Player ID could not be found."),
+        Some(member) => {
+            member.name = body.new_name.clone();
+            mjdata.save_to_file();
+            HttpResponse::Ok().body("Edited player name")
+        }
+    }
 }
 
 #[derive(Deserialize)]
