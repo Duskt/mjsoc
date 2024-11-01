@@ -43,16 +43,16 @@ function renderLogsTable(parent: HTMLTableElement) {
     // re-render all logs
     let reverseLog = window.MJDATA.log;
     reverseLog.reverse();
-    for (let pt of reverseLog) {
+    for (let l of reverseLog) {
         let logRow = new LogRow({
             parent,
-            transfer: pt,
+            log: l,
         });
     }
 }
 
 interface LogRowParams extends Params<"tr"> {
-    transfer: PointTransfer;
+    log: Log;
 }
 
 class LogRow extends Component<"tr"> {
@@ -71,24 +71,24 @@ class LogRow extends Component<"tr"> {
             parent: this.element,
             textContent:
                 getFaanFromPoints(
-                    params.transfer.points,
-                    params.transfer.from.length
+                    params.log.points,
+                    params.log.from.length
                 )?.toString() || "???",
         });
         this.points = new Component({
             tag: "td",
             parent: this.element,
-            textContent: params.transfer.points.toString(),
+            textContent: params.log.points.toString(),
         });
         this.to = new Component({
             tag: "td",
             parent: this.element,
-            textContent: getMember(params.transfer.to).name,
+            textContent: getMember(params.log.to).name,
         });
         this.from = new Component({
             tag: "td",
             parent: this.element,
-            textContent: params.transfer.from
+            textContent: params.log.from
                 .map((mId) => getMember(mId).name)
                 .join(","),
         });

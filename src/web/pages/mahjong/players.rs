@@ -6,7 +6,7 @@ use urlencoding::encode;
 
 use crate::{
     auth::is_authenticated,
-    mahjongdata::{Log, Member, MemberId, TournamentData},
+    mahjongdata::{Member, MemberId, TournamentData},
     AppState,
 };
 
@@ -130,37 +130,4 @@ pub async fn delete_member(
             body.name
         ))
     }
-}
-
-pub async fn transfer_points(
-    session: Session,
-    data: web::Data<AppState>,
-    body: web::Json<Log>,
-) -> impl Responder {
-    if !is_authenticated(&session, &data.authenticated_keys) {
-        // todo: should include WW-Authentication header...
-        return HttpResponse::Unauthorized().finish();
-    }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
-    // take the points from...
-    let mut update_members: Vec<Member> = vec![];
-    for id in body.from.iter() {
-        for member in mjdata.members.iter_mut() {
-            if member.id == *id {
-                member.tournament.session_points -= body.points;
-                update_members.push(member.clone());
-            }
-        }
-    }
-    // and give points*n to...
-    let points = ((body.points as isize) * (body.from.len() as isize)) as i32;
-    if let Some(mem) = mjdata.members.iter_mut().find(|mem| mem.id == body.to) {
-        mem.tournament.session_points += points;
-        update_members.push(mem.clone());
-    }
-    // log the PointTransfer request
-    mjdata.log.push(body.to_owned());
-    mjdata.save_to_file();
-    // send back the affected members as confirmation
-    HttpResponse::Ok().json(update_members)
 }

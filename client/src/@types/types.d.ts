@@ -26,16 +26,21 @@ interface Member {
     tournament: TournamentData;
 }
 
-interface PointTransfer {
+interface Log {
+    id: number;
     to: MemberId;
     from: MemberId[];
     // x points will be taken from n players in 'from', and x*n awarded to 'to'
     points: number;
+    datetime?: Date;
+    round_wind?: Wind;
+    seat_wind?: Wind;
+    disabled: boolean;
 }
 
 interface MahjongData {
     week: {};
     tables: TableData[];
     members: Member[];
-    log: PointTransfer[];
+    log: Log[];
 }

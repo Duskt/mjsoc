@@ -35,8 +35,8 @@ use pages::{
     login::login,
     logo::logo,
     mahjong::{
-        log::get_log_page,
-        players::{create_member, delete_member, transfer_points, update_member},
+        log::{get_log_page, transfer_points},
+        players::{create_member, delete_member, update_member},
         tables::{create_table, delete_table, get_tables, update_table},
     },
     qr::page::{download_qr, generate_qr},

@@ -43,16 +43,16 @@ export async function request(
 /**
  *
  * @param payload
- * @returns boolean - if successful
+ * @returns Response
  */
 export async function pointTransfer(
-    payload: PointTransfer,
+    payload: Log,
     target: HTMLElement | Document = document
 ) {
     let r = await request("/members/transfer", payload, "POST");
     if (!r.ok) {
         console.error("Invalid transfer: ", payload);
-        return false;
+        return r;
     }
     window.MJDATA.log.push(payload);
     // for each member, see if they've been updated
@@ -70,7 +70,7 @@ export async function pointTransfer(
         bubbles: true,
     });
     target.dispatchEvent(event);
-    return true;
+    return r;
 }
 
 export async function manualRegister(

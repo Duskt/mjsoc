@@ -15,6 +15,7 @@ import {
     POINTS,
     isMember,
     OptionMember,
+    isWind,
 } from "../data";
 import { InputListener, InputListenerParameters } from "./input/listener";
 import { pointTransfer, request } from "../request";
@@ -103,8 +104,11 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
     }
 
     async onclickPointTransfer(losers: OptionMember[], points: number) {
-        let success = await pointTransfer(
+        let roundWind = window.sessionStorage.getItem("round");
+        let r = await pointTransfer(
             {
+                // todo: server-side id
+                id: Math.max(...window.MJDATA.log.map((l) => l.id)) + 1,
                 to: this.memberId,
                 from: losers.map((m) => {
                     if (!isMember(m)) {
@@ -113,19 +117,29 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
                     return m.id;
                 }),
                 points,
+                datetime: new Date(),
+                round_wind: isWind(roundWind) ? roundWind : undefined,
+                //seat_wind
+                disabled: false,
             },
             this.element
         );
-        if (success) {
+        if (r.ok) {
             if (points === 256 || (points === 128 && losers.length > 1)) {
                 triggerCelebration();
             }
             this.deactivate();
-        } else {
+        } else if (r.status === 401) {
+            // You have to be logged in to see this page, so it must be a timeout.
             alert(
                 "The session timed out. Please tell a committee member to sign-in again so you can enter your points. Thank you!"
             );
             window.location.reload();
+        } else {
+            alert(
+                "An unknown error occurred while processing your win. Please let a member of the committee know."
+            );
+            console.error(r);
         }
     }
 

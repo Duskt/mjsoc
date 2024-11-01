@@ -6,3 +6,4 @@ _*.json
 hop.yml
 /data
 node_modules
+public/index.js
