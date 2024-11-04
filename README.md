@@ -41,8 +41,7 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
--   go through git stash
--   add undo/edit logs
+-   add undo point transfer button
 
 ## Feature
 
@@ -54,6 +53,7 @@ Contains the Rust server and command line interface.
     -   fill
     -   add/remove members
 -   style the log page
+-   allow redo and delete logs with double-auth
 -   persist auth keys
 
 ## Refactor

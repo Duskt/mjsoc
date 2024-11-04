@@ -1,14 +1,18 @@
 import Component, { Params } from "../components";
 import IconButton from "../components/icons";
 import { getMember, POINTS } from "../data";
+import { editLog } from "../request";
 
 export default function logPage() {
     let logTable = document.getElementById("log-table");
     if (!(logTable instanceof HTMLTableElement)) {
         throw Error("Couldn't get log-table <table> element.");
     }
-    logTable.classList.add("info-grid");
-    renderLogsTable(logTable);
+    logTable.replaceWith(
+        new LogTable({
+            classList: ["info-grid"],
+        }).element
+    );
 }
 
 function getFaanFromPoints(points: number, n_losers: number) {
@@ -21,33 +25,84 @@ function getFaanFromPoints(points: number, n_losers: number) {
     return undefined;
 }
 
-function renderLogsTable(parent: HTMLTableElement) {
-    // clear the table
-    parent.innerHTML = "";
-    // render headings
-    let headerRow = document.createElement("tr");
-    parent.appendChild(headerRow);
-    let faan = document.createElement("th");
-    faan.textContent = "Faan";
-    headerRow.appendChild(faan);
-    let points = document.createElement("th");
-    points.textContent = "Points /n";
-    points.style["width"] = "20%";
-    headerRow.appendChild(points);
-    let winner = document.createElement("th");
-    winner.textContent = "Winner";
-    headerRow.appendChild(winner);
-    let losers = document.createElement("th");
-    losers.textContent = "Loser(s)";
-    headerRow.appendChild(losers);
-    // re-render all logs
-    let reverseLog = window.MJDATA.log;
-    reverseLog.reverse();
-    for (let l of reverseLog) {
-        let logRow = new LogRow({
-            parent,
-            log: l,
+class LogTable extends Component<"table"> {
+    headerRow: Component<"tr">;
+    headers: Component<"th">[];
+    logs: LogRow[];
+    constructor(params: Params<"table">) {
+        super({
+            tag: "table",
+            ...params,
         });
+        this.headerRow = new Component({
+            tag: "tr",
+            parent: this.element,
+        });
+        this.headers = [];
+        this.logs = [];
+        this.createHeaders();
+        this.renderLogs();
+        console.log("adding el");
+        this.element.addEventListener("mjEditLog", () => {
+            console.log("editlog");
+            this.element.innerHTML = "";
+            this.renderHeaders();
+            this.renderLogs();
+        });
+    }
+    /**
+     * Also renders the headers automatically.
+     */
+    createHeaders() {
+        this.headers.push(
+            new Component({
+                tag: "th",
+                parent: this.headerRow.element,
+                textContent: "Faan",
+            })
+        );
+        this.headers.push(
+            new Component({
+                tag: "th",
+                parent: this.headerRow.element,
+                textContent: "Points from each",
+            })
+        );
+        this.headers[1].element.style["width"] = "20%";
+        this.headers.push(
+            new Component({
+                tag: "th",
+                parent: this.headerRow.element,
+                textContent: "Winner",
+            })
+        );
+        this.headers.push(
+            new Component({
+                tag: "th",
+                parent: this.headerRow.element,
+                textContent: "Losers",
+            })
+        );
+    }
+    renderHeaders() {
+        let header: Component<"th">;
+        for (header of this.headers) {
+            this.element.appendChild(header.element);
+        }
+    }
+    renderLogs() {
+        this.logs = [];
+        let reverseLog = [...window.MJDATA.log].reverse();
+        let log: Log;
+        for (log of reverseLog) {
+            if (log.disabled) continue;
+            this.logs.push(
+                new LogRow({
+                    log,
+                    parent: this.element,
+                })
+            );
+        }
     }
 }
 
@@ -56,17 +111,20 @@ interface LogRowParams extends Params<"tr"> {
 }
 
 class LogRow extends Component<"tr"> {
-    faan: Component<"td">;
-    points: Component<"td">;
-    to: Component<"td">;
-    from: Component<"td">;
-    disable: Component<"td">;
+    log: Log;
+    faanTd: Component<"td">;
+    pointsTd: Component<"td">;
+    toTd: Component<"td">;
+    fromTd: Component<"td">;
+    disableTd: Component<"td">;
+    disableButton: Component<"button">;
     constructor(params: LogRowParams) {
         super({
             tag: "tr",
             ...params,
         });
-        this.faan = new Component({
+        this.log = params.log;
+        this.faanTd = new Component({
             tag: "td",
             parent: this.element,
             textContent:
@@ -75,33 +133,46 @@ class LogRow extends Component<"tr"> {
                     params.log.from.length
                 )?.toString() || "???",
         });
-        this.points = new Component({
+        this.pointsTd = new Component({
             tag: "td",
             parent: this.element,
-            textContent: params.log.points.toString(),
+            textContent: params.log.disabled
+                ? "DISABLE"
+                : params.log.points.toString(),
         });
-        this.to = new Component({
+        this.toTd = new Component({
             tag: "td",
             parent: this.element,
             textContent: getMember(params.log.to).name,
         });
-        this.from = new Component({
+        this.fromTd = new Component({
             tag: "td",
             parent: this.element,
             textContent: params.log.from
                 .map((mId) => getMember(mId).name)
                 .join(","),
         });
-        this.disable = new Component({
+        this.disableTd = new Component({
             tag: "td",
-            // TODO parent: this.element,
+            parent: this.element,
         });
-        this.disable.element.style.paddingBottom = "0";
-        this.disable.element.style.border = "none";
-        let disableButton = new IconButton({
+        this.disableTd.element.style.paddingBottom = "0";
+        this.disableTd.element.style.border = "none";
+        this.disableButton = new IconButton({
             icon: "trash",
-            parent: this.disable.element,
-            onclick: (ev) => alert("del"),
+            parent: this.disableTd.element,
+            onclick: async (ev) => this.disable(),
         });
+    }
+    disable() {
+        let newLog = { ...this.log };
+        newLog.disabled = true;
+        editLog(
+            {
+                id: this.log.id,
+                newLog,
+            },
+            this.element
+        );
     }
 }

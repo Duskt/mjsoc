@@ -1,4 +1,4 @@
-import { getMember, isMember } from "./data";
+import { getMember, isMember, updateMembers } from "./data";
 
 const MJ_EVENT_PREFIX = "mj";
 
@@ -57,15 +57,7 @@ export async function pointTransfer(
         return r;
     }
     window.MJDATA.log.push(payload);
-    // for each member, see if they've been updated
-    let updated_members: Member[] = await r.json();
-    let new_member: Member | undefined;
-    window.MJDATA.members = window.MJDATA.members.map((old_member) => {
-        new_member = updated_members.find(
-            (new_member) => new_member.id === old_member.id
-        );
-        return new_member !== undefined ? new_member : old_member;
-    });
+    updateMembers(await r.json());
 
     let event: PointTransferEvent = new CustomEvent("mjPointTransfer", {
         detail: payload,
@@ -188,4 +180,37 @@ export async function resetSession() {
         m.tournament.session_points = 0;
     }
     document.dispatchEvent(ResetSessionEvent);
+}
+
+export async function editLog(
+    payload: {
+        id: Log["id"];
+        newLog: Log;
+    },
+    target: HTMLElement | Document = document
+) {
+    let oldLogIndex = window.MJDATA.log.findIndex((l) => l.id === payload.id);
+    if (oldLogIndex === -1) {
+        throw new Error("Couldn't find that log");
+    }
+    let r = await request(
+        "/log",
+        {
+            id: payload.id,
+            log: payload.newLog,
+        },
+        "PUT"
+    );
+    if (!r.ok) {
+        console.error(r);
+        return r;
+    }
+    window.MJDATA.log[oldLogIndex] = payload.newLog;
+    updateMembers(await r.json());
+    let event: EditLogEvent = new CustomEvent("mjEditLog", {
+        detail: payload,
+        bubbles: true,
+    });
+    target.dispatchEvent(event);
+    return r;
 }

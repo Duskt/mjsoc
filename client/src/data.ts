@@ -180,3 +180,14 @@ export function getSessionWind(): Wind {
         return "east";
     }
 }
+
+export function updateMembers(
+    affectedMembers: Member[],
+    key: keyof Member = "id"
+) {
+    let newMember: Member | undefined;
+    window.MJDATA.members = window.MJDATA.members.map((oldMember) => {
+        newMember = affectedMembers.find((m) => m[key] === oldMember[key]);
+        return newMember !== undefined ? newMember : oldMember;
+    });
+}

@@ -4,6 +4,7 @@ interface CustomEventMap {
     mjRegister: RegisterEvent;
     mjAddMember: AddMemberEvent;
     mjEditMember: EditMemberEvent;
+    mjEditLog: EditLogEvent;
 }
 declare global {
     interface GlobalEventHandlersEventMap extends CustomEventMap {}
