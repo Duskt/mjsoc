@@ -43,16 +43,16 @@ Contains the Rust server and command line interface.
 
 -   go through git stash
 -   add undo/edit logs
+
+## Feature
+
 -   shuffle seats without losing previous tables
 -   seat council last
 -   make things bigger
 -   add success confirmations and errors:
-    - shuffle
-    - fill
-    - add/remove members
-
-## Feature
-
+    -   shuffle
+    -   fill
+    -   add/remove members
 -   style the log page
 -   persist auth keys
 

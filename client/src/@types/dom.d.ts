@@ -2,6 +2,8 @@
 interface CustomEventMap {
     mjPointTransfer: PointTransferEvent;
     mjRegister: RegisterEvent;
+    mjAddMember: AddMemberEvent;
+    mjEditMember: EditMemberEvent;
 }
 declare global {
     interface GlobalEventHandlersEventMap extends CustomEventMap {}

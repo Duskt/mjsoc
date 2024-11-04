@@ -1,3 +1,5 @@
+import { getMember, isMember } from "./data";
+
 const MJ_EVENT_PREFIX = "mj";
 
 type RequestMethod = "GET" | "POST" | "PUT" | "DELETE";
@@ -51,7 +53,7 @@ export async function pointTransfer(
 ) {
     let r = await request("/members/transfer", payload, "POST");
     if (!r.ok) {
-        console.error("Invalid transfer: ", payload);
+        console.error("Invalid transfer: ", payload, r);
         return r;
     }
     window.MJDATA.log.push(payload);
@@ -79,7 +81,7 @@ export async function manualRegister(
 ) {
     let r = await request("/register", { member_id: payload.memberId }, "POST");
     if (!r.ok) {
-        console.error(`${r}`);
+        console.error(r);
         return false;
     }
     let present: boolean = await r.json();
@@ -97,41 +99,78 @@ export async function manualRegister(
     return true;
 }
 
-const EditMemberEvent = new Event(`${MJ_EVENT_PREFIX}EditMember`);
-
-export async function editMemberList(
-    payload: { name: string },
-    mode: "POST" | "DELETE"
+export async function editMember(
+    payload: {
+        id: MemberId;
+        newMember?: Member;
+    },
+    target: HTMLElement | Document = document
 ) {
-    let r = await request("/members", payload, mode);
+    let mode: "DELETE" | "PUT" =
+        payload.newMember === undefined ? "DELETE" : "PUT";
+    let oldMember = getMember(payload.id);
+    if (!isMember(oldMember)) {
+        throw new Error(`Couldn't find the member ${payload.id} to modify.`);
+    }
+
+    let r = await request(
+        "/members",
+        {
+            id: payload.id,
+            new_member: payload.newMember,
+        },
+        mode
+    );
     if (!r.ok) {
-        console.error(
-            `Failed to ${mode == "POST" ? "create" : "delete"} member "${
-                payload.name
-            }"`
-        );
-        return;
+        console.error(`Failed to modify/delete member "${payload.id}"`, r);
+        return r;
     }
-    if (mode == "DELETE") {
-        let member = window.MJDATA.members.find((m) => m.name === payload.name);
-        if (!member) {
-            console.warn(
-                `Couldn't find the deleted member ${payload.name} before removal.`
-            );
-        } else {
-            let index = window.MJDATA.members.indexOf(member);
-            window.MJDATA.members.splice(index, 1);
-            for (let t of window.MJDATA.tables) {
-                if (t.east === member.id) t.east = 0;
-                if (t.south === member.id) t.south = 0;
-                if (t.west === member.id) t.west = 0;
-                if (t.north === member.id) t.north = 0;
-            }
-        }
+
+    let index = window.MJDATA.members.indexOf(oldMember);
+    let newId: MemberId | 0;
+    if (payload.newMember === undefined) {
+        window.MJDATA.members.splice(index, 1);
+        newId = 0;
     } else {
-        window.MJDATA.members.push(await r.json());
+        window.MJDATA.members[index] = payload.newMember;
+        newId = payload.newMember.id;
     }
-    document.dispatchEvent(EditMemberEvent);
+    for (let t of window.MJDATA.tables) {
+        if (t.east === oldMember.id) t.east = newId;
+        if (t.south === oldMember.id) t.south = newId;
+        if (t.west === oldMember.id) t.west = newId;
+        if (t.north === oldMember.id) t.north = newId;
+    }
+
+    let event: EditMemberEvent = new CustomEvent("mjEditMember", {
+        detail: {
+            id: oldMember.id,
+            new_member:
+                payload.newMember === undefined ? {} : payload.newMember,
+        },
+        bubbles: true,
+    });
+    target.dispatchEvent(event);
+    return r;
+}
+
+export async function addMember(
+    payload: { name: string },
+    target: HTMLElement | Document = document
+) {
+    let r = await request("/members", payload);
+    if (!r.ok) {
+        console.error("Failed to POST new member:", r);
+        return r;
+    }
+    let newMember = await r.json();
+    window.MJDATA.members.push(newMember);
+    let event: AddMemberEvent = new CustomEvent("mjAddMember", {
+        detail: newMember,
+        bubbles: true,
+    });
+    target.dispatchEvent(event);
+    return r;
 }
 
 const ResetSessionEvent = new Event(`${MJ_EVENT_PREFIX}ResetSession`);
@@ -139,7 +178,7 @@ const ResetSessionEvent = new Event(`${MJ_EVENT_PREFIX}ResetSession`);
 export async function resetSession() {
     let r = await request("/week", null, "DELETE");
     if (!r.ok) {
-        console.error(`Failed to reset the session. ${r}`);
+        console.error("Failed to reset the session.", r);
     }
     // repeated computation but its better than a big payload?
     let m: Member;

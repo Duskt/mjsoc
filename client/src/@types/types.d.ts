@@ -24,6 +24,7 @@ interface Member {
     id: MemberId;
     name: string;
     tournament: TournamentData;
+    council: boolean;
 }
 
 interface Log {

@@ -7,7 +7,12 @@ export interface ListenerParameters<
     event: E;
     initListener?: boolean;
 }
-// The purpose of this is to have a listener function that can be updated as necessary
+/** A `Listener` is a `Component` that keeps track of one specific
+ * listener. Setting the listener twice will delete the first one,
+ * and getting the listener will return only the active listener.
+ * 
+ * This is an abstract class which requires an implementation for `generateListener`
+ */
 export default abstract class Listener<
     E extends keyof HTMLElementEventMap,
     T extends keyof HTMLElementTagNameMap

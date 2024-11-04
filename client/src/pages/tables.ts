@@ -19,12 +19,12 @@ export default function tables() {
     // the left sidebar contains leaderboard and player info
     renderSidebar();
     renderHeader();
-    document.addEventListener("mjEditMember", (ev) => renderTables());
-    document.addEventListener("mjResetSession", (ev) => {
+    document.addEventListener("mjEditMember", () => renderTables());
+    document.addEventListener("mjResetSession", () => {
         renderSidebar();
         renderTables();
     });
-    document.addEventListener("mjRegister", (ev) => {
+    document.addEventListener("mjRegister", () => {
         renderTables();
     });
 }
@@ -180,7 +180,7 @@ class GameTable extends UsesTable(InputListener<"table">) {
             this.animatePointTransfer(ev)
         );
     }
-    animatePointTransfer(ev: CustomEvent<PointTransfer>) {
+    animatePointTransfer(ev: CustomEvent<Log>) {
         let winner = this.findPlayerTag(ev.detail.to);
         if (!winner) return;
         pointBounce(winner, ev.detail.points * ev.detail.from.length, {

@@ -1,3 +1,5 @@
+use std::mem;
+
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use lib::util::get_redirect_response;
@@ -13,7 +15,7 @@ use crate::{
 #[derive(Deserialize)]
 pub struct UpdateMemberPutRequest {
     id: MemberId,
-    new_name: String,
+    new_member: Member,
 }
 
 pub async fn update_member(
@@ -31,15 +33,13 @@ pub async fn update_member(
         ));
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
-    let member_data = mjdata.members.iter_mut().find(|x| x.id == body.id);
-    match member_data {
+    let optmember = mjdata.members.iter_mut().find(|x| x.id == body.id);
+    let response = match optmember {
         None => HttpResponse::BadRequest().body("Player ID could not be found."),
-        Some(member) => {
-            member.name = body.new_name.clone();
-            mjdata.save_to_file();
-            HttpResponse::Ok().body("Edited player name")
-        }
-    }
+        Some(member) => HttpResponse::Ok().json(mem::replace(member, body.new_member.clone())),
+    };
+    mjdata.save_to_file();
+    response
 }
 
 #[derive(Deserialize)]
@@ -82,7 +82,7 @@ pub async fn create_member(
 
 #[derive(Deserialize)]
 pub struct MemberDeleteRequest {
-    name: String,
+    id: MemberId,
 }
 
 pub async fn delete_member(
@@ -102,7 +102,7 @@ pub async fn delete_member(
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
 
-    if let Some(index) = mjdata.members.iter().position(|x| x.name == body.name) {
+    if let Some(index) = mjdata.members.iter().position(|x| x.id == body.id) {
         let member_id = mjdata.members[index].id;
         // remove references to the member
         for t in mjdata.tables.iter_mut() {
@@ -125,9 +125,6 @@ pub async fn delete_member(
         mjdata.save_to_file();
         HttpResponse::ResetContent().body("Deleted member")
     } else {
-        HttpResponse::BadRequest().body(format!(
-            "Could not find a member by the name of {}",
-            body.name
-        ))
+        HttpResponse::BadRequest().body(format!("Could not find a member with the id {}", body.id))
     }
 }

@@ -1,5 +1,10 @@
 import Component, { Params } from ".";
-import { editMemberList, manualRegister, resetSession } from "../request";
+import {
+    addMember,
+    editMember,
+    manualRegister,
+    resetSession,
+} from "../request";
 import IconButton from "./icons";
 import Dialog, { ConfirmationDialog } from "./input/focus/dialog";
 import {
@@ -80,12 +85,16 @@ export default function renderSidebar() {
         classList: ["info-grid"],
     });
 
+    // dialog isn't added as a child of listener
     document.addEventListener("mjEditMember", (ev) => {
         memberList.updateMembers();
         editMembersBar.removeButton.update();
         editMembersBar.register.updateMembers();
-        // todo: add event info to only do this for post?
-        dialog.deactivate();
+    });
+    document.addEventListener("mjAddMember", (ev) => {
+        memberList.updateMembers();
+        editMembersBar.removeButton.update();
+        editMembersBar.register.updateMembers();
     });
     sidebar.addEventListener("mjRegister", (ev) => {
         // optimize
@@ -99,8 +108,9 @@ export default function renderSidebar() {
         if (!name) {
             throw Error("no name");
         }
-        await editMemberList({ name }, "POST");
+        await addMember({ name }, form);
     };
+    form.addEventListener("mjAddMember", () => dialog.deactivate());
     editMembersBar.checkbox.element.onchange = () => {
         memberList.showAbsent = editMembersBar.checkbox.element.checked;
         memberList.updateMembers();
@@ -188,7 +198,7 @@ class RemoveMemberButton extends DropdownButton {
                     textContent: m.name,
                     other: {
                         onclick: async (ev: MouseEvent) =>
-                            editMemberList({ name: m.name }, "DELETE"),
+                            editMember({ id: m.id }, this.element),
                     },
                 }).element
         );

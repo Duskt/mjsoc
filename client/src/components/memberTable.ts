@@ -1,5 +1,6 @@
 import Component, { Params } from ".";
-import { manualRegister } from "../request";
+import { editMember, manualRegister } from "../request";
+import FocusNode from "./input/focus/focusNode";
 
 export default class MemberGrid extends Component<"table"> {
     memberElems: {
@@ -65,9 +66,7 @@ export default class MemberGrid extends Component<"table"> {
             tag: "tr",
             parent: this.element,
         });
-        let name = new Component({
-            tag: "td",
-            textContent: member.name,
+        let name = new NameTd(member, {
             parent: row.element,
         });
         if (this.showAbsent && member.tournament.registered) {
@@ -125,5 +124,72 @@ class PointsTd extends Component<"td"> {
                 : params.points === 0
                 ? "yellow"
                 : "red";
+    }
+}
+
+class NameTd extends FocusNode<"td"> {
+    name: string;
+    input: Component<"input">;
+    keyListener: (ev: KeyboardEvent) => void;
+    dblclickListener: (ev: MouseEvent) => void;
+    constructor(member: Member, params: Params<"td">) {
+        super({
+            tag: "td",
+            textContent: member.name,
+            ...params,
+        });
+        this.name = member.name;
+        this.input = new Component({
+            tag: "input",
+            other: {
+                value: member.name,
+            },
+        });
+        this.input.element.style.fontSize = "16px";
+        this.input.element.style.margin = "0";
+        this.input.element.style.width = "90%";
+        this.keyListener = async (ev) => {
+            if (ev.key === "Enter") {
+                let r = await editMember({
+                    id: member.id,
+                    newMember: {
+                        id: member.id,
+                        name: this.input.element.value,
+                        tournament: member.tournament,
+                        council: member.council,
+                    },
+                });
+                if (!r.ok) {
+                    alert(
+                        "An unknown error occurred trying to delete this member."
+                    );
+                    return;
+                }
+            }
+            if (ev.key === "Escape" || ev.key === "Enter") {
+                this.deactivate();
+            }
+        };
+        this.dblclickListener = (ev) => {
+            this.activate();
+        };
+        this.element.addEventListener("dblclick", this.dblclickListener);
+    }
+    activate(): this {
+        super.activate();
+        this.element.style.padding = "0";
+        this.element.innerHTML = "";
+        this.element.appendChild(this.input.element);
+        this.input.element.addEventListener("keydown", this.keyListener);
+        this.input.element.focus();
+        return this;
+    }
+    deactivate(): this {
+        super.deactivate();
+        this.input.element.removeEventListener("keydown", this.keyListener);
+        this.element.innerHTML = "";
+        this.element.style.padding = "";
+        this.element.textContent = this.name;
+        return this;
     }
 }
