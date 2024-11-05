@@ -11,7 +11,7 @@ import { allocateSeats, shuffleSeats } from "../components/seatingUtils";
 import renderSidebar from "../components/sidebar";
 import { pointBounce } from "../components/successAnim";
 import { UsesTable } from "../data";
-import { request } from "../request";
+import { editLog, request } from "../request";
 
 export default function tables() {
     // the tables with players on are, confusingly, ordered into a table of tables
@@ -133,6 +133,8 @@ interface GameTableParameters
 class GameTable extends UsesTable(InputListener<"table">) {
     tableNo: TableNo;
     players: PlayerTag[];
+    undoButton?: IconButton;
+    innerTableDisplay: Component<"td">;
     constructor(params: GameTableParameters) {
         super({
             ...params,
@@ -161,7 +163,18 @@ class GameTable extends UsesTable(InputListener<"table">) {
             tableNo: params.table.table_no,
             seat: "north",
         });
-        this.renderTableDisplay(innerRows[1]);
+        this.innerTableDisplay = new Component({
+            tag: "td",
+            classList: ["mahjong-table-display"],
+            textContent: this.tableNo.toString(),
+            parent: innerRows[1],
+        });
+        let [logId, logTableNo] = (
+            window.sessionStorage.getItem("undoButton") || "-1|-1"
+        ).split("|");
+        if (parseInt(logTableNo) === this.tableNo) {
+            this.toggleUndoButton(parseInt(logId));
+        }
         let south = new PlayerTag({
             parent: innerRows[1],
             tableNo: params.table.table_no,
@@ -179,6 +192,22 @@ class GameTable extends UsesTable(InputListener<"table">) {
         this.element.addEventListener("mjPointTransfer", (ev) =>
             this.animatePointTransfer(ev)
         );
+        // upon pt transfer, add the undo button to this table
+        document.addEventListener("mjPointTransfer", (ev) => {
+            let log = ev.detail;
+            if (
+                ev.target instanceof HTMLElement &&
+                this.element.contains(ev.target)
+            ) {
+                this.toggleUndoButton(log.id);
+            } else {
+                this.toggleUndoButton(undefined);
+            }
+        });
+        // upon log edit (prob from undo button), remove undo button
+        document.addEventListener("mjEditLog", (ev) => {
+            this.toggleUndoButton(undefined);
+        });
     }
     animatePointTransfer(ev: CustomEvent<Log>) {
         let winner = this.findPlayerTag(ev.detail.to);
@@ -212,11 +241,37 @@ class GameTable extends UsesTable(InputListener<"table">) {
         });
         parent.appendChild(deleteButtonCell);
     }
-    renderTableDisplay(parent: HTMLElement) {
-        let inner_table_display = document.createElement("td");
-        inner_table_display.classList.add("mahjong-table-display");
-        inner_table_display.textContent = this.tableNo.toString();
-        parent.appendChild(inner_table_display);
+    toggleUndoButton(logId: Log["id"] | undefined) {
+        if (logId === undefined) {
+            // don't remove sessionStorage - another table might have set their undoButton
+            if (this.undoButton) this.undoButton.element.remove();
+            return;
+        }
+        window.sessionStorage.setItem("undoButton", `${logId}|${this.tableNo}`);
+        this.undoButton = new IconButton({
+            icon: "undo",
+            parent: this.innerTableDisplay.element,
+            onclick: async (ev) => {
+                let log = window.MJDATA.log.find((l) => l.id == logId);
+                if (log === undefined) {
+                    alert(
+                        "That log couldn't be found - the webpage might have disconnected without uploading your win. Check with a member of the council; sorry!"
+                    );
+                    throw new Error("log not found");
+                }
+                let newLog = { ...log };
+                newLog.disabled = true;
+                await editLog(
+                    {
+                        id: logId,
+                        newLog,
+                    },
+                    // ! because we're setting it here. idk what to say
+                    this.undoButton!.element
+                );
+                window.sessionStorage.removeItem("undoButton");
+            },
+        });
     }
     generateListener(): EventListener {
         return (ev: Event) => {

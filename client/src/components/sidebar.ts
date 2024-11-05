@@ -101,6 +101,9 @@ export default function renderSidebar() {
         memberList.updateMembers();
         editMembersBar.register.input.element.value = "";
     });
+    document.addEventListener("mjEditLog", (ev) => {
+        memberList.updateMembers();
+    });
 
     form.onsubmit = async (ev) => {
         ev.preventDefault();

@@ -8,6 +8,13 @@
   border: 2px solid black;
   border-radius: 6px;
   padding: 20px;
+  position: relative;
+}
+
+.mahjong-table-display .icon-button {
+  position: absolute;
+  top: 5%;
+  right: 5%;
 }
 
 .small-button {
@@ -136,6 +143,7 @@ h1 {
   padding: 0px;
   background: none;
   border: none;
+  cursor: pointer;
 }
 
 .register-checkbox {
