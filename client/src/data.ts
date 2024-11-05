@@ -7,9 +7,16 @@ export function UsesTable<TBase extends Class>(target: TBase) {
         abstract tableNo: TableNo;
         abstract updateTable(tableNo: TableNo): void;
         public get table() {
-            let table = window.MJDATA.tables.find(
-                (table) => table.table_no === this.tableNo
-            );
+            let table: TableData;
+            if (this.tableNo > 0) {
+                table = window.MJDATA.tables.find(
+                    (table) => table.table_no === this.tableNo
+                )!;
+            } else {
+                table = JSON.parse(
+                    window.sessionStorage.getItem("savedTables") || "[]"
+                ).find((v: TableData) => v.table_no === this.tableNo);
+            }
             if (!table)
                 throw Error(
                     `Failure to index table from tableNo ${this.tableNo}`
@@ -58,6 +65,11 @@ export class MahjongUnknownTableError extends Error {
 
 export function getTable(tableNo: TableNo) {
     let table = window.MJDATA.tables.find((t) => t.table_no === tableNo);
+    if (!table) {
+        table = JSON.parse(
+            window.sessionStorage.getItem("savedTables") || "[]"
+        ).find((t: TableData) => t.table_no === tableNo);
+    }
     if (table === undefined) {
         throw new MahjongUnknownTableError(tableNo);
     } else {

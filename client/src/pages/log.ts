@@ -173,6 +173,8 @@ class LogRow extends Component<"tr"> {
                 newLog,
             },
             this.element
-        );
+        ).then((r) => {
+            if (r.ok) window.sessionStorage.removeItem("undoButton");
+        });
     }
 }

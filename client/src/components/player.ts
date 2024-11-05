@@ -267,6 +267,7 @@ interface PlayerTagParameters
     extends Omit<InputListenerParameters<"td">, "tag"> {
     tableNo: TableNo;
     seat: SeatWind;
+    disabled?: boolean;
 }
 
 export default class PlayerTag extends UsesTable(
@@ -277,7 +278,7 @@ export default class PlayerTag extends UsesTable(
     tableNo: TableNo;
     seat: SeatWind;
     memberId: MemberId | 0;
-    constructor(params: PlayerTagParameters) {
+    constructor({ disabled = false, ...params }: PlayerTagParameters) {
         super({
             ...params,
             classList: ["player"],
@@ -291,6 +292,9 @@ export default class PlayerTag extends UsesTable(
             classList: ["name-tag", this.seat],
             parent: this.element,
             value: isMember(me) ? me : undefined,
+            other: {
+                disabled,
+            },
         });
         // doesn't need to UsesMember because it controls memberId (and reacts appropriately)!
         this.memberId = table[this.seat];

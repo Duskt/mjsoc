@@ -41,8 +41,6 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
--   shuffle seats without losing previous tables
-
 ## Feature
 
 -   make things bigger

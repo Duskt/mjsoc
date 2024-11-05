@@ -1,6 +1,7 @@
 type PointTransferEvent = CustomEvent<Log>;
 type RegisterEvent = CustomEvent<MemberId>;
 
+type AddTableEvent = CustomEvent<TableData>;
 type AddMemberEvent = CustomEvent<Member>;
 
 type EditMemberEvent = CustomEvent<{

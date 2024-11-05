@@ -1,4 +1,4 @@
-import Component from "../components";
+import Component, { Params } from "../components";
 import DeleteButton from "../components/deleteButton";
 import IconButton from "../components/icons";
 import {
@@ -81,18 +81,24 @@ function renderTables() {
     if (!table_table) throw Error("No element with the table id is present.");
     // clear for re-render
     table_table.innerHTML = "";
-    let tables: (TableData | undefined)[] = [];
-    // mjdata.tables sorted by table_no
-    let sorted_tabledata = [...window.MJDATA.tables].sort(
-        (a, b) => a.table_no - b.table_no
+    let tables: TableData[] = [...window.MJDATA.tables];
+    tables = tables.sort((a, b) => a.table_no - b.table_no);
+    try {
+        tables = tables.concat(
+            ...JSON.parse(
+                window.sessionStorage.getItem("savedTables") || "[]"
+            ).sort((a: TableData, b: TableData) => b.table_no - a.table_no)
+        );
+    } catch {}
+    let tablesAndNewButton = (tables as (TableData | undefined)[]).concat(
+        undefined
     );
-    tables = tables.concat(sorted_tabledata).concat([undefined]);
-
     let current_row = document.createElement("tr");
-    let n_cols = 3; //Math.ceil(Math.sqrt(tables.length));
+    let n_cols = 3; //Math.ceil(Math.sqrt(tablesAndNewButton.length));
     let index = 0;
     let td = document.createElement("td");
-    for (const i of tables) {
+    document.addEventListener("mjAddTable", () => renderTables());
+    for (const i of tablesAndNewButton) {
         if (index >= n_cols) {
             table_table.appendChild(current_row);
             current_row = document.createElement("tr");
@@ -106,6 +112,7 @@ function renderTables() {
                 classList: ["create-table"],
                 other: {
                     onclick: async (ev) => {
+                        // todo: use custom request and event
                         let r = await request("/tables", {}, "POST");
                         window.MJDATA.tables.push(await r.json());
                         renderTables();
@@ -134,6 +141,7 @@ class GameTable extends UsesTable(InputListener<"table">) {
     tableNo: TableNo;
     players: PlayerTag[];
     undoButton?: IconButton;
+    buttonPanel: ButtonPanel;
     innerTableDisplay: Component<"td">;
     constructor(params: GameTableParameters) {
         super({
@@ -155,6 +163,7 @@ class GameTable extends UsesTable(InputListener<"table">) {
             parent: innerRows[0],
             tableNo: params.table.table_no,
             seat: "west",
+            disabled: this.tableNo < 0,
         });
         blank(innerRows[0]);
         // middle row
@@ -162,23 +171,23 @@ class GameTable extends UsesTable(InputListener<"table">) {
             parent: innerRows[1],
             tableNo: params.table.table_no,
             seat: "north",
+            disabled: this.tableNo < 0,
         });
         this.innerTableDisplay = new Component({
             tag: "td",
             classList: ["mahjong-table-display"],
-            textContent: this.tableNo.toString(),
+            textContent: this.tableNo >= 0 ? this.tableNo.toString() : "Saved",
             parent: innerRows[1],
         });
-        let [logId, logTableNo] = (
-            window.sessionStorage.getItem("undoButton") || "-1|-1"
-        ).split("|");
-        if (parseInt(logTableNo) === this.tableNo) {
-            this.toggleUndoButton(parseInt(logId));
-        }
+        this.buttonPanel = new ButtonPanel({
+            table: this.table,
+            parent: this.innerTableDisplay.element,
+        });
         let south = new PlayerTag({
             parent: innerRows[1],
             tableNo: params.table.table_no,
             seat: "south",
+            disabled: this.tableNo < 0,
         });
         // bottom row
         blank(innerRows[2]);
@@ -186,6 +195,7 @@ class GameTable extends UsesTable(InputListener<"table">) {
             parent: innerRows[2],
             tableNo: params.table.table_no,
             seat: "east",
+            disabled: this.tableNo < 0,
         });
         this.renderDeleteCell(innerRows[2]);
         this.players = [east, south, west, north];
@@ -199,14 +209,10 @@ class GameTable extends UsesTable(InputListener<"table">) {
                 ev.target instanceof HTMLElement &&
                 this.element.contains(ev.target)
             ) {
-                this.toggleUndoButton(log.id);
+                this.buttonPanel.toggleUndoButton(log.id);
             } else {
-                this.toggleUndoButton(undefined);
+                this.buttonPanel.toggleUndoButton(undefined);
             }
-        });
-        // upon log edit (prob from undo button), remove undo button
-        document.addEventListener("mjEditLog", (ev) => {
-            this.toggleUndoButton(undefined);
         });
     }
     animatePointTransfer(ev: CustomEvent<Log>) {
@@ -241,16 +247,84 @@ class GameTable extends UsesTable(InputListener<"table">) {
         });
         parent.appendChild(deleteButtonCell);
     }
+    generateListener(): EventListener {
+        return (ev: Event) => {
+            for (const player of this.players) {
+                player.updateWinButton();
+            }
+        };
+    }
+    updateTable(tableNo: TableNo): void {
+        throw Error("not imp.");
+    }
+}
+
+interface ButtonPanelParams extends Params<"div"> {
+    table: TableData;
+}
+
+class ButtonPanel extends Component<"div"> {
+    table: TableData;
+    undoButton?: IconButton;
+    saveButton: IconButton;
+    constructor(params: ButtonPanelParams) {
+        super({
+            tag: "div",
+            classList: ["button-panel"],
+            ...params,
+        });
+        this.table = params.table;
+        this.saveButton = new IconButton({
+            icon: "save",
+            parent: this.element,
+            disabled: this.table.table_no < 0,
+            onclick: (ev) => {
+                // put in sessionstorage
+                let ssTables: TableData[] = JSON.parse(
+                    window.sessionStorage.getItem("savedTables") || "[]"
+                );
+                let newTable = { ...this.table };
+                newTable.table_no = (Math.min(
+                    0,
+                    ...ssTables.map((t) => t.table_no)
+                ) - 1) as TableNo;
+                ssTables.push(newTable);
+                window.sessionStorage.setItem(
+                    "savedTables",
+                    JSON.stringify(ssTables)
+                );
+                let event = new CustomEvent("mjAddTable", {
+                    detail: this.table,
+                    bubbles: true,
+                });
+                this.saveButton.element.dispatchEvent(event);
+            },
+        });
+        // render undoButton from sessionStorage
+        let [logId, logTableNo] = (
+            window.sessionStorage.getItem("undoButton") || "|"
+        ).split("|");
+        if (logTableNo && parseInt(logTableNo) === this.table.table_no) {
+            this.toggleUndoButton(parseInt(logId));
+        }
+        // upon log edit from anywhere, remove undo button
+        document.addEventListener("mjEditLog", (ev) => {
+            this.toggleUndoButton(undefined);
+        });
+    }
     toggleUndoButton(logId: Log["id"] | undefined) {
         if (logId === undefined) {
             // don't remove sessionStorage - another table might have set their undoButton
             if (this.undoButton) this.undoButton.element.remove();
             return;
         }
-        window.sessionStorage.setItem("undoButton", `${logId}|${this.tableNo}`);
+        window.sessionStorage.setItem(
+            "undoButton",
+            `${logId}|${this.table.table_no}`
+        );
         this.undoButton = new IconButton({
             icon: "undo",
-            parent: this.innerTableDisplay.element,
+            parent: this.element,
             onclick: async (ev) => {
                 let log = window.MJDATA.log.find((l) => l.id == logId);
                 if (log === undefined) {
@@ -272,15 +346,5 @@ class GameTable extends UsesTable(InputListener<"table">) {
                 window.sessionStorage.removeItem("undoButton");
             },
         });
-    }
-    generateListener(): EventListener {
-        return (ev: Event) => {
-            for (const player of this.players) {
-                player.updateWinButton();
-            }
-        };
-    }
-    updateTable(tableNo: TableNo): void {
-        throw Error("not imp.");
     }
 }

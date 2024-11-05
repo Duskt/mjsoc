@@ -11,10 +11,15 @@
   position: relative;
 }
 
-.mahjong-table-display .icon-button {
+.button-panel {
   position: absolute;
-  top: 5%;
   right: 5%;
+  top: 0;
+  height: 90%; /* 100% - 5%*2 from padding*/
+  display: flex;
+  flex-direction: column;
+  padding-block: 5%;
+  justify-content: space-between;
 }
 
 .small-button {

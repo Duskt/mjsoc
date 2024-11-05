@@ -128,11 +128,15 @@ export async function editMember(
         newId = payload.newMember.id;
     }
     for (let t of window.MJDATA.tables) {
-        if (t.east === oldMember.id) t.east = newId;
-        if (t.south === oldMember.id) t.south = newId;
-        if (t.west === oldMember.id) t.west = newId;
-        if (t.north === oldMember.id) t.north = newId;
+        replaceMemberOnTable(t, oldMember.id, newId);
     }
+    let savedTables = JSON.parse(
+        window.sessionStorage.getItem("savedTables") || "[]"
+    );
+    for (let t of savedTables) {
+        replaceMemberOnTable(t, oldMember.id, newId);
+    }
+    window.sessionStorage.setItem("savedTables", JSON.stringify(savedTables));
 
     let event: EditMemberEvent = new CustomEvent("mjEditMember", {
         detail: {
@@ -144,6 +148,17 @@ export async function editMember(
     });
     target.dispatchEvent(event);
     return r;
+}
+
+function replaceMemberOnTable(
+    table: TableData,
+    oldId: MemberId,
+    newId: MemberId | 0
+) {
+    if (table.east === oldId) table.east = newId;
+    if (table.south === oldId) table.south = newId;
+    if (table.west === oldId) table.west = newId;
+    if (table.north === oldId) table.north = newId;
 }
 
 export async function addMember(
