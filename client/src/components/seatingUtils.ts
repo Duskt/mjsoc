@@ -41,14 +41,25 @@ async function seatMemberLast(mem: Member) {
 /**
  * Returns boolean for whether every member was successfully seated.
  */
-export async function allocateSeats(seatAbsent: boolean = false) {
+export async function allocateSeats(seatAbsent = false, seatCouncilLast = true) {
+    let council: Member[] = [];
     for (let mem of window.MJDATA.members) {
+        if (mem.council && seatCouncilLast) {
+            council.push(mem);
+            continue;
+        }
         // if the player isn't seated, and either they're present or we're seating all
         if (!isSat(mem) && (seatAbsent || mem.tournament.registered)) {
             if ((await seatMemberLast(mem)) === undefined) {
                 // return early because tables must be full
                 return false;
             }
+        }
+    }
+    for (let cMem of council) {
+        if (!isSat(cMem) && (seatAbsent || cMem.tournament.registered)) {
+            // don't return unsuccessful if council can't be seated
+            await seatMemberLast(cMem);
         }
     }
     return true;

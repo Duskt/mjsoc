@@ -41,12 +41,10 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
--   add undo point transfer button
+-   shuffle seats without losing previous tables
 
 ## Feature
 
--   shuffle seats without losing previous tables
--   seat council last
 -   make things bigger
 -   add success confirmations and errors:
     -   shuffle
