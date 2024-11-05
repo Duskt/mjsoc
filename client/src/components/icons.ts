@@ -1,7 +1,7 @@
 import Component, { Params } from ".";
 
 interface IconButtonParameters extends Params<"button"> {
-    icon: "fill" | "shuffle" | "reset" | "trash" | "save";
+    icon: "fill" | "shuffle" | "reset" | "trash" | "save" | "undo";
     onclick?: (ev: MouseEvent) => void;
 }
 
@@ -56,6 +56,9 @@ export default class IconButton extends Component<"button"> {
                 "d",
                 "M48 96l0 320c0 8.8 7.2 16 16 16l320 0c8.8 0 16-7.2 16-16l0-245.5c0-4.2-1.7-8.3-4.7-11.3l33.9-33.9c12 12 18.7 28.3 18.7 45.3L448 416c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96C0 60.7 28.7 32 64 32l245.5 0c17 0 33.3 6.7 45.3 18.7l74.5 74.5-33.9 33.9L320.8 84.7c-.3-.3-.5-.5-.8-.8L320 184c0 13.3-10.7 24-24 24l-192 0c-13.3 0-24-10.7-24-24L80 80 64 80c-8.8 0-16 7.2-16 16zm80-16l0 80 144 0 0-80L128 80zm32 240a64 64 0 1 1 128 0 64 64 0 1 1 -128 0z"
             );
+        } else if (icon == "undo") {
+            this.svg.setAttribute("viewBox", "0 0 512 512");
+            this.path.setAttribute("d", "M48.5 224L40 224c-13.3 0-24-10.7-24-24L16 72c0-9.7 5.8-18.5 14.8-22.2s19.3-1.7 26.2 5.2L98.6 96.6c87.6-86.5 228.7-86.2 315.8 1c87.5 87.5 87.5 229.3 0 316.8s-229.3 87.5-316.8 0c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0c62.5 62.5 163.8 62.5 226.3 0s62.5-163.8 0-226.3c-62.2-62.2-162.7-62.5-225.3-1L185 183c6.9 6.9 8.9 17.2 5.2 26.2s-12.5 14.8-22.2 14.8L48.5 224z");
         } else {
             throw new Error(`Unknown icon type ${icon}`);
         }
