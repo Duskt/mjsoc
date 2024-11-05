@@ -74,7 +74,8 @@ export default class MemberGrid extends Component<"table"> {
         }
         let pointsTd = new PointsTd({
             points: this.showAbsent
-                ? member.tournament.total_points
+                ? member.tournament.total_points +
+                  member.tournament.session_points
                 : member.tournament.session_points,
             parent: row.element,
         });
