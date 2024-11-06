@@ -6,6 +6,7 @@ interface CustomEventMap {
     mjEditMember: EditMemberEvent;
     mjEditLog: EditLogEvent;
     mjAddTable: AddTableEvent;
+    mjEditTable: EditTableEvent;
 }
 declare global {
     interface GlobalEventHandlersEventMap extends CustomEventMap {}

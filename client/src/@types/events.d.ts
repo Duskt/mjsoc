@@ -8,8 +8,11 @@ type EditMemberEvent = CustomEvent<{
     id: MemberId;
     new_member: Member | {};
 }>;
-
 type EditLogEvent = CustomEvent<{
     id: Log["id"];
     newLog: Log;
+}>;
+type EditTableEvent = CustomEvent<{
+    tableNo: TableNo;
+    newTable: TableData;
 }>;

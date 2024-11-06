@@ -10,7 +10,6 @@ import PlayerTag from "../components/player";
 import { allocateSeats, shuffleSeats } from "../components/seatingUtils";
 import renderSidebar from "../components/sidebar";
 import { pointBounce } from "../components/successAnim";
-import { UsesTable } from "../data";
 import { editLog, request } from "../request";
 
 export default function tables() {
@@ -50,7 +49,7 @@ function renderHeader() {
         icon: "shuffle",
         parent: headerBar,
         onclick: async (ev) => {
-            await shuffleSeats();
+            await shuffleSeats(shuffle.element);
             renderTables();
             let tablesGrid = document.getElementById("table");
             if (!tablesGrid) throw new Error("Couldn't find #table");
@@ -137,7 +136,7 @@ interface GameTableParameters
     table: TableData;
 }
 
-class GameTable extends UsesTable(InputListener<"table">) {
+class GameTable extends InputListener<"table"> {
     tableNo: TableNo;
     players: PlayerTag[];
     undoButton?: IconButton;
@@ -180,7 +179,7 @@ class GameTable extends UsesTable(InputListener<"table">) {
             parent: innerRows[1],
         });
         this.buttonPanel = new ButtonPanel({
-            table: this.table,
+            table: params.table,
             parent: this.innerTableDisplay.element,
         });
         let south = new PlayerTag({

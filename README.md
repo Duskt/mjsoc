@@ -59,14 +59,11 @@ Contains the Rust server and command line interface.
 
 ## Future
 
--   Add a frontend way to enter points from a table that doesn't exist
 -   Rename table no.
--   increase font-sizes for tables
 -   Allow multiple clients to interact instantaneously:
     -   sqlite3 migration
     -   unauthorised page
 
 ## Bugs
 
--   duplicate tables: on new player, register
--   premature session reload?
+-   duplicate tables: on new player, register (should be fixed; see bottom of player.ts in this commit)

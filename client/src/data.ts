@@ -2,31 +2,6 @@ type Constructor = new (...args: any[]) => {};
 type AbstractConstructor = abstract new (...args: any[]) => {};
 type Class = Constructor | AbstractConstructor;
 
-export function UsesTable<TBase extends Class>(target: TBase) {
-    abstract class UsesTable extends target {
-        abstract tableNo: TableNo;
-        abstract updateTable(tableNo: TableNo): void;
-        public get table() {
-            let table: TableData;
-            if (this.tableNo > 0) {
-                table = window.MJDATA.tables.find(
-                    (table) => table.table_no === this.tableNo
-                )!;
-            } else {
-                table = JSON.parse(
-                    window.sessionStorage.getItem("savedTables") || "[]"
-                ).find((v: TableData) => v.table_no === this.tableNo);
-            }
-            if (!table)
-                throw Error(
-                    `Failure to index table from tableNo ${this.tableNo}`
-                );
-            return table;
-        }
-    }
-    return UsesTable;
-}
-
 export function UsesMember<TBase extends Class>(target: TBase) {
     abstract class UsesMember extends target {
         abstract memberId: MemberId;
@@ -53,9 +28,6 @@ export function UsesSeat<TBase extends Class>(target: TBase) {
     return UsesSeat;
 }
 
-export const UsesMJData = <TBase extends Constructor>(t: TBase) =>
-    UsesMember(UsesSeat(UsesTable(t)));
-
 export class MahjongUnknownTableError extends Error {
     constructor(tableNo: number) {
         super(`Couldn't find table ${tableNo}`);
@@ -65,13 +37,13 @@ export class MahjongUnknownTableError extends Error {
 
 export function getTable(tableNo: TableNo) {
     let table = window.MJDATA.tables.find((t) => t.table_no === tableNo);
-    if (!table) {
+    if (table === undefined) {
         table = JSON.parse(
             window.sessionStorage.getItem("savedTables") || "[]"
         ).find((t: TableData) => t.table_no === tableNo);
     }
     if (table === undefined) {
-        throw new MahjongUnknownTableError(tableNo);
+        return new MahjongUnknownTableError(tableNo);
     } else {
         return table;
     }
@@ -151,14 +123,13 @@ export function getMember(
 
 export function getOtherPlayersOnTable(
     memberId: MemberId,
-    table: TableNo | TableData
+    table: TableData
 ) {
-    let tableData = typeof table === "number" ? getTable(table) : table;
     let otherSeats = (["east", "south", "west", "north"] as SeatWind[]).filter(
-        (seat) => tableData[seat] != memberId
+        (seat) => table[seat] != memberId
     );
     return otherSeats.map((seat) => {
-        let mId = tableData[seat];
+        let mId = table[seat];
         return getMember(mId);
     });
 }

@@ -229,3 +229,33 @@ export async function editLog(
     target.dispatchEvent(event);
     return r;
 }
+
+export async function editTable(
+    payload: {
+        tableNo: TableNo;
+        newTable: TableData;
+    },
+    target: HTMLElement | Document = document
+) {
+    let r = await request(
+        "/tables",
+        {
+            table_no: payload.tableNo,
+            table: payload.newTable,
+        },
+        "PUT"
+    );
+    if (!r.ok) {
+        console.error(r);
+        alert(
+            "An error occurred while modifying the table. Please contact a member of the council."
+        );
+        return;
+    }
+    window.MJDATA.tables[window.MJDATA.tables.findIndex((t) => t.table_no == payload.tableNo)] = payload.newTable
+    let event: EditTableEvent = new CustomEvent("mjEditTable", {
+        detail: payload,
+        bubbles: true,
+    });
+    target.dispatchEvent(event);
+}

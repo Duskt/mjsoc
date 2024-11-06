@@ -1,5 +1,5 @@
-import { getTable } from "../data";
-import { request } from "../request";
+import { getTable, MahjongUnknownTableError } from "../data";
+import { editTable, request } from "../request";
 
 function isSat(mem: Member) {
     for (let t of window.MJDATA.tables) {
@@ -41,7 +41,10 @@ async function seatMemberLast(mem: Member) {
 /**
  * Returns boolean for whether every member was successfully seated.
  */
-export async function allocateSeats(seatAbsent = false, seatCouncilLast = true) {
+export async function allocateSeats(
+    seatAbsent = false,
+    seatCouncilLast = true
+) {
     let council: Member[] = [];
     for (let mem of window.MJDATA.members) {
         if (mem.council && seatCouncilLast) {
@@ -72,7 +75,9 @@ function shuffleArray(array: any[]) {
     }
 }
 
-export async function shuffleSeats() {
+export async function shuffleSeats(
+    eventTarget: HTMLElement | Document = document
+) {
     // most of the work is keeping the shuffle function abstract, so it takes any array
     // load tables as [x-east, x-south, x-west, x-north, y-east...]
     // preserve table order in [x, y, ...]
@@ -86,32 +91,44 @@ export async function shuffleSeats() {
         flatTables.push(t.north);
     }
     shuffleArray(flatTables);
-    // now unpack that into MJDATA
-    let index = 0;
-    let tablen: TableNo;
-    let seatn: number;
-    let table: TableData | undefined;
-    while (index < flatTables.length) {
-        tablen = tableOrders[Math.floor(index / 4)];
-        seatn = index % 4;
-        table = getTable(tablen);
-        if (seatn === 0) {
-            table.east = flatTables[index];
-        } else if (seatn === 1) {
-            table.south = flatTables[index];
-        } else if (seatn === 2) {
-            table.west = flatTables[index];
-        } else if (seatn === 3) {
-            table.north = flatTables[index];
-            await request(
-                "/tables",
-                {
-                    table_no: tablen,
-                    table: table,
-                },
-                "PUT"
+    /* now that we have ordered tables with randomised members, simply allocate the
+     * new members to their new seats */
+    let tableNo: TableNo;
+    let tableIndex = 0;
+    // for each table
+    while (tableIndex < tableOrders.length) {
+        tableNo = tableOrders[tableIndex];
+        // make a copy of the old table to edit
+        let oldTable = getTable(tableNo);
+        if (oldTable instanceof MahjongUnknownTableError) {
+            console.error(oldTable);
+            alert(
+                "Something went wrong while shuffling the tables - please refresh and try again."
             );
+            return;
         }
-        index++;
+        let newTable = { ...oldTable };
+        // and for each seat, find the new member
+        let seatIndex = 0;
+        while (seatIndex < 4) {
+            if (seatIndex === 0) {
+                newTable.east = flatTables[tableIndex * 4 + seatIndex];
+            } else if (seatIndex === 1) {
+                newTable.south = flatTables[tableIndex * 4 + seatIndex];
+            } else if (seatIndex === 2) {
+                newTable.west = flatTables[tableIndex * 4 + seatIndex];
+            } else if (seatIndex === 3) {
+                newTable.north = flatTables[tableIndex * 4 + seatIndex];
+                await editTable(
+                    {
+                        tableNo,
+                        newTable,
+                    },
+                    eventTarget
+                );
+            }
+            seatIndex++;
+        }
+        tableIndex++;
     }
 }

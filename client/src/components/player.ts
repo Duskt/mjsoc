@@ -7,7 +7,6 @@ import { FocusButton, FocusButtonParameters } from "./input/focus/focusNode";
 import NameTag from "./nametag";
 import {
     UsesSeat,
-    UsesTable,
     UsesMember,
     getOtherPlayersOnTable,
     MahjongUnknownMemberError,
@@ -16,9 +15,11 @@ import {
     isMember,
     OptionMember,
     isWind,
+    getTable,
+    MahjongUnknownTableError,
 } from "../data";
 import { InputListener, InputListenerParameters } from "./input/listener";
-import { pointTransfer, request } from "../request";
+import { editTable, pointTransfer } from "../request";
 import { triggerCelebration } from "./successAnim";
 
 // type predicate for checking list purity/homogeny
@@ -43,7 +44,7 @@ interface WinButtonParameters extends FocusButtonParameters {
  * These points will be taken from another player if won by 'dachut'.
  * For this purpose, the win button splits into two, which have their own dropdown(s).
  */
-class WinButton extends UsesMember(UsesTable(FocusButton)) {
+class WinButton extends UsesMember(FocusButton) {
     // holds the three dropdown buttons
     popup: Component<"div">;
     // there are two types of wins:
@@ -144,7 +145,14 @@ class WinButton extends UsesMember(UsesTable(FocusButton)) {
     }
 
     updatePlayers() {
-        let table = this.table;
+        let table = getTable(this.tableNo);
+        if (table instanceof MahjongUnknownTableError) {
+            console.error(table);
+            let newButton = WinButton.empty();
+            this.element.replaceWith(newButton.element);
+            this.element = newButton.element;
+            return;
+        }
         let member = this.member;
         let otherPlayers = getOtherPlayersOnTable(member.id, table);
         // deals with appending/removing children
@@ -270,9 +278,7 @@ interface PlayerTagParameters
     disabled?: boolean;
 }
 
-export default class PlayerTag extends UsesTable(
-    UsesSeat(InputListener<"td">)
-) {
+export default class PlayerTag extends UsesSeat(InputListener<"td">) {
     nameTag: NameTag;
     winButton: Component<"button"> | WinButton;
     tableNo: TableNo;
@@ -285,9 +291,23 @@ export default class PlayerTag extends UsesTable(
             tag: "td",
         });
         this.tableNo = params.tableNo;
-        let table = this.table;
         this.seat = params.seat;
-        let me = getMember(table[this.seat]);
+        let table = getTable(this.tableNo);
+        if (table instanceof MahjongUnknownTableError) {
+            this.memberId = 0;
+            this.nameTag = new NameTag({
+                classList: ["name-tag", this.seat],
+                parent: this.element,
+                value: undefined,
+                other: {
+                    disabled: true,
+                },
+            });
+            this.winButton = this.disableWinButton();
+            return;
+        }
+        this.memberId = table[this.seat];
+        let me = getMember(this.memberId);
         this.nameTag = new NameTag({
             classList: ["name-tag", this.seat],
             parent: this.element,
@@ -296,8 +316,6 @@ export default class PlayerTag extends UsesTable(
                 disabled,
             },
         });
-        // doesn't need to UsesMember because it controls memberId (and reacts appropriately)!
-        this.memberId = table[this.seat];
         if (this.memberId === 0) {
             // explicitly EMPTY
             this.winButton = WinButton.empty(this.element);
@@ -333,15 +351,24 @@ export default class PlayerTag extends UsesTable(
         this.tableNo = tableNo;
         this.listener = this.generateListener();
     }
-    // called by the parent table when it receives the input event
-    updateWinButton() {
-        let newMemberId = this.table[this.seat];
-        let newMember = getMember(newMemberId);
-        if (!isMember(newMember)) {
-            this.winButton.element.remove();
-            this.winButton = WinButton.empty(this.element);
+    /** Updates the WinButton to reflect the new `Member` at `this.seat`.
+     * Does not update `this.memberId``.
+     * Called by the parent component when member changes.
+     */
+    updateWinButton(table?: TableData | MahjongUnknownTableError) {
+        if (table === undefined) {
+            table = getTable(this.tableNo);
+        }
+        if (table instanceof MahjongUnknownTableError) {
+            this.disableWinButton();
             return;
         }
+        let newMember = getMember(table[this.seat]);
+        if (!isMember(newMember)) {
+            this.disableWinButton();
+            return;
+        }
+        // new member is a real Member and table is a real TableData
         if (this.winButton instanceof WinButton) {
             this.winButton.updateMember(newMember.id);
         } else if (this.memberId != 0) {
@@ -355,6 +382,12 @@ export default class PlayerTag extends UsesTable(
             });
         }
     }
+    disableWinButton() {
+        let newButton = WinButton.empty();
+        this.winButton.element.replaceWith(newButton.element);
+        this.winButton = newButton;
+        return this.winButton;
+    }
     // PlayerTag should update the table data but all the WinButtons will be updated by the table
     generateListener(): EventListener {
         return async (ev) => {
@@ -367,17 +400,19 @@ export default class PlayerTag extends UsesTable(
             if (!newMember) throw Error("could not find member from <option>");
             this.memberId = newMember.id;
             // update our member
-            let tableCopy = this.table;
+            let tableCopy = getTable(this.tableNo);
+            if (tableCopy instanceof MahjongUnknownTableError) {
+                console.error(tableCopy);
+                alert(
+                    "An error occurred while finding the table to modify. Please contact a member of the council."
+                );
+                return;
+            }
             tableCopy[this.seat] = newMember.id;
-            await request(
-                "/tables",
-                {
-                    table_no: this.tableNo,
-                    table: this.table,
-                },
-                "PUT"
-            );
-            window.MJDATA.tables[this.tableNo] = tableCopy;
+            editTable({
+                tableNo: this.tableNo,
+                newTable: tableCopy,
+            });
         };
     }
 }
