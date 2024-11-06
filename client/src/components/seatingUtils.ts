@@ -59,6 +59,7 @@ export async function allocateSeats(
             }
         }
     }
+    shuffleArray(council);
     for (let cMem of council) {
         if (!isSat(cMem) && (seatAbsent || cMem.tournament.registered)) {
             // don't return unsuccessful if council can't be seated
