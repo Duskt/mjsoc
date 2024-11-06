@@ -35,12 +35,15 @@ export default class MemberGrid extends Component<"table"> {
             textContent: this.showAbsent ? "Total" : "Pts.",
             parent: headerRow.element,
         });
-        if (!this.showAbsent) return;
+        let regCount = window.MJDATA.members.filter(
+            (m) => m.tournament.registered
+        ).length;
         let present = new Component({
             tag: "th",
-            textContent: "Reg.",
+            textContent: `Reg. (${regCount})`,
             parent: headerRow.element,
         });
+        present.element.style.width = "10px";
         present.element.style.fontSize = "12px";
     }
     updateMembers() {
@@ -79,13 +82,11 @@ export default class MemberGrid extends Component<"table"> {
                 : member.tournament.session_points,
             parent: row.element,
         });
-        if (!this.showAbsent) {
-            return;
-        }
         let presentTd = new Component({
             tag: "td",
             parent: row.element,
         });
+        presentTd.element.style.padding = "0";
         let checkbox = new Component({
             tag: "input",
             classList: ["present-checkbox"],
