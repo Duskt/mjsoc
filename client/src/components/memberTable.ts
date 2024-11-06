@@ -52,7 +52,10 @@ export default class MemberGrid extends Component<"table"> {
             .sort((a, b) => {
                 if (this.showAbsent) {
                     return (
-                        b.tournament.total_points - a.tournament.total_points
+                        b.tournament.total_points +
+                        b.tournament.session_points -
+                        (a.tournament.total_points +
+                            a.tournament.session_points)
                     );
                 } else {
                     return (
