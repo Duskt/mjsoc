@@ -260,8 +260,17 @@ class Register extends Component<"form"> {
     }
     updateMembers() {
         this.datalist.element.innerHTML = "";
+        let sortedMembers = [...window.MJDATA.members].sort((a, b) => {
+            if (a.name > b.name) {
+                return 1;
+            } else if (a.name < b.name) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
         let member: Member;
-        for (member of window.MJDATA.members) {
+        for (member of sortedMembers) {
             this.renderOption(member);
         }
     }
