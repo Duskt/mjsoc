@@ -42,7 +42,6 @@ class LogTable extends Component<"table"> {
         this.logs = [];
         this.createHeaders();
         this.renderLogs();
-        console.log("adding el");
         this.element.addEventListener("mjEditLog", () => {
             console.log("editlog");
             this.element.innerHTML = "";

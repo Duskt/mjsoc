@@ -8,6 +8,7 @@ pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
                 title { "Mahjong Bath" }
                 link rel="stylesheet" href="styles.css";
                 link rel="stylesheet" href="tables.css";
+                link rel="icon" type="image/x-icon" href="assets/favicon.ico";
             }
             body {
                 nav {

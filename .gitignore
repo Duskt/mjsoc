@@ -1,6 +1,6 @@
 /target
 # contains sensitive info for public repo
-/public/assets/logo*
+/public/assets/*
 .env
 _*.json
 hop.yml
