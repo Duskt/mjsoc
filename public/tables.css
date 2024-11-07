@@ -314,6 +314,7 @@ dialog button {
 
 .winner-crown {
   position: absolute;
+  user-select: none;
   left: -4%;
   transform: rotate(-40deg);
   top: -50%;

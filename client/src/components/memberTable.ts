@@ -121,7 +121,6 @@ export default class MemberGrid extends Component<"table"> {
             classList: ["winner-crown"],
             parent: row.element,
         });
-        crown.element.style.position = "absolute";
         this.crowns.push(crown);
     }
     renderMember(member: Member) {

@@ -41,6 +41,10 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
+-   stop doing "dachut?"
+-   separate undo log and edit log endpoints, and validate the latter
+-   correct some log displays
+
 ## Feature
 
 -   make things bigger
