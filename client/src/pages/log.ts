@@ -24,9 +24,7 @@ function getFaanFromPoints(
         points = points / 3;
     } else if (win_kind === "dachut" || n_losers === 1) {
         points = points / 2;
-    } else if (win_kind === undefined) {
-        return undefined;
-    }
+    } // otherwise winkind is explicitly or implicitly zimo, points=points
     for (let [faan, pts] of POINTS.entries()) {
         if (pts == points) return faan;
     }
