@@ -124,6 +124,7 @@ pub struct Log {
     pub to: MemberId,
     pub from: Vec<MemberId>,
     pub points: i32,
+    pub faan: Option<i8>,
     pub win_kind: Option<WinKind>,
     pub datetime: Option<DateTime<Utc>>,
     pub round_wind: Option<Wind>,

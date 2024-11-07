@@ -35,6 +35,7 @@ interface Log {
     from: MemberId[];
     // x points will be taken from n players in 'from', and x*n awarded to 'to'
     points: number;
+    faan: number | null;
     win_kind: WinKind | null;
     datetime: Date | null;
     round_wind: Wind | null;

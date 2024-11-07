@@ -106,7 +106,7 @@ class WinButton extends UsesMember(FocusButton) {
 
     async onclickPointTransfer(
         losers: OptionMember[],
-        points: number,
+        faan: number,
         kind: WinKind
     ) {
         let roundWind = window.sessionStorage.getItem("round");
@@ -121,7 +121,11 @@ class WinButton extends UsesMember(FocusButton) {
                     }
                     return m.id;
                 }),
-                points,
+                // points is legacy, and referred to the points the winner gets / number of people paying
+                points:
+                    getPointsFromFaan(faan) *
+                    (kind === "baozimo" ? 3 : kind === "dachut" ? 2 : 1),
+                faan,
                 win_kind: kind,
                 datetime: new Date(),
                 round_wind: isWind(roundWind) ? roundWind : null,
@@ -131,7 +135,7 @@ class WinButton extends UsesMember(FocusButton) {
             this.element
         );
         if (r.ok) {
-            if (points === 256 || (points === 128 && losers.length > 1)) {
+            if (faan === 10) {
                 triggerCelebration();
             }
             this.deactivate();
@@ -167,11 +171,7 @@ class WinButton extends UsesMember(FocusButton) {
                     textContent: m.name,
                     classList: ["small-button"],
                     onclick: async (ev, faan) =>
-                        this.onclickPointTransfer(
-                            [m],
-                            getPointsFromFaan(faan) * 2,
-                            "dachut"
-                        ),
+                        this.onclickPointTransfer([m], faan, "dachut"),
                     other: {
                         title: "",
                     },
@@ -183,22 +183,14 @@ class WinButton extends UsesMember(FocusButton) {
                     textContent: m.name,
                     classList: ["small-button"],
                     onclick: async (ev, faan) =>
-                        this.onclickPointTransfer(
-                            [m],
-                            getPointsFromFaan(faan) * 3,
-                            "baozimo"
-                        ),
+                        this.onclickPointTransfer([m], faan, "baozimo"),
                     other: {
                         title: "",
                     },
                 }).element
         );
         this.zimo.onclick = async (ev, faan) =>
-            this.onclickPointTransfer(
-                otherPlayers,
-                getPointsFromFaan(faan),
-                "zimo"
-            );
+            this.onclickPointTransfer(otherPlayers, faan, "zimo");
     }
     updateMember(memberId: MemberId): void {
         this.memberId = memberId;

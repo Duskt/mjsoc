@@ -15,9 +15,17 @@ export default function logPage() {
     );
 }
 
-function getFaanFromPoints(points: number, n_losers: number) {
-    if (n_losers == 1) {
+function getFaanFromPoints(
+    points: number,
+    n_losers: number,
+    win_kind?: WinKind
+) {
+    if (win_kind === "baozimo") {
+        points = points / 3;
+    } else if (win_kind === "dachut" || n_losers === 1) {
         points = points / 2;
+    } else if (win_kind === undefined) {
+        return undefined;
     }
     for (let [faan, pts] of POINTS.entries()) {
         if (pts == points) return faan;
@@ -124,17 +132,19 @@ class LogRow extends Component<"tr"> {
             ...params,
         });
         this.log = params.log;
+        let win_kind = params.log.win_kind;
         this.faanTd = new Component({
             tag: "td",
             parent: this.element,
-            textContent:
-                getFaanFromPoints(
-                    params.log.points,
-                    params.log.from.length
-                )?.toString() || "???",
+            textContent: params.log.faan
+                ? params.log.faan.toString()
+                : getFaanFromPoints(
+                      params.log.points,
+                      params.log.from.length,
+                      win_kind === null ? undefined : win_kind
+                  )?.toString() || "???",
         });
         // 自摸 打出 包自摸
-        let win_kind = params.log.win_kind;
         this.modeTd = new Component({
             tag: "td",
             parent: this.element,
