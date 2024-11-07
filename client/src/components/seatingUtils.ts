@@ -97,6 +97,7 @@ function getRandomCouncilMap() {
 export async function shuffleSeats(
     eventTarget: HTMLElement | Document = document
 ) {
+    window.sessionStorage.setItem("undoButton", "");
     let councilMap = getRandomCouncilMap();
     // most of the work is keeping the shuffle function abstract, so it takes any array
     // load tables as [x-east, x-south, x-west, x-north, y-east...]

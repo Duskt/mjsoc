@@ -213,6 +213,9 @@ class GameTable extends InputListener<"table"> {
                 this.buttonPanel.toggleUndoButton(undefined);
             }
         });
+        this.element.addEventListener("mjEditTable", () =>
+            this.buttonPanel.toggleUndoButton(undefined)
+        );
     }
     animatePointTransfer(ev: CustomEvent<Log>) {
         let winner = this.findPlayerTag(ev.detail.to);

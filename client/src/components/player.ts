@@ -409,10 +409,13 @@ export default class PlayerTag extends UsesSeat(InputListener<"td">) {
                 return;
             }
             tableCopy[this.seat] = newMember.id;
-            editTable({
-                tableNo: this.tableNo,
-                newTable: tableCopy,
-            });
+            editTable(
+                {
+                    tableNo: this.tableNo,
+                    newTable: tableCopy,
+                },
+                this.nameTag.element
+            );
         };
     }
 }
