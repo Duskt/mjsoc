@@ -1,7 +1,7 @@
 import { getTable, MahjongUnknownTableError } from "../data";
 import { editTable, request } from "../request";
 
-function isSat(mem: Member) {
+export function isSat(mem: Member) {
     for (let t of window.MJDATA.tables) {
         if (mem.id == t.east) return true;
         if (mem.id == t.south) return true;

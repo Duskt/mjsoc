@@ -1,11 +1,13 @@
 import Component, { Params } from ".";
 import { editMember, manualRegister } from "../request";
 import FocusNode from "./input/focus/focusNode";
+import { isSat } from "./seatingUtils";
 
 export default class MemberGrid extends Component<"table"> {
     memberElems: {
         [id: Member["id"]]: HTMLLIElement;
     };
+    nameTds: NameTd[] = [];
     showAbsent: boolean;
     constructor(params: Params<"table">) {
         super({
@@ -14,10 +16,13 @@ export default class MemberGrid extends Component<"table"> {
         });
         this.memberElems = {};
         this.updateMembers();
-        document.addEventListener("mjPointTransfer", () => {
+        this.showAbsent = false;
+        document.addEventListener("mjPointTransfer", (ev) => {
             this.updateMembers();
         });
-        this.showAbsent = false;
+        document.addEventListener("mjEditTable", (ev) => {
+            this.updateSatMembers();
+        });
     }
     renderNewHeaders() {
         this.element.innerHTML = "";
@@ -66,6 +71,16 @@ export default class MemberGrid extends Component<"table"> {
             })
             .forEach((m) => this.renderLi(m));
     }
+    updateSatMembers() {
+        let td: NameTd;
+        for (td of this.nameTds) {
+            if (isSat(td.member)) {
+                td.element.style.color = "black";
+            } else {
+                td.element.style.color = "red";
+            }
+        }
+    }
     renderLi(member: Member) {
         if (!member.tournament.registered && !this.showAbsent) return;
         let row = new Component({
@@ -75,8 +90,12 @@ export default class MemberGrid extends Component<"table"> {
         let name = new NameTd(member, {
             parent: row.element,
         });
+        this.nameTds.push(name);
+        if (member.tournament.registered && !isSat(member)) {
+            name.element.style.color = "red";
+        }
         if (this.showAbsent && member.tournament.registered) {
-            name.element.style["fontWeight"] = "bold";
+            name.element.style.fontWeight = "bold";
         }
         let pointsTd = new PointsTd({
             points: this.showAbsent
@@ -133,7 +152,7 @@ class PointsTd extends Component<"td"> {
 }
 
 class NameTd extends FocusNode<"td"> {
-    name: string;
+    member: Member;
     input: Component<"input">;
     keyListener: (ev: KeyboardEvent) => void;
     dblclickListener: (ev: MouseEvent) => void;
@@ -143,7 +162,7 @@ class NameTd extends FocusNode<"td"> {
             textContent: member.name,
             ...params,
         });
-        this.name = member.name;
+        this.member = member;
         this.input = new Component({
             tag: "input",
             other: {
@@ -194,7 +213,7 @@ class NameTd extends FocusNode<"td"> {
         this.input.element.removeEventListener("keydown", this.keyListener);
         this.element.innerHTML = "";
         this.element.style.padding = "";
-        this.element.textContent = this.name;
+        this.element.textContent = this.member.name;
         return this;
     }
 }
