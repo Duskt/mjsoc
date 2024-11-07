@@ -74,10 +74,20 @@ export default class MemberGrid extends Component<"table"> {
     updateSatMembers() {
         let td: NameTd;
         for (td of this.nameTds) {
-            if (isSat(td.member)) {
-                td.element.style.color = "black";
+            if (td.member.tournament.registered) {
+                if (!isSat(td.member)) {
+                    td.element.style.color = "red";
+                    td.element.style.fontWeight = "bold";
+                } else if (this.showAbsent) {
+                    td.element.style.color = "";
+                    td.element.style.fontWeight = "bold";
+                } else {
+                    td.element.style.color = "";
+                    td.element.style.fontWeight = "";
+                }
             } else {
-                td.element.style.color = "red";
+                td.element.style.color = "";
+                td.element.style.fontWeight = "";
             }
         }
     }
