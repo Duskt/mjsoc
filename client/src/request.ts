@@ -67,8 +67,16 @@ export async function pointTransfer(
     return r;
 }
 
+/**
+ *
+ * @param payload
+ * @param leaveTables Whether to remove a member who was UNregistered from all real tables
+ * @param target
+ * @returns
+ */
 export async function manualRegister(
     payload: { memberId: MemberId },
+    leaveTables: boolean,
     target: HTMLElement | Document = document
 ) {
     let r = await request("/register", { member_id: payload.memberId }, "POST");
@@ -83,12 +91,62 @@ export async function manualRegister(
         }
         return member;
     });
+    if (leaveTables && !present) {
+        replaceMemberOnTables(payload.memberId, 0, target);
+    }
     let event: RegisterEvent = new CustomEvent("mjRegister", {
         detail: payload.memberId,
         bubbles: true,
     });
     target.dispatchEvent(event);
     return true;
+}
+
+export function replaceMemberOnTable(
+    table: TableData,
+    oldId: MemberId,
+    newId: MemberId | 0
+) {
+    let success = false;
+    if (table.east === oldId) {
+        table.east = newId;
+        success = true;
+    }
+    if (table.south === oldId) {
+        table.south = newId;
+        success = true;
+    }
+    if (table.west === oldId) {
+        table.west = newId;
+        success = true;
+    }
+    if (table.north === oldId) {
+        table.north = newId;
+        success = true;
+    }
+    return success;
+}
+
+/**
+ * Iterate through all the UNSAVED tables and make edits as necessary to
+ * replace one member ID with another in any places they're sat.
+ * @param oldId
+ * @param newId
+ */
+export async function replaceMemberOnTables(
+    oldId: MemberId,
+    newId: MemberId | 0,
+    target: HTMLElement | Document = document
+) {
+    let table: TableData;
+    for (table of window.MJDATA.tables) {
+        if (replaceMemberOnTable(table, oldId, newId)) {
+            await editTable(
+                { tableNo: table.table_no, newTable: table },
+                target
+            );
+        }
+    }
 }
 
 export async function editMember(
@@ -127,9 +185,9 @@ export async function editMember(
         window.MJDATA.members[index] = payload.newMember;
         newId = payload.newMember.id;
     }
-    for (let t of window.MJDATA.tables) {
-        replaceMemberOnTable(t, oldMember.id, newId);
-    }
+    // replace tables with new ID (including backend request)
+    replaceMemberOnTables(oldMember.id, newId);
+    // replace session savedTables with new ID (no backend)
     let savedTables = JSON.parse(
         window.sessionStorage.getItem("savedTables") || "[]"
     );
@@ -148,17 +206,6 @@ export async function editMember(
     });
     target.dispatchEvent(event);
     return r;
-}
-
-function replaceMemberOnTable(
-    table: TableData,
-    oldId: MemberId,
-    newId: MemberId | 0
-) {
-    if (table.east === oldId) table.east = newId;
-    if (table.south === oldId) table.south = newId;
-    if (table.west === oldId) table.west = newId;
-    if (table.north === oldId) table.north = newId;
 }
 
 export async function addMember(
@@ -252,7 +299,9 @@ export async function editTable(
         );
         return;
     }
-    window.MJDATA.tables[window.MJDATA.tables.findIndex((t) => t.table_no == payload.tableNo)] = payload.newTable
+    window.MJDATA.tables[
+        window.MJDATA.tables.findIndex((t) => t.table_no == payload.tableNo)
+    ] = payload.newTable;
     let event: EditTableEvent = new CustomEvent("mjEditTable", {
         detail: payload,
         bubbles: true,

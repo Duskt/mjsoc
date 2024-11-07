@@ -91,11 +91,13 @@ export default class MemberGrid extends Component<"table"> {
             parent: row.element,
         });
         this.nameTds.push(name);
-        if (member.tournament.registered && !isSat(member)) {
-            name.element.style.color = "red";
-        }
-        if (this.showAbsent && member.tournament.registered) {
-            name.element.style.fontWeight = "bold";
+        if (member.tournament.registered) {
+            if (!isSat(member)) {
+                name.element.style.color = "red";
+                name.element.style.fontWeight = "bold";
+            } else if (this.showAbsent) {
+                name.element.style.fontWeight = "bold";
+            }
         }
         let pointsTd = new PointsTd({
             points: this.showAbsent
@@ -119,6 +121,7 @@ export default class MemberGrid extends Component<"table"> {
                 onchange: async () => {
                     let r = await manualRegister(
                         { memberId: member.id },
+                        true, // leaveTables
                         checkbox.element
                     );
                     if (!r) {

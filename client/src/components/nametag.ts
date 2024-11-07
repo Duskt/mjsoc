@@ -21,6 +21,8 @@ export default class NameTag extends InputListener<"select"> {
             this.renderOption(params.value);
         } else {
             this.renderPlaceholder();
+            this.element.style.fontWeight = "bold";
+            this.element.style.color = "red";
         }
 
         // render other options
@@ -29,11 +31,14 @@ export default class NameTag extends InputListener<"select"> {
             if (!m.tournament.registered) continue;
             this.renderOption(m);
         }
+        // if (params.value) this.renderPlaceholder();
     }
 
     renderOption(member: Member) {
         let optElem = document.createElement("option");
         optElem.textContent = member.name;
+        optElem.style.fontWeight = "normal";
+        optElem.style.color = "black";
         this.nameOptions[member.id] = optElem;
         this.element.appendChild(optElem);
         return optElem;
@@ -42,6 +47,8 @@ export default class NameTag extends InputListener<"select"> {
     renderPlaceholder() {
         let optElem = document.createElement("option");
         optElem.textContent = "EMPTY";
+        optElem.style.fontWeight = "bold";
+        optElem.style.color = "red";
         this.empty = optElem;
         this.element.appendChild(optElem);
         return optElem;
@@ -51,6 +58,8 @@ export default class NameTag extends InputListener<"select"> {
         // removes EMPTY from options
         return () => {
             this.empty?.remove();
+            this.element.style.fontWeight = "normal";
+            this.element.style.color = "black";
             this.listener = undefined;
         };
     }

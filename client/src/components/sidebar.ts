@@ -3,6 +3,7 @@ import {
     addMember,
     editMember,
     manualRegister,
+    replaceMemberOnTables,
     resetSession,
 } from "../request";
 import IconButton from "./icons";
@@ -245,11 +246,29 @@ class Register extends Component<"form"> {
         this.input.element.style["fontSize"] = "14px";
         this.element.onsubmit = (ev) => {
             ev.preventDefault();
-            let memberId = window.MJDATA.members.find(
-                (m) => m.name == this.input.element.value.trim()
-            )?.id;
-            if (memberId === undefined) throw new Error("no id AJDSBFI");
-            let r = manualRegister({ memberId }, this.input.element);
+            let name = this.input.element.value.trim();
+            let members = window.MJDATA.members.filter(
+                (m) => m.name.trim() == name
+            );
+            if (members.length > 1) {
+                console.error(`Multiple members named ${name}`);
+                alert(
+                    "There seem to be multiple members with this name. If this is unlikely, try refreshing. Otherwise, you should rename one, I guess."
+                );
+                return;
+            } else if (members.length === 0) {
+                console.error(`No member named ${name}`);
+                alert(
+                    "There was no member with that name found. Try refreshing?"
+                );
+                return;
+            }
+            let member = members[0];
+            let r = manualRegister(
+                { memberId: member.id },
+                true, // leaveTables
+                this.input.element
+            );
             r.then((success) => {
                 if (!success) {
                     alert("Please try again.");
