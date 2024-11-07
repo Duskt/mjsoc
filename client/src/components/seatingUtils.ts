@@ -1,6 +1,7 @@
 import { getTable, MahjongUnknownTableError } from "../data";
-import { editTable, request } from "../request";
+import { addTable, editTable } from "../request";
 
+// todo: refactor into a 'seating hashmap'
 export function isSat(mem: Member) {
     for (let t of window.MJDATA.tables) {
         if (mem.id == t.east) return true;
@@ -11,59 +12,93 @@ export function isSat(mem: Member) {
     return false;
 }
 
-async function seatMemberLast(mem: Member) {
+/**
+ *
+ * @param member
+ * @param inPlaceOfCouncil
+ * @param target
+ * @returns the response if successful, otherwise undefined
+ */
+async function seatMemberLast(
+    member: Member,
+    inPlaceOfCouncil = true,
+    target: HTMLElement | Document = document
+) {
+    let councilIds = inPlaceOfCouncil
+        ? window.MJDATA.members.filter((m) => m.council).map((m) => m.id)
+        : [];
     for (let t of window.MJDATA.tables.sort(
         (a, b) => a.table_no - b.table_no
     )) {
-        if (t.east === 0) {
-            t.east = mem.id;
-        } else if (t.south === 0) {
-            t.south = mem.id;
-        } else if (t.west === 0) {
-            t.west = mem.id;
-        } else if (t.north === 0) {
-            t.north = mem.id;
+        if (t.east === 0 || councilIds.includes(t.east)) {
+            t.east = member.id;
+        } else if (t.south === 0 || councilIds.includes(t.south)) {
+            t.south = member.id;
+        } else if (t.west === 0 || councilIds.includes(t.west)) {
+            t.west = member.id;
+        } else if (t.north === 0 || councilIds.includes(t.north)) {
+            t.north = member.id;
         } else {
             // none of them were empty so skip request
             continue;
         }
-        return await request(
-            "/tables",
+        return await editTable(
             {
-                table_no: t.table_no,
-                table: t,
+                tableNo: t.table_no,
+                newTable: t,
             },
-            "PUT"
+            target
         );
     }
 }
 
 /**
- * Returns boolean for whether every member was successfully seated.
+ * First, unseat all council members (if seatCouncilLast). Then
+ * @param seatAbsent
+ * @param seatCouncilLast
+ * @returns {Promise<boolean>} whether the algorithm successfully seated every non-council member
  */
 export async function allocateSeats(
     seatAbsent = false,
-    seatCouncilLast = true
-) {
+    seatCouncilLast = true,
+    target: HTMLElement | Document = document
+): Promise<boolean> {
+    // first, create the minimum amount of tables that can seat everyone
+    let nTables = Math.floor(
+        window.MJDATA.members.filter((m) => m.tournament.registered).length / 4
+    );
+    // todo: relate to .env
+    let maxNewTables = 10;
+    while (window.MJDATA.tables.length < nTables && maxNewTables > 0) {
+        await addTable(target);
+        maxNewTables--;
+    }
+    // next, seat all the players
     let council: Member[] = [];
     for (let mem of window.MJDATA.members) {
         if (mem.council && seatCouncilLast) {
             council.push(mem);
             continue;
         }
-        // if the player isn't seated, and either they're present or we're seating all
+        // if unseated and registered (if necessary), then seat them last
         if (!isSat(mem) && (seatAbsent || mem.tournament.registered)) {
-            if ((await seatMemberLast(mem)) === undefined) {
+            if (
+                (await seatMemberLast(mem, seatCouncilLast, target)) ===
+                undefined
+            ) {
+                console.log("ended early");
                 // return early because tables must be full
                 return false;
             }
         }
     }
+    console.log("seating council");
+    // isSat would need to be refreshed here accounting for replaced council members
     shuffleArray(council);
     for (let cMem of council) {
         if (!isSat(cMem) && (seatAbsent || cMem.tournament.registered)) {
             // don't return unsuccessful if council can't be seated
-            await seatMemberLast(cMem);
+            await seatMemberLast(cMem, false, target); // IMPORTANT: if true, only last council would be sat
         }
     }
     return true;

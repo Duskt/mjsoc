@@ -41,8 +41,7 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
--   shuffle also randomises the council members
--   fill auto creates the tables
+-   proper baozimo support
 
 ## Feature
 
@@ -69,4 +68,4 @@ Contains the Rust server and command line interface.
 
 ## Bugs
 
--   duplicate tables: on new player, register (should be fixed; see bottom of player.ts in this commit)
+-   memberTable font

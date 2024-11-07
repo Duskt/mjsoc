@@ -10,7 +10,7 @@ import PlayerTag from "../components/player";
 import { allocateSeats, shuffleSeats } from "../components/seatingUtils";
 import renderSidebar from "../components/sidebar";
 import { pointBounce } from "../components/successAnim";
-import { editLog, request } from "../request";
+import { addTable, editLog } from "../request";
 
 export default function tables() {
     // the tables with players on are, confusingly, ordered into a table of tables
@@ -36,7 +36,7 @@ function renderHeader() {
     let sit = new IconButton({
         icon: "fill",
         onclick: async (ev) => {
-            await allocateSeats();
+            await allocateSeats(false, true, sit.element);
             renderTables();
         },
         other: {
@@ -111,9 +111,7 @@ function renderTables() {
                 classList: ["create-table"],
                 other: {
                     onclick: async (ev) => {
-                        // todo: use custom request and event
-                        let r = await request("/tables", {}, "POST");
-                        window.MJDATA.tables.push(await r.json());
+                        let r = await addTable(createTableButton.element);
                         renderTables();
                     },
                 },

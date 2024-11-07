@@ -277,6 +277,25 @@ export async function editLog(
     return r;
 }
 
+export async function addTable(target: HTMLElement | Document = document) {
+    let r = await request("/tables", null, "POST");
+    if (!r.ok) {
+        console.error(r);
+        alert(
+            "An error occurred while trying to create a new table. Please refresh the page and try again."
+        );
+        return;
+    }
+    let newTable: TableData = await r.json();
+    window.MJDATA.tables.push(newTable);
+    let event: AddTableEvent = new CustomEvent("mjAddTable", {
+        detail: newTable,
+        bubbles: true,
+    });
+    target.dispatchEvent(event);
+    return r;
+}
+
 export async function editTable(
     payload: {
         tableNo: TableNo;
@@ -307,4 +326,5 @@ export async function editTable(
         bubbles: true,
     });
     target.dispatchEvent(event);
+    return r;
 }
