@@ -109,11 +109,22 @@ pub enum Wind {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum WinKind {
+    #[serde(rename = "zimo")]
+    Zimo,
+    #[serde(rename = "dachut")]
+    Dachut,
+    #[serde(rename = "baozimo")]
+    Baozimo
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Log {
     pub id: LogId,
     pub to: MemberId,
     pub from: Vec<MemberId>,
     pub points: i32,
+    pub win_kind: Option<WinKind>,
     pub datetime: Option<DateTime<Utc>>,
     pub round_wind: Option<Wind>,
     pub seat_wind: Option<Wind>,

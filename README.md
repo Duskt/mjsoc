@@ -41,8 +41,6 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
--   proper baozimo support
-
 ## Feature
 
 -   make things bigger
@@ -67,5 +65,3 @@ Contains the Rust server and command line interface.
     -   unauthorised page
 
 ## Bugs
-
--   memberTable font

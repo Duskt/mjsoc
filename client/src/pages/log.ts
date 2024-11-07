@@ -34,6 +34,7 @@ class LogTable extends Component<"table"> {
             tag: "table",
             ...params,
         });
+        this.element.style.marginTop = "40px";
         this.headerRow = new Component({
             tag: "tr",
             parent: this.element,
@@ -64,7 +65,7 @@ class LogTable extends Component<"table"> {
             new Component({
                 tag: "th",
                 parent: this.headerRow.element,
-                textContent: "Points from each",
+                textContent: "Win type",
             })
         );
         this.headers[1].element.style["width"] = "20%";
@@ -112,7 +113,7 @@ interface LogRowParams extends Params<"tr"> {
 class LogRow extends Component<"tr"> {
     log: Log;
     faanTd: Component<"td">;
-    pointsTd: Component<"td">;
+    modeTd: Component<"td">;
     toTd: Component<"td">;
     fromTd: Component<"td">;
     disableTd: Component<"td">;
@@ -132,12 +133,19 @@ class LogRow extends Component<"tr"> {
                     params.log.from.length
                 )?.toString() || "???",
         });
-        this.pointsTd = new Component({
+        // 自摸 打出 包自摸
+        let win_kind = params.log.win_kind;
+        this.modeTd = new Component({
             tag: "td",
             parent: this.element,
-            textContent: params.log.disabled
-                ? "DISABLE"
-                : params.log.points.toString(),
+            textContent:
+                win_kind === "zimo" || params.log.from.length > 1
+                    ? "自摸"
+                    : win_kind === "dachut"
+                    ? "打出"
+                    : win_kind === "baozimo"
+                    ? "包自摸"
+                    : "打出?",
         });
         this.toTd = new Component({
             tag: "td",
@@ -149,7 +157,7 @@ class LogRow extends Component<"tr"> {
             parent: this.element,
             textContent: params.log.from
                 .map((mId) => getMember(mId).name)
-                .join(","),
+                .join(", "),
         });
         this.disableTd = new Component({
             tag: "td",

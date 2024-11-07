@@ -41,6 +41,7 @@ export async function request(
     }*/
     return r;
 }
+window._request = request;
 
 /**
  *

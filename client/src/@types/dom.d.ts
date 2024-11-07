@@ -10,5 +10,9 @@ interface CustomEventMap {
 }
 declare global {
     interface GlobalEventHandlersEventMap extends CustomEventMap {}
+    interface Window {
+        MJDATA: MahjongData;
+        _request: any;
+    }
 }
 export {};

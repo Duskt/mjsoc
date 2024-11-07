@@ -104,7 +104,11 @@ class WinButton extends UsesMember(FocusButton) {
         return super.deactivate();
     }
 
-    async onclickPointTransfer(losers: OptionMember[], points: number) {
+    async onclickPointTransfer(
+        losers: OptionMember[],
+        points: number,
+        kind: WinKind
+    ) {
         let roundWind = window.sessionStorage.getItem("round");
         let r = await pointTransfer(
             {
@@ -118,9 +122,10 @@ class WinButton extends UsesMember(FocusButton) {
                     return m.id;
                 }),
                 points,
+                win_kind: kind,
                 datetime: new Date(),
-                round_wind: isWind(roundWind) ? roundWind : undefined,
-                //seat_wind
+                round_wind: isWind(roundWind) ? roundWind : null,
+                seat_wind: null,
                 disabled: false,
             },
             this.element
@@ -164,7 +169,8 @@ class WinButton extends UsesMember(FocusButton) {
                     onclick: async (ev, faan) =>
                         this.onclickPointTransfer(
                             [m],
-                            getPointsFromFaan(faan) * 2
+                            getPointsFromFaan(faan) * 2,
+                            "dachut"
                         ),
                     other: {
                         title: "",
@@ -179,7 +185,8 @@ class WinButton extends UsesMember(FocusButton) {
                     onclick: async (ev, faan) =>
                         this.onclickPointTransfer(
                             [m],
-                            getPointsFromFaan(faan) * 3
+                            getPointsFromFaan(faan) * 3,
+                            "baozimo"
                         ),
                     other: {
                         title: "",
@@ -187,15 +194,15 @@ class WinButton extends UsesMember(FocusButton) {
                 }).element
         );
         this.zimo.onclick = async (ev, faan) =>
-            this.onclickPointTransfer(otherPlayers, getPointsFromFaan(faan));
+            this.onclickPointTransfer(
+                otherPlayers,
+                getPointsFromFaan(faan),
+                "zimo"
+            );
     }
     updateMember(memberId: MemberId): void {
         this.memberId = memberId;
         this.updatePlayers();
-    }
-    updateTable(tableNo: TableNo): void {
-        throw Error("not written");
-        this.tableNo = tableNo;
     }
     static empty(parent?: HTMLElement) {
         return new Component({

@@ -27,15 +27,18 @@ interface Member {
     council: boolean;
 }
 
+type WinKind = "zimo" | "dachut" | "baozimo";
+
 interface Log {
     id: number;
     to: MemberId;
     from: MemberId[];
     // x points will be taken from n players in 'from', and x*n awarded to 'to'
     points: number;
-    datetime?: Date;
-    round_wind?: Wind;
-    seat_wind?: Wind;
+    win_kind: WinKind | null;
+    datetime: Date | null;
+    round_wind: Wind | null;
+    seat_wind: Wind | null;
     disabled: boolean;
 }
 
