@@ -313,9 +313,9 @@ class ButtonPanel extends Component<"div"> {
         });
     }
     toggleUndoButton(logId: Log["id"] | undefined) {
+        if (this.undoButton) this.undoButton.element.remove();
         if (logId === undefined) {
             // don't remove sessionStorage - another table might have set their undoButton
-            if (this.undoButton) this.undoButton.element.remove();
             return;
         }
         window.sessionStorage.setItem(
