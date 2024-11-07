@@ -314,9 +314,9 @@ dialog button {
 
 .winner-crown {
   position: absolute;
-  left: -3%;
+  left: -4%;
   transform: rotate(-40deg);
-  top: -40%;
+  top: -50%;
   font-size: 1.3em;
-  text-shadow: 0 0 3px black;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
 }
