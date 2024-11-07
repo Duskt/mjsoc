@@ -76,9 +76,28 @@ function shuffleArray(array: any[]) {
     }
 }
 
+/**
+ * Get a map of each registered council member to another random registered council member.
+ * @returns Map<MemberId, MemberId>
+ */
+function getRandomCouncilMap() {
+    // for all seated registered council members replace them with another council member ensuring no dupes
+    let councilMap = new Map<MemberId, MemberId>();
+    let councilIds = window.MJDATA.members
+        .filter((m) => m.council && m.tournament.registered)
+        .map((m) => m.id);
+    let randomisedCouncilId = [...councilIds];
+    shuffleArray(randomisedCouncilId);
+    for (let i = 0; i < councilIds.length; i++) {
+        councilMap.set(councilIds[i], randomisedCouncilId[i]);
+    }
+    return councilMap;
+}
+
 export async function shuffleSeats(
     eventTarget: HTMLElement | Document = document
 ) {
+    let councilMap = getRandomCouncilMap();
     // most of the work is keeping the shuffle function abstract, so it takes any array
     // load tables as [x-east, x-south, x-west, x-north, y-east...]
     // preserve table order in [x, y, ...]
@@ -91,6 +110,13 @@ export async function shuffleSeats(
         flatTables.push(t.west);
         flatTables.push(t.north);
     }
+    // randomise which council members are playing
+    flatTables = flatTables.map((m) => {
+        if (m === 0 || !councilMap.has(m)) return m;
+        let newCouncil = councilMap.get(m);
+        // satisfies typescript
+        return newCouncil === undefined ? m : newCouncil;
+    });
     shuffleArray(flatTables);
     /* now that we have ordered tables with randomised members, simply allocate the
      * new members to their new seats */

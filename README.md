@@ -41,6 +41,9 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
+-   shuffle also randomises the council members
+-   fill auto creates the tables
+
 ## Feature
 
 -   make things bigger
