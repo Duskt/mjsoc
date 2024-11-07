@@ -5,16 +5,15 @@ import { isSat } from "./seatingUtils";
 
 export default class MemberGrid extends Component<"table"> {
     memberElems: {
-        [id: Member["id"]]: HTMLLIElement;
-    };
-    nameTds: NameTd[] = [];
+        [id: Member["id"]]: [Component<"tr">, NameTd]; // parent row, name, crown
+    } = {};
     showAbsent: boolean;
+    crowns: Component<"span">[] = [];
     constructor(params: Params<"table">) {
         super({
             tag: "table",
             ...params,
         });
-        this.memberElems = {};
         this.updateMembers();
         this.showAbsent = false;
         document.addEventListener("mjPointTransfer", (ev) => {
@@ -69,11 +68,14 @@ export default class MemberGrid extends Component<"table"> {
                     );
                 }
             })
-            .forEach((m) => this.renderLi(m));
+            .forEach((m) => this.renderMember(m));
+        this.renderWinnerCrowns();
     }
     updateSatMembers() {
+        let mId: any;
         let td: NameTd;
-        for (td of this.nameTds) {
+        for (mId in this.memberElems) {
+            td = this.memberElems[mId][1];
             if (td.member.tournament.registered) {
                 if (!isSat(td.member)) {
                     td.element.style.color = "red";
@@ -91,7 +93,38 @@ export default class MemberGrid extends Component<"table"> {
             }
         }
     }
-    renderLi(member: Member) {
+    renderWinnerCrowns() {
+        this.crowns.forEach((c) => c.element.remove());
+        this.crowns = [];
+        let maxPts = Math.max(
+            ...window.MJDATA.members.map(
+                (m) => m.tournament.session_points + m.tournament.total_points
+            )
+        );
+        let winners = window.MJDATA.members.filter(
+            (m) =>
+                m.tournament.session_points + m.tournament.total_points ===
+                maxPts
+        );
+        let wMember: Member;
+        for (wMember of winners) {
+            let wRow = (this.memberElems[wMember.id] || [undefined, undefined])[0];
+            if (wRow === undefined) continue;
+            this.renderCrown(wRow);
+        }
+    }
+    renderCrown(row: Component<"tr">) {
+        row.element.style.position = "relative";
+        let crown = new Component({
+            tag: "span",
+            textContent: "👑",
+            classList: ["winner-crown"],
+            parent: row.element,
+        });
+        crown.element.style.position = "absolute";
+        this.crowns.push(crown);
+    }
+    renderMember(member: Member) {
         if (!member.tournament.registered && !this.showAbsent) return;
         let row = new Component({
             tag: "tr",
@@ -100,7 +133,6 @@ export default class MemberGrid extends Component<"table"> {
         let name = new NameTd(member, {
             parent: row.element,
         });
-        this.nameTds.push(name);
         if (member.tournament.registered) {
             if (!isSat(member)) {
                 name.element.style.color = "red";
@@ -141,6 +173,7 @@ export default class MemberGrid extends Component<"table"> {
                 },
             },
         });
+        this.memberElems[member.id] = [row, name]
     }
 }
 

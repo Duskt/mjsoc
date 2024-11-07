@@ -311,3 +311,12 @@ dialog button {
   width: 100%;
   position: absolute;
 }
+
+.winner-crown {
+  position: absolute;
+  left: -3%;
+  transform: rotate(-40deg);
+  top: -40%;
+  font-size: 1.3em;
+  text-shadow: 0 0 3px black;
+}
