@@ -113,6 +113,7 @@ fn edit_log(data: web::Data<AppState>, log_id: LogId, new_log: Log) -> HttpRespo
     let mut mahjongdata = data.mahjong_data.lock().unwrap();
     if let Some(old_log) = mahjongdata.log.iter_mut().find(|l| l.id == log_id) {
         *old_log = new_log;
+        mahjongdata.save_to_file();
         HttpResponse::Ok().finish()
     } else {
         HttpResponse::BadRequest().body("id not found")
