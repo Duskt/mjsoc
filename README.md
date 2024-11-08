@@ -41,19 +41,16 @@ Contains the Rust server and command line interface.
 
 ## Priority
 
--   stop doing "dachut?"
--   separate undo log and edit log endpoints, and validate the latter
--   correct some log displays
-
 ## Feature
 
+-   style the log page
 -   make things bigger
 -   add success confirmations and errors:
     -   shuffle
     -   fill
     -   add/remove members
--   style the log page
--   allow redo and delete logs with double-auth
+-   implement edit log and validate the endpoint (to reject point edits?)
+-   allow delete logs with double-auth
 -   persist auth keys
 
 ## Refactor
