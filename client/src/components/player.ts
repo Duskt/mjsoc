@@ -132,9 +132,10 @@ class WinButton extends UsesMember(FocusButton) {
                 }),
                 others,
                 // points is legacy, and referred to the points the winner gets div by number of people paying
+                // calc on frontend as fallback for backend
                 points:
                     getPointsFromFaan(faan) *
-                    (kind === "baozimo" ? 3 : kind === "dachut" ? 2 : 1),
+                    (kind === "baozimo" ? 3 : kind === "dachut" ? 2 : 1), // baozimo triple from one, dachut double from one, zimo base amount from three players
                 faan,
                 win_kind: kind,
                 datetime: new Date(),

@@ -135,7 +135,7 @@ pub struct Log {
     pub disabled: bool,
 }
 
-pub fn get_points(faan: i8) -> Option<i32> {
+pub fn get_raw_points(faan: i8) -> Option<i32> {
     match faan {
         3 => Some(8),
         4 => Some(16),
@@ -147,6 +147,21 @@ pub fn get_points(faan: i8) -> Option<i32> {
         10 => Some(128),
         -10 => Some(-128),
         _ => None,
+    }
+}
+
+pub fn get_points(faan: Option<i8>, kind: Option<WinKind>) -> Option<i32> {
+    let Some(some_faan) = faan else {
+        return None;
+    };
+    let Some(raw_points) = get_raw_points(some_faan) else {
+        return None;
+    };
+    match kind {
+        Some(WinKind::Zimo) => Some(raw_points),
+        Some(WinKind::Dachut) => Some(raw_points * 2),
+        Some(WinKind::Baozimo) => Some(raw_points * 3),
+        None => None,
     }
 }
 

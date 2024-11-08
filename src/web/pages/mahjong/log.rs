@@ -8,7 +8,7 @@ use urlencoding::encode;
 use crate::{
     auth::is_authenticated,
     components::page::page,
-    mahjongdata::{get_points, Log, LogId, Member, WinKind},
+    mahjongdata::{get_points, Log, LogId, Member},
     AppState,
 };
 
@@ -56,21 +56,11 @@ pub async fn transfer_points(
         return HttpResponse::BadRequest().body("id already exists");
     }
 
-    let points: i32;
-    if let Some(faan) = body.faan {
-        if let Some(raw_faan_points) = get_points(faan) {
-            points = match body.win_kind {
-                Some(WinKind::Zimo) => raw_faan_points,
-                Some(WinKind::Dachut) => raw_faan_points * 2,
-                Some(WinKind::Baozimo) => raw_faan_points * 3,
-                None => body.points,
-            }
-        } else {
-            points = body.points
-        }
-    } else {
-        points = body.points;
-    }
+    // calc points, defaulting to body.points (legacy) which frontend calculates
+    let points = match get_points(body.faan, body.win_kind.clone()) {
+        Some(calc_pts) => calc_pts,
+        None => body.points,
+    };
     // take the points from...
     let mut update_members: Vec<Member> = vec![];
     for id in body.from.iter() {
@@ -141,12 +131,11 @@ fn undo_log(data: web::Data<AppState>, log_id: LogId) -> HttpResponse {
         log.disabled = true;
     }
     let log_copy = log.clone();
-    let points: i32;
-    if let Some(faan) = log_copy.faan {
-        points = get_points(faan).unwrap_or(log_copy.points);
-    } else {
-        points = log_copy.points;
-    }
+    // calc points, defaulting to body.points (legacy) which frontend calculates
+    let points = match get_points(log_copy.faan, log_copy.win_kind.clone()) {
+        Some(calc_pts) => calc_pts,
+        None => log_copy.points,
+    };
     let mut points_from_winner: i32 = 0;
     for loser_id in log_copy.from {
         if let Some(loser) = mjdata.members.iter_mut().find(|m| m.id == loser_id) {
