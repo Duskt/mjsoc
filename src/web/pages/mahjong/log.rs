@@ -56,20 +56,26 @@ pub async fn transfer_points(
         return HttpResponse::BadRequest().body("id already exists");
     }
 
+    let points: i32;
+    if let Some(faan) = body.faan {
+        points = get_points(faan).unwrap_or(body.points)
+    } else {
+        points = body.points;
+    }
     // take the points from...
     let mut update_members: Vec<Member> = vec![];
     for id in body.from.iter() {
         for member in mjdata.members.iter_mut() {
             if member.id == *id {
-                member.tournament.session_points -= body.points;
+                member.tournament.session_points -= points;
                 update_members.push(member.clone());
             }
         }
     }
     // and give points*n to...
-    let points = ((body.points as isize) * (body.from.len() as isize)) as i32;
+    let winner_points = ((points as isize) * (body.from.len() as isize)) as i32;
     if let Some(mem) = mjdata.members.iter_mut().find(|mem| mem.id == body.to) {
-        mem.tournament.session_points += points;
+        mem.tournament.session_points += winner_points;
         update_members.push(mem.clone());
     }
     // log the PointTransfer request
@@ -86,9 +92,9 @@ pub struct PutLogRequest {
 }
 
 /* put_log handles either:
-    - body.log = Some<Log>: Log editing (without point transfer)
-    - body.log = None: Undo log (with point transfer)
- */
+   - body.log = Some<Log>: Log editing (without point transfer)
+   - body.log = None: Undo log (with point transfer)
+*/
 pub async fn put_log(
     session: Session,
     data: web::Data<AppState>,
