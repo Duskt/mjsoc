@@ -1,5 +1,3 @@
-use std::sync::MutexGuard;
-
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use lib::util::get_redirect_response;
@@ -10,7 +8,7 @@ use urlencoding::encode;
 use crate::{
     auth::is_authenticated,
     components::page::page,
-    mahjongdata::{Log, LogId, MahjongData, Member},
+    mahjongdata::{get_points, Log, LogId, Member},
     AppState,
 };
 
@@ -43,6 +41,7 @@ pub async fn get_log_page(
     HttpResponse::Ok().body(html.into_string())
 }
 
+// a.k.a POST log, but for actual point transfer this endpoint (/members/transfer) must be used
 pub async fn transfer_points(
     session: Session,
     data: web::Data<AppState>,
@@ -81,51 +80,71 @@ pub async fn transfer_points(
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct EditLogRequest {
+pub struct PutLogRequest {
     id: LogId,
-    log: Log,
+    log: Option<Log>,
 }
 
-pub async fn edit_log(
+/* put_log handles either:
+    - body.log = Some<Log>: Log editing (without point transfer)
+    - body.log = None: Undo log (with point transfer)
+ */
+pub async fn put_log(
     session: Session,
     data: web::Data<AppState>,
-    body: web::Json<EditLogRequest>,
+    body: web::Json<PutLogRequest>,
 ) -> impl Responder {
     if !is_authenticated(&session, &data.authenticated_keys) {
         return HttpResponse::Unauthorized().finish();
     }
-    let mut mahjongdata = data.mahjong_data.lock().unwrap();
-    let undone;
-    if let Some(old_log) = mahjongdata.log.iter_mut().find(|l| l.id == body.log.id) {
-        // if the log has now been disabled
-        undone = (!old_log.disabled) && body.log.disabled;
-        *old_log = body.log.clone();
+    if let Some(log) = &body.log {
+        edit_log(data, body.id, log.clone())
     } else {
-        return HttpResponse::BadRequest().body("Couldn't find that id");
-    };
-    if undone {
-        // undo_log saves for us; todo: move fn to mjdata and save at end here
-        HttpResponse::Ok().json(undo_log(body.log.clone(), &mut mahjongdata))
-    } else {
-        mahjongdata.save_to_file();
-        HttpResponse::Ok().json(Vec::<Member>::new())
+        undo_log(data, body.id)
     }
 }
 
-fn undo_log(log: Log, mjdata: &mut MutexGuard<'_, MahjongData>) -> Vec<Member> {
+fn edit_log(data: web::Data<AppState>, log_id: LogId, new_log: Log) -> HttpResponse {
+    let mut mahjongdata = data.mahjong_data.lock().unwrap();
+    if let Some(old_log) = mahjongdata.log.iter_mut().find(|l| l.id == log_id) {
+        *old_log = new_log;
+        HttpResponse::Ok().finish()
+    } else {
+        HttpResponse::BadRequest().body("id not found")
+    }
+}
+
+fn undo_log(data: web::Data<AppState>, log_id: LogId) -> HttpResponse {
     let mut changes = Vec::<Member>::new();
+    let mut mjdata = data.mahjong_data.lock().unwrap();
+    let Some(log) = mjdata.log.iter_mut().find(|l| l.id == log_id) else {
+        return HttpResponse::BadRequest().body("id not found");
+    };
+    if log.disabled {
+        return HttpResponse::BadRequest().body("log already disabled");
+    } else {
+        log.disabled = true;
+    }
+    let log_copy = log.clone();
+    let points: i32;
+    if let Some(faan) = log_copy.faan {
+        points = get_points(faan).unwrap_or(log_copy.points);
+    } else {
+        points = log_copy.points;
+    }
     let mut points_from_winner: i32 = 0;
-    for loser_id in log.from {
+    for loser_id in log_copy.from {
         if let Some(loser) = mjdata.members.iter_mut().find(|m| m.id == loser_id) {
-            loser.tournament.session_points += log.points;
-            points_from_winner += log.points;
+            // give points back to each member in `log.from`
+            loser.tournament.session_points += points;
+            points_from_winner += points;
             changes.push(loser.clone());
         }
     }
-    if let Some(winner) = mjdata.members.iter_mut().find(|m| m.id == log.to) {
+    if let Some(winner) = mjdata.members.iter_mut().find(|m| m.id == log_copy.to) {
         winner.tournament.session_points -= points_from_winner;
         changes.push(winner.clone());
     }
     mjdata.save_to_file();
-    changes
+    HttpResponse::Ok().json(changes)
 }

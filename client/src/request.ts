@@ -269,9 +269,42 @@ export async function editLog(
         return r;
     }
     window.MJDATA.log[oldLogIndex] = payload.newLog;
-    updateMembers(await r.json());
     let event: EditLogEvent = new CustomEvent("mjEditLog", {
         detail: payload,
+        bubbles: true,
+    });
+    target.dispatchEvent(event);
+    return r;
+}
+
+export async function undoLog(
+    payload: {
+        id: Log["id"];
+    },
+    target: HTMLElement | Document = document
+) {
+    let log = window.MJDATA.log.find((l) => l.id === payload.id);
+    if (log === undefined) {
+        throw new Error("Couldn't find that log");
+    } else if (log.disabled) {
+        console.warn("log was already disabled:", log);
+        return;
+    }
+    let r = await request(
+        "/log",
+        {
+            id: payload.id,
+        },
+        "PUT"
+    );
+    if (!r.ok) {
+        console.error(r);
+        return r;
+    }
+    log.disabled = true;
+    updateMembers(await r.json());
+    let event: UndoLogEvent = new CustomEvent("mjUndoLog", {
+        detail: payload.id,
         bubbles: true,
     });
     target.dispatchEvent(event);

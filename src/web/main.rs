@@ -31,7 +31,7 @@ use pages::{
     login::login,
     logo::logo,
     mahjong::{
-        log::{edit_log, get_log_page, transfer_points},
+        log::{put_log, get_log_page, transfer_points},
         players::{create_member, delete_member, update_member},
         tables::{create_table, delete_table, get_tables, update_table},
     },
@@ -113,7 +113,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::resource("/log")
                     .route(get().to(get_log_page))
-                    .route(put().to(edit_log)),
+                    .route(put().to(put_log)),
             )
             //.service(fs::Files::new("/assets", "./data/assets"))
             // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.

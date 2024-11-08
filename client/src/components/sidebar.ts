@@ -102,7 +102,7 @@ export default function renderSidebar() {
         memberList.updateMembers();
         editMembersBar.register.input.element.value = "";
     });
-    document.addEventListener("mjEditLog", (ev) => {
+    document.addEventListener("mjUndoLog", (ev) => {
         memberList.updateMembers();
     });
 

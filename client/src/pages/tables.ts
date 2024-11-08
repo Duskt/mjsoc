@@ -10,7 +10,7 @@ import PlayerTag from "../components/player";
 import { allocateSeats, shuffleSeats } from "../components/seatingUtils";
 import renderSidebar from "../components/sidebar";
 import { pointBounce } from "../components/successAnim";
-import { addTable, editLog } from "../request";
+import { addTable, undoLog } from "../request";
 
 export default function tables() {
     // the tables with players on are, confusingly, ordered into a table of tables
@@ -308,7 +308,7 @@ class ButtonPanel extends Component<"div"> {
             this.toggleUndoButton(parseInt(logId));
         }
         // upon log edit from anywhere, remove undo button
-        document.addEventListener("mjEditLog", (ev) => {
+        document.addEventListener("mjUndoLog", (ev) => {
             this.toggleUndoButton(undefined);
         });
     }
@@ -333,12 +333,9 @@ class ButtonPanel extends Component<"div"> {
                     );
                     throw new Error("log not found");
                 }
-                let newLog = { ...log };
-                newLog.disabled = true;
-                await editLog(
+                await undoLog(
                     {
                         id: logId,
-                        newLog,
                     },
                     // ! because we're setting it here. idk what to say
                     this.undoButton!.element

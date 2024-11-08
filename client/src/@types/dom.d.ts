@@ -4,6 +4,7 @@ interface CustomEventMap {
     mjRegister: RegisterEvent;
     mjAddMember: AddMemberEvent;
     mjEditMember: EditMemberEvent;
+    mjUndoLog: UndoLogEvent;
     mjEditLog: EditLogEvent;
     mjAddTable: AddTableEvent;
     mjEditTable: EditTableEvent;

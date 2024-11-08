@@ -8,6 +8,7 @@ type EditMemberEvent = CustomEvent<{
     id: MemberId;
     new_member: Member | {};
 }>;
+type UndoLogEvent = CustomEvent<Log["id"]>;
 type EditLogEvent = CustomEvent<{
     id: Log["id"];
     newLog: Log;

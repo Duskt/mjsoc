@@ -115,7 +115,7 @@ pub enum WinKind {
     #[serde(rename = "dachut")]
     Dachut,
     #[serde(rename = "baozimo")]
-    Baozimo
+    Baozimo,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -131,6 +131,21 @@ pub struct Log {
     pub seat_wind: Option<Wind>,
     #[serde(default)] // false
     pub disabled: bool,
+}
+
+pub fn get_points(faan: i8) -> Option<i32> {
+    match faan {
+        3 => Some(8),
+        4 => Some(16),
+        5 => Some(24),
+        6 => Some(32),
+        7 => Some(48),
+        8 => Some(64),
+        9 => Some(96),
+        10 => Some(128),
+        -10 => Some(-128),
+        _ => None,
+    }
 }
 
 fn get_new_index(indices: Vec<u32>) -> u32 {

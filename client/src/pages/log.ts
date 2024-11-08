@@ -1,7 +1,7 @@
 import Component, { Params } from "../components";
 import IconButton from "../components/icons";
 import { getMember, POINTS } from "../data";
-import { editLog } from "../request";
+import { undoLog } from "../request";
 
 export default function logPage() {
     let logTable = document.getElementById("log-table");
@@ -49,7 +49,7 @@ class LogTable extends Component<"table"> {
         this.logs = [];
         this.createHeaders();
         this.renderLogs();
-        this.element.addEventListener("mjEditLog", () => {
+        this.element.addEventListener("mjUndoLog", () => {
             console.log("editlog");
             this.element.innerHTML = "";
             this.renderHeaders();
@@ -180,16 +180,13 @@ class LogRow extends Component<"tr"> {
         });
     }
     disable() {
-        let newLog = { ...this.log };
-        newLog.disabled = true;
-        editLog(
+        undoLog(
             {
                 id: this.log.id,
-                newLog,
             },
             this.element
         ).then((r) => {
-            if (r.ok) window.sessionStorage.removeItem("undoButton");
+            if (r !== undefined && r.ok) window.sessionStorage.removeItem("undoButton");
         });
     }
 }
