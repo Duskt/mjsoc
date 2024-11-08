@@ -8,7 +8,7 @@ use urlencoding::encode;
 use crate::{
     auth::is_authenticated,
     components::page::page,
-    mahjongdata::{get_points, Log, LogId, Member},
+    mahjongdata::{get_points, Log, LogId, Member, WinKind},
     AppState,
 };
 
@@ -58,7 +58,16 @@ pub async fn transfer_points(
 
     let points: i32;
     if let Some(faan) = body.faan {
-        points = get_points(faan).unwrap_or(body.points)
+        if let Some(raw_faan_points) = get_points(faan) {
+            points = match body.win_kind {
+                Some(WinKind::Zimo) => raw_faan_points,
+                Some(WinKind::Dachut) => raw_faan_points * 2,
+                Some(WinKind::Baozimo) => raw_faan_points * 3,
+                None => body.points,
+            }
+        } else {
+            points = body.points
+        }
     } else {
         points = body.points;
     }

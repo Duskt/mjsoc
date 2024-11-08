@@ -131,7 +131,7 @@ class WinButton extends UsesMember(FocusButton) {
                     return m.id;
                 }),
                 others,
-                // points is legacy, and referred to the points the winner gets / number of people paying
+                // points is legacy, and referred to the points the winner gets div by number of people paying
                 points:
                     getPointsFromFaan(faan) *
                     (kind === "baozimo" ? 3 : kind === "dachut" ? 2 : 1),
