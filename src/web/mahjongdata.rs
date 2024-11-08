@@ -129,6 +129,8 @@ pub struct Log {
     pub datetime: Option<DateTime<Utc>>,
     pub round_wind: Option<Wind>,
     pub seat_wind: Option<Wind>,
+    // other unaffected players on the table
+    pub others: Option<Vec<MemberId>>,
     #[serde(default)] // false
     pub disabled: bool,
 }

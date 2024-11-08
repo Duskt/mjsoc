@@ -107,9 +107,18 @@ class WinButton extends UsesMember(FocusButton) {
     async onclickPointTransfer(
         losers: OptionMember[],
         faan: number,
-        kind: WinKind
+        kind: WinKind,
+        otherPlayers: OptionMember[]
     ) {
         let roundWind = window.sessionStorage.getItem("round");
+        let others: MemberId[] | null = [];
+        otherPlayers.forEach((o) => {
+            if (others !== null && isMember(o)) {
+                others.push(o.id);
+            } else {
+                others = null;
+            }
+        });
         let r = await pointTransfer(
             {
                 // todo: server-side id
@@ -121,6 +130,7 @@ class WinButton extends UsesMember(FocusButton) {
                     }
                     return m.id;
                 }),
+                others,
                 // points is legacy, and referred to the points the winner gets / number of people paying
                 points:
                     getPointsFromFaan(faan) *
@@ -171,7 +181,12 @@ class WinButton extends UsesMember(FocusButton) {
                     textContent: m.name,
                     classList: ["small-button"],
                     onclick: async (ev, faan) =>
-                        this.onclickPointTransfer([m], faan, "dachut"),
+                        this.onclickPointTransfer(
+                            [m],
+                            faan,
+                            "dachut",
+                            otherPlayers.filter((o) => o.id !== m.id)
+                        ),
                     other: {
                         title: "",
                     },
@@ -183,14 +198,19 @@ class WinButton extends UsesMember(FocusButton) {
                     textContent: m.name,
                     classList: ["small-button"],
                     onclick: async (ev, faan) =>
-                        this.onclickPointTransfer([m], faan, "baozimo"),
+                        this.onclickPointTransfer(
+                            [m],
+                            faan,
+                            "baozimo",
+                            otherPlayers.filter((o) => o.id !== m.id)
+                        ),
                     other: {
                         title: "",
                     },
                 }).element
         );
         this.zimo.onclick = async (ev, faan) =>
-            this.onclickPointTransfer(otherPlayers, faan, "zimo");
+            this.onclickPointTransfer(otherPlayers, faan, "zimo", []);
     }
     updateMember(memberId: MemberId): void {
         this.memberId = memberId;

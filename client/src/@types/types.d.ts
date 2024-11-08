@@ -40,6 +40,7 @@ interface Log {
     datetime: Date | null;
     round_wind: Wind | null;
     seat_wind: Wind | null;
+    others: MemberId[] | null;
     disabled: boolean;
 }
 
