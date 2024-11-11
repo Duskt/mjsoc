@@ -92,16 +92,31 @@ class LogTable extends Component<"table"> {
     headerRow: Component<"tr">;
     headers: Component<"th">[];
     logs: LogRow[];
+    weekMap: Map<string, number>;
     constructor(params: Params<"table">) {
         super({
             tag: "table",
             ...params,
         });
         this.element.style.marginTop = "10px";
+        this.element.style.marginInline = "20px";
         this.headerRow = new Component({
             tag: "tr",
             parent: this.element,
         });
+        this.weekMap = new Map();
+        let sessionNo = 3; // TODO: remove manual override
+        let date: string;
+        window.MJDATA.log
+            .map((l) => l.datetime)
+            .filter((d) => d !== null)
+            .sort()
+            .forEach((d) => {
+                date = new Date(d).toDateString();
+                if (this.weekMap.has(date)) return;
+                this.weekMap.set(date, sessionNo);
+                sessionNo++;
+            });
         this.headers = [];
         this.logs = [];
         this.createHeaders();
@@ -121,9 +136,18 @@ class LogTable extends Component<"table"> {
             new Component({
                 tag: "th",
                 parent: this.headerRow.element,
+                textContent: "Session",
+            })
+        );
+        this.headers[0].element.style["width"] = "5%";
+        this.headers.push(
+            new Component({
+                tag: "th",
+                parent: this.headerRow.element,
                 textContent: "Faan",
             })
         );
+        this.headers[1].element.style["width"] = "5%";
         this.headers.push(
             new Component({
                 tag: "th",
@@ -131,7 +155,7 @@ class LogTable extends Component<"table"> {
                 textContent: "Win type",
             })
         );
-        this.headers[1].element.style["width"] = "20%";
+        this.headers[2].element.style["width"] = "10%";
         this.headers.push(
             new Component({
                 tag: "th",
@@ -171,6 +195,12 @@ class LogTable extends Component<"table"> {
                     log,
                     parent: this.element,
                     boldIds: matchedIds,
+                    session:
+                        log.datetime === null
+                            ? undefined
+                            : this.weekMap.get(
+                                  new Date(log.datetime).toDateString()
+                              ),
                 })
             );
         }
@@ -180,23 +210,39 @@ class LogTable extends Component<"table"> {
 interface LogRowParams extends Params<"tr"> {
     log: Log;
     boldIds?: MemberId[];
+    session?: number;
 }
 
 class LogRow extends Component<"tr"> {
     log: Log;
+    dateTd: Component<"td">;
     faanTd: Component<"td">;
     modeTd: Component<"td">;
     toTd: Component<"td">;
     fromTd: Component<"td">;
     disableTd: Component<"td">;
     disableButton: Component<"button">;
-    constructor({ boldIds = [], ...params }: LogRowParams) {
+    constructor({
+        session = undefined,
+        boldIds = [],
+        ...params
+    }: LogRowParams) {
         super({
             tag: "tr",
             ...params,
         });
         this.log = params.log;
         let win_kind = params.log.win_kind;
+        this.dateTd = new Component({
+            tag: "td",
+            parent: this.element,
+            textContent:
+                session === undefined
+                    ? params.log.datetime === null
+                        ? "(Not recorded)"
+                        : new Date(params.log.datetime).toDateString()
+                    : session.toString(),
+        });
         this.faanTd = new Component({
             tag: "td",
             parent: this.element,
