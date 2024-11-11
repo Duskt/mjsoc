@@ -239,7 +239,7 @@ class LogRow extends Component<"tr"> {
             textContent:
                 session === undefined
                     ? params.log.datetime === null
-                        ? "(Not recorded)"
+                        ? "(Date unknown)"
                         : new Date(params.log.datetime).toDateString()
                     : session.toString(),
         });
