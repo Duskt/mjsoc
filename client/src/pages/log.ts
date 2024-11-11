@@ -4,15 +4,35 @@ import { getMember, POINTS } from "../data";
 import { undoLog } from "../request";
 
 export default function logPage() {
-    let logTable = document.getElementById("log-table");
-    if (!(logTable instanceof HTMLTableElement)) {
+    let placeholderLogTable = document.getElementById("log-table");
+    if (!(placeholderLogTable instanceof HTMLTableElement)) {
         throw Error("Couldn't get log-table <table> element.");
     }
-    logTable.replaceWith(
-        new LogTable({
-            classList: ["info-grid"],
-        }).element
-    );
+    let mainChildDiv = new Component({
+        tag: "div",
+    });
+    mainChildDiv.element.style.width = "100%";
+    let logTable = new LogTable({
+        classList: ["info-grid"],
+        parent: mainChildDiv.element,
+    });
+    placeholderLogTable.replaceWith(mainChildDiv.element);
+    let filterForm = new FilterForm({
+        oninput: (ev, value) => {
+            let members: Member[] | undefined;
+            if (value.trim() !== "") {
+                members = window.MJDATA.members.filter((m) =>
+                    m.name.trim().includes(value.trim())
+                );
+            }
+            logTable.element.innerHTML = "";
+            logTable.renderHeaders();
+            logTable.renderLogs(
+                members === undefined ? members : members.map((m) => m.id)
+            );
+        },
+    });
+    logTable.element.insertAdjacentElement("beforebegin", filterForm.element);
 }
 
 function getFaanFromPoints(
@@ -31,6 +51,43 @@ function getFaanFromPoints(
     return undefined;
 }
 
+interface FilterParams extends Params<"form"> {
+    oninput: (ev: Event, value: string) => void;
+}
+
+class FilterForm extends Component<"form"> {
+    input: Component<"input">;
+    label: Component<"label">;
+    oninput: (ev: Event, value: string) => void;
+    constructor({ oninput, ...params }: FilterParams) {
+        super({
+            tag: "form",
+            ...params,
+        });
+        this.element.style.flexDirection = "row";
+        this.element.style.justifyContent = "center";
+        this.element.style.width = "100%";
+        this.element.style.maxWidth = "initial";
+        this.label = new Component({
+            tag: "label",
+            textContent: "Filter:",
+            parent: this.element,
+        });
+        this.oninput = oninput;
+        this.input = new Component({
+            tag: "input",
+            parent: this.element,
+            other: {
+                placeholder: "Enter a name",
+            },
+        });
+        this.input.element.style.width = "auto";
+        this.input.element.style.fontSize = "12px";
+        this.input.element.oninput = (ev) =>
+            this.oninput(ev, this.input.element.value);
+    }
+}
+
 class LogTable extends Component<"table"> {
     headerRow: Component<"tr">;
     headers: Component<"th">[];
@@ -40,7 +97,7 @@ class LogTable extends Component<"table"> {
             tag: "table",
             ...params,
         });
-        this.element.style.marginTop = "40px";
+        this.element.style.marginTop = "10px";
         this.headerRow = new Component({
             tag: "tr",
             parent: this.element,
@@ -96,16 +153,24 @@ class LogTable extends Component<"table"> {
             this.element.appendChild(header.element);
         }
     }
-    renderLogs() {
+    renderLogs(memberIds?: MemberId[]) {
         this.logs = [];
         let reverseLog = [...window.MJDATA.log].reverse();
         let log: Log;
+        let matchedIds: MemberId[] | undefined;
         for (log of reverseLog) {
             if (log.disabled) continue;
+            if (memberIds !== undefined) {
+                matchedIds = log.from
+                    .concat(log.to)
+                    .filter((m) => memberIds.includes(m));
+                if (matchedIds.length === 0) continue;
+            }
             this.logs.push(
                 new LogRow({
                     log,
                     parent: this.element,
+                    boldIds: matchedIds,
                 })
             );
         }
@@ -114,6 +179,7 @@ class LogTable extends Component<"table"> {
 
 interface LogRowParams extends Params<"tr"> {
     log: Log;
+    boldIds?: MemberId[];
 }
 
 class LogRow extends Component<"tr"> {
@@ -124,7 +190,7 @@ class LogRow extends Component<"tr"> {
     fromTd: Component<"td">;
     disableTd: Component<"td">;
     disableButton: Component<"button">;
-    constructor(params: LogRowParams) {
+    constructor({ boldIds = [], ...params }: LogRowParams) {
         super({
             tag: "tr",
             ...params,
@@ -160,13 +226,22 @@ class LogRow extends Component<"tr"> {
             parent: this.element,
             textContent: getMember(params.log.to).name,
         });
+        if (boldIds.includes(params.log.to))
+            this.toTd.element.style.fontWeight = "bold";
         this.fromTd = new Component({
             tag: "td",
             parent: this.element,
-            textContent: params.log.from
-                .map((mId) => getMember(mId).name)
-                .join(", "),
         });
+        let mId: MemberId;
+        let memberSpan: HTMLSpanElement | undefined;
+        for (mId of params.log.from) {
+            if (memberSpan !== undefined)
+                this.fromTd.element.appendChild(document.createTextNode(", "));
+            memberSpan = document.createElement("span");
+            memberSpan.textContent = getMember(mId).name;
+            if (boldIds.includes(mId)) memberSpan.style.fontWeight = "bold";
+            this.fromTd.element.appendChild(memberSpan);
+        }
         this.disableTd = new Component({
             tag: "td",
             parent: this.element,
@@ -186,7 +261,8 @@ class LogRow extends Component<"tr"> {
             },
             this.element
         ).then((r) => {
-            if (r !== undefined && r.ok) window.sessionStorage.removeItem("undoButton");
+            if (r !== undefined && r.ok)
+                window.sessionStorage.removeItem("undoButton");
         });
     }
 }
