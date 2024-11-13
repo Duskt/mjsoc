@@ -100,6 +100,7 @@ class LogTable extends Component<"table"> {
         });
         this.element.style.marginTop = "10px";
         this.element.style.marginInline = "20px";
+        this.element.style.width = "100%";
         this.headerRow = new Component({
             tag: "tr",
             parent: this.element,
