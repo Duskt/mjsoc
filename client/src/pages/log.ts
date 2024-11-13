@@ -106,7 +106,7 @@ class LogTable extends Component<"table"> {
             parent: this.element,
         });
         this.weekMap = new Map();
-        let sessionNo = 3; // TODO: remove manual override
+        let sessionNo = 1;
         let date: string;
         window.MJDATA.log
             .map((l) => l.datetime)
