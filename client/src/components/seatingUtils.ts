@@ -1,4 +1,9 @@
-import { getTable, MahjongUnknownTableError } from "../data";
+import {
+    getMember,
+    getTable,
+    isMember,
+    MahjongUnknownTableError,
+} from "../data";
 import { addTable, editTable } from "../request";
 
 // todo: refactor into a 'seating hashmap'
@@ -12,17 +17,17 @@ export function isSat(mem: Member) {
     return false;
 }
 
-/**
- *
+/** Seats a member in the first empty(/council) seat found,
+ * (putting them last in the array).
  * @param member
- * @param inPlaceOfCouncil
- * @param target
+ * @param inPlaceOfCouncil [true] whether to replace council members
+ * @param eventTarget [document] the node to dispatch the table update event from
  * @returns the response if successful, otherwise undefined
  */
 async function seatMemberLast(
     member: Member,
     inPlaceOfCouncil = true,
-    target: HTMLElement | Document = document
+    eventTarget: HTMLElement | Document = document
 ) {
     let councilIds = inPlaceOfCouncil
         ? window.MJDATA.members.filter((m) => m.council).map((m) => m.id)
@@ -47,21 +52,21 @@ async function seatMemberLast(
                 tableNo: t.table_no,
                 newTable: t,
             },
-            target
+            eventTarget
         );
     }
 }
 
-/**
- * First, unseat all council members (if seatCouncilLast). Then
- * @param seatAbsent
- * @param seatCouncilLast
+/** Tries to create enough tables for all registered members, then seats them all.
+ * @param seatAbsent [false] if true, seat all members (even unregistered)
+ * @param seatCouncilLast seats council last and replaces already sat council members
+ * @param [eventTarget=document] the node to dispatch the update table / add table events from
  * @returns {Promise<boolean>} whether the algorithm successfully seated every non-council member
  */
 export async function allocateSeats(
     seatAbsent = false,
     seatCouncilLast = true,
-    target: HTMLElement | Document = document
+    eventTarget: HTMLElement | Document = document
 ): Promise<boolean> {
     // first, create the minimum amount of tables that can seat everyone
     let nTables = Math.floor(
@@ -70,7 +75,7 @@ export async function allocateSeats(
     // todo: relate to .env
     let maxNewTables = 10;
     while (window.MJDATA.tables.length < nTables && maxNewTables > 0) {
-        await addTable(target);
+        await addTable(eventTarget);
         maxNewTables--;
     }
     // next, seat all the players
@@ -83,7 +88,7 @@ export async function allocateSeats(
         // if unseated and registered (if necessary), then seat them last
         if (!isSat(mem) && (seatAbsent || mem.tournament.registered)) {
             if (
-                (await seatMemberLast(mem, seatCouncilLast, target)) ===
+                (await seatMemberLast(mem, seatCouncilLast, eventTarget)) ===
                 undefined
             ) {
                 console.log("ended early");
@@ -98,21 +103,47 @@ export async function allocateSeats(
     for (let cMem of council) {
         if (!isSat(cMem) && (seatAbsent || cMem.tournament.registered)) {
             // don't return unsuccessful if council can't be seated
-            await seatMemberLast(cMem, false, target); // IMPORTANT: if true, only last council would be sat
+            await seatMemberLast(cMem, false, eventTarget); // IMPORTANT: if true, only last council would be sat
         }
     }
     return true;
 }
 
-function shuffleArray(array: any[]) {
+/** Fully randomised shuffling. This should not be biased!
+ * Used to shuffle which council member(s) are playing. See also **shuffleSeatArray**.
+ * @param array - shuffled in place (and returned)
+ * @returns shuffled array
+ */
+function shuffleArray<X>(array: X[]): X[] {
     for (let i = array.length - 1; i >= 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
+    return array;
 }
 
-/**
- * Get a map of each registered council member to another random registered council member.
+// TODO: implement biased randomization algorithms!
+/** An implementation of a shuffling algorithm. Currently purely random.
+ * Used to randomise the player seatings. Does not affect council members (see *shuffleArray*).
+ * @param array - shuffled in place (and returned)
+ */
+function randomizeSeats(array: (MemberId | 0)[]) {
+    return shuffleArray(array);
+    // sort the array by points
+    array.sort((a, b) => {
+        let memberA = getMember(a);
+        let memberB = getMember(b);
+        // check if either seat is empty, if so just say they're equal?
+        if (!(isMember(memberA) && isMember(memberB))) return 0;
+        let pts = (m: Member) =>
+            m.tournament.session_points + m.tournament.total_points;
+        return pts(memberA) - pts(memberB);
+    });
+    // e.g. apply a low probability bubble shuffle to each seat
+}
+
+/** Get a map of each registered council member to another random registered council member.
+ * Used to randomise which council members get to play when there are too few seats.
  * @returns Map<MemberId, MemberId>
  */
 function getRandomCouncilMap() {
@@ -129,6 +160,11 @@ function getRandomCouncilMap() {
     return councilMap;
 }
 
+/** Switches out council members (``shuffleArray``) and randomises the seating (``randomizeSeats``).
+ * **This function is called when the shuffle button is pressed**.
+ * @param eventTarget the node to dispatch update table events from
+ * @returns
+ */
 export async function shuffleSeats(
     eventTarget: HTMLElement | Document = document
 ) {
@@ -153,7 +189,7 @@ export async function shuffleSeats(
         // satisfies typescript
         return newCouncil === undefined ? m : newCouncil;
     });
-    shuffleArray(flatTables);
+    randomizeSeats(flatTables);
     /* now that we have ordered tables with randomised members, simply allocate the
      * new members to their new seats */
     let tableNo: TableNo;
