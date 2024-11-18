@@ -109,8 +109,7 @@ export async function allocateSeats(
     return true;
 }
 
-/** Fully randomised shuffling. This should not be biased!
- * Used to shuffle which council member(s) are playing. See also **shuffleSeatArray**.
+/** Fully randomised shuffling. Used to shuffle which council member(s) are playing.
  * @param array - shuffled in place (and returned)
  * @returns shuffled array
  */
@@ -122,9 +121,12 @@ function shuffleArray<X>(array: X[]): X[] {
     return array;
 }
 
-// TODO: implement biased randomization algorithms!
-/** An implementation of a shuffling algorithm. Currently purely random.
- * Used to randomise the player seatings. Does not affect council members (see *shuffleArray*).
+// TODO e.g. apply a low probability swap to each seat
+function disturbSeats<X>(array: X[]): X[] {
+    return array;
+}
+
+/** Used to randomise the player seatings. Does not affect council members.
  * @param array - shuffled in place (and returned)
  */
 function randomizeSeats(array: (MemberId | 0)[]) {
@@ -139,7 +141,8 @@ function randomizeSeats(array: (MemberId | 0)[]) {
             m.tournament.session_points + m.tournament.total_points;
         return pts(memberA) - pts(memberB);
     });
-    // e.g. apply a low probability bubble shuffle to each seat
+    // partially randomise the seats
+    return disturbSeats(array);
 }
 
 /** Get a map of each registered council member to another random registered council member.
