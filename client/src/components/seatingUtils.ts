@@ -121,8 +121,106 @@ function shuffleArray<X>(array: X[]): X[] {
     return array;
 }
 
-// TODO e.g. apply a low probability swap to each seat
-function disturbSeats<X>(array: X[]): X[] {
+// https://stackoverflow.com/questions/25582882/javascript-math-random-normal-distribution-gaussian-bell-curve
+function gaussianRandom(mean = 0, stdev = 1) {
+    const u = 1 - Math.random(); // Converting [0,1) to (0,1]
+    const v = Math.random();
+    const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    // Transform to the desired mean and standard deviation:
+    return z * stdev + mean;
+}
+
+/** Inserts ``item`` into ``array`` at the sorted position
+ * @param array a **SORTED** array to insert into (**not modified in place**)
+ * @param item to insert
+ * @param key [(x) => x] compares (key(item) to key(array[index]))
+ * @returns new array containing inserted item
+ */
+function insertSorted<X>(
+    array: Array<X>,
+    item: X,
+    key: (item: X) => any = (x) => x
+) {
+    if (array.length == 0) {
+        return [item];
+    }
+    let newArray: typeof array | undefined;
+    // ``every`` is a for each loop which you can break out of
+    if (
+        array.every((i, index) => {
+            if (key(item) < key(i)) {
+                newArray = array
+                    .slice(undefined, index)
+                    .concat(item, ...array.slice(index, undefined));
+                return false;
+            }
+            return true;
+        })
+    ) {
+        return array.concat(item);
+    }
+    if (newArray === undefined) {
+        throw new Error("impossible");
+    }
+    return newArray;
+}
+
+/** Maps each item of an array to a new index given by a random point from a normal distribution
+ * @param array to shuffle (**not modified in-place**)
+ * @param stdev [1] shared stdev of normal dist.
+ * @param key [(_, index) => index] the mean of the normal distribution sampled for that item
+ * @returns new shuffled array
+ */
+function weightedNormalShuffle<X>(
+    array: Array<X>,
+    stdev = 1,
+    key: (item: X, index: number, array: Array<X>) => number = (
+        item,
+        index,
+        array
+    ) => index
+) {
+    // map each item to a point sampled from a normal distribution N(mu=index of item, sigma=stdev)
+    let shuffleMap: Map<X, number> = new Map();
+    array.forEach((item, index) => {
+        shuffleMap.set(item, gaussianRandom(index, stdev));
+    });
+
+    // add each key (item) to the new list, sorting them by value (N dist point) as it goes along
+    let result: X[] = [];
+    // O(n^2) but could be O(nlogn) if i used a binary tree insertion or sorted afterwards
+    shuffleMap.forEach((_, item) => {
+        result = insertSorted(result, item, (i) => shuffleMap.get(i));
+    });
+    return result;
+}
+
+/** Shuffles seats slightly, swapping one by one.
+ * @param array to shuffle
+ * @param N (set to array.length^2) number of times to run disturbance, recommended N >= array.length
+ * @param P (0-1) randomness coefficient affecting likelihood of disturbing seating: 0, completely random, means a 50/50 of swapping each seat, whereas 1, fixed, means a 0% chance of swapping seats
+ * @returns array
+ */
+function disturbSeats<X>(array: X[], N?: number, P = 0): X[] {
+    if (N === undefined) {
+        N = array.length * array.length;
+    }
+    let temp: X;
+    for (let _ = 0; _ < N; _++) {
+        // start at second element, swapping with the previous element
+        let swapN = 0;
+        for (let index = 1; index < array.length; index += 2) {
+            // 1 isn't random, 0.5 is random, 0 isn't random (swapping every single time introduces no randomness)
+            // so distribute P (0-1) within 0.5-1.0
+            if (Math.random() > 0.5 + P / 2) {
+                swapN++;
+                temp = array[index];
+                array[index] = array[index - 1];
+                array[index - 1] = temp;
+            }
+        }
+        console.log(swapN / array.length);
+    }
     return array;
 }
 
@@ -130,7 +228,7 @@ function disturbSeats<X>(array: X[]): X[] {
  * @param array - shuffled in place (and returned)
  */
 function randomizeSeats(array: (MemberId | 0)[]) {
-    return shuffleArray(array);
+    // return shuffleArray(array);
     // sort the array by points
     array.sort((a, b) => {
         let memberA = getMember(a);
@@ -139,10 +237,11 @@ function randomizeSeats(array: (MemberId | 0)[]) {
         if (!(isMember(memberA) && isMember(memberB))) return 0;
         let pts = (m: Member) =>
             m.tournament.session_points + m.tournament.total_points;
-        return pts(memberA) - pts(memberB);
+        // B - A reverses it
+        return pts(memberB) - pts(memberA);
     });
     // partially randomise the seats
-    return disturbSeats(array);
+    return window.MJSeating.shuffle(array);
 }
 
 /** Get a map of each registered council member to another random registered council member.
@@ -192,7 +291,7 @@ export async function shuffleSeats(
         // satisfies typescript
         return newCouncil === undefined ? m : newCouncil;
     });
-    randomizeSeats(flatTables);
+    flatTables = randomizeSeats(flatTables);
     /* now that we have ordered tables with randomised members, simply allocate the
      * new members to their new seats */
     let tableNo: TableNo;
@@ -234,3 +333,31 @@ export async function shuffleSeats(
         tableIndex++;
     }
 }
+
+function test(f: (array: Array<any>) => Array<any>, N = 10000, l = 20) {
+    let array = Array.from(Array(l).keys());
+    let elementCount: Map<any, number>;
+    let indexMap: Map<number, typeof elementCount> = new Map();
+    for (let _ = 0; _ <= N; _++) {
+        f(array).forEach((v, index) => {
+            elementCount = indexMap.get(index) || new Map();
+            elementCount.set(v, (elementCount.get(v) || 0) + 1);
+            indexMap.set(index, elementCount);
+        });
+    }
+    let results: [any, number][];
+    indexMap.forEach((ec, index) => {
+        console.log(`Position ${index}`);
+        results = [];
+        ec.forEach((count, i) => {
+            results.push([i, (count / N) * 100]);
+        });
+        results.sort((a, b) => a[0] - b[0]);
+        results.forEach(([a, b]) => {
+            console.log(a, "|".repeat(b));
+        });
+    });
+}
+
+window.MJSeating.test = test;
+window.MJSeating.shuffle = (a) => weightedNormalShuffle(a, a.length * 2);
