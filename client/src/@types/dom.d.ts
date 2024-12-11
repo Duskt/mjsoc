@@ -11,6 +11,7 @@ interface CustomEventMap {
 }
 interface Seating {
     shuffle: (array: Array<any>) => Array<any>;
+    weightedNormalShuffle: any;
     test: (f: (array: Array<any>) => Array<any>, N: number, l: number) => void;
 }
 declare global {

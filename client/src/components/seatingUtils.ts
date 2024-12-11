@@ -359,5 +359,8 @@ function test(f: (array: Array<any>) => Array<any>, N = 10000, l = 20) {
     });
 }
 
-window.MJSeating.test = test;
-window.MJSeating.shuffle = (a) => weightedNormalShuffle(a, a.length * 2);
+window.MJSeating = {
+    test,
+    weightedNormalShuffle,
+    shuffle: (a) => weightedNormalShuffle(a, a.length),
+};
