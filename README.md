@@ -39,30 +39,22 @@ Contains the Rust server and command line interface.
 
 # Todo
 
-## Priority
+Priority: 1 (urgent) - 5 (not entirely necessary)
+\+ Workload: 1 (quick and easy) - 5 (insane)
 
-## Feature
-
--   style the log page
--   make things bigger
--   add success confirmations and errors:
-    -   shuffle
+-   3. figure out how big the matchmaking effect is + visualisation
+-   4.  add some data analysis: point/rank graphs, 'most 10s' etc
+-   5. make things bigger
+-   5. Rename table no.
+-   5. add success confirmations and errors:
     -   fill
     -   add/remove members
--   implement edit log and validate the endpoint (to reject point edits?)
--   allow delete logs with double-auth
--   persist auth keys
-
-## Refactor
-
--   Clear up event rerenders
--   refactor the css, particularly for sidebar transitions
-
-## Future
-
--   Rename table no.
--   Allow multiple clients to interact instantaneously:
+-   6. style the log page
+-   ?. implement edit log and validate the endpoint (to reject point edits?)
+-   8. allow delete logs with double-auth
+-   8. refactor the css, particularly for sidebar transitions
+-   9. Clear up event rerenders
+-   10. Allow multiple clients to interact instantaneously:
     -   sqlite3 migration
     -   unauthorised page
-
-## Bugs
+    -   persist auth keys in db?

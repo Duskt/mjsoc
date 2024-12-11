@@ -17,12 +17,13 @@ export default function logPage() {
         parent: mainChildDiv.element,
     });
     placeholderLogTable.replaceWith(mainChildDiv.element);
+    let normalizeName = (name: string) => name.trim().toLowerCase();
     let filterForm = new FilterForm({
         oninput: (ev, value) => {
             let members: Member[] | undefined;
-            if (value.trim() !== "") {
+            if (normalizeName(value) !== "") {
                 members = window.MJDATA.members.filter((m) =>
-                    m.name.trim().includes(value.trim())
+                    normalizeName(m.name).includes(normalizeName(value))
                 );
             }
             logTable.element.innerHTML = "";
