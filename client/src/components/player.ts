@@ -119,10 +119,16 @@ class WinButton extends UsesMember(FocusButton) {
                 others = null;
             }
         });
+        let transferId: number;
+        if (window.MJDATA.log.length === 0) {
+            transferId = 0;
+        } else {
+            transferId = Math.max(...window.MJDATA.log.map((l) => l.id)) + 1;
+        }
         let r = await pointTransfer(
             {
                 // todo: server-side id
-                id: Math.max(...window.MJDATA.log.map((l) => l.id)) + 1,
+                id: transferId,
                 to: this.memberId,
                 from: losers.map((m) => {
                     if (!isMember(m)) {
