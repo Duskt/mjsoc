@@ -101,10 +101,6 @@ class RoundWind extends Component<"p"> {
             parent: this.element,
         });
     }
-    setLock(time: number = 60000) {
-        this.lock = true;
-        window.setTimeout(() => (this.lock = false), time);
-    }
     setWind(wind: Wind) {
         this.wind = wind;
         window.sessionStorage.setItem("round", wind);
