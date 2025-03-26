@@ -26,6 +26,7 @@ export default function tables() {
     document.addEventListener("mjRegister", () => {
         renderTables();
     });
+    document.addEventListener("mjAddTable", () => renderTables());
 }
 
 function renderHeader() {
@@ -96,7 +97,6 @@ function renderTables() {
     let n_cols = 3; //Math.ceil(Math.sqrt(tablesAndNewButton.length));
     let index = 0;
     let td = document.createElement("td");
-    document.addEventListener("mjAddTable", () => renderTables());
     for (const i of tablesAndNewButton) {
         if (index >= n_cols) {
             table_table.appendChild(current_row);
@@ -279,16 +279,19 @@ class ButtonPanel extends Component<"div"> {
             parent: this.element,
             disabled: this.table.table_no < 0,
             onclick: (ev) => {
+                console.log("onclick", new Date());
                 // put in sessionstorage
                 let ssTables: TableData[] = JSON.parse(
                     window.sessionStorage.getItem("savedTables") || "[]"
                 );
+                console.log("parsed tables", new Date());
                 let newTable = { ...this.table };
                 newTable.table_no = (Math.min(
                     0,
                     ...ssTables.map((t) => t.table_no)
                 ) - 1) as TableNo;
                 ssTables.push(newTable);
+                console.log("pushing tables", new Date());
                 window.sessionStorage.setItem(
                     "savedTables",
                     JSON.stringify(ssTables)
