@@ -1,4 +1,5 @@
 use maud::{html, PreEscaped, DOCTYPE};
+use lib::expect_env;
 
 pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
     html! {
@@ -6,13 +7,13 @@ pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
         html {
             head {
                 title { "Mahjong Bath" }
-                link rel="stylesheet" href="styles.css";
-                link rel="stylesheet" href="tables.css";
-                link rel="icon" type="image/x-icon" href="assets/favicon.ico";
+                link rel="stylesheet" href="/public/styles.css";
+                link rel="stylesheet" href="/public/tables.css";
+                link rel="icon" type="image/x-icon" href="/public/assets/favicon.ico";
             }
             body {
                 nav {
-                    a href="/" { img src="/assets/logo.jpg" class="home-icon" {} }
+                    a href="/" { img src=(expect_env!("LOGO_ROUTE")) class="home-icon" {} }
                     a href="/tables" class="nav-link" { "Tables" }
                     a href="/log" class="nav-link" { "Log" }
                 }

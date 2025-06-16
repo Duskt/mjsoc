@@ -1,9 +1,12 @@
-/target
-# contains sensitive info for public repo
+/target/
 /public/assets/*
-.env
-_*.json
-hop.yml
+node_modules/
 /data
-node_modules
-public/index.js
+
+/.env
+/public/index.js
+
+# hosting configuration
+fly.toml
+service.yaml
+.gcloudignore

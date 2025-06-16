@@ -20,7 +20,7 @@ pub fn get_redirect_response(url: &str) -> HttpResponse {
 }
 
 pub fn get_file_bytes(path: &str) -> Vec<u8> {
-    let f = File::open(path).expect("Failed to find file");
+    let f = File::open(path).unwrap_or_else(|_| panic!("Failed to find file {}", path));
     let mut reader = BufReader::new(f);
     let mut buffer = Vec::new();
 

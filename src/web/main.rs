@@ -22,16 +22,15 @@ use lib::{
 use chrono::Duration as chronoDuration;
 use circular_buffer::CircularBuffer;
 use dotenv::dotenv;
-use std::sync::{Arc, Mutex, RwLock};
+use std::{env, sync::{Arc, Mutex, RwLock}};
 
 use mahjongdata::MahjongData;
 use pages::{
     auth::authenticate,
     index::index,
     login::login,
-    logo::logo,
     mahjong::{
-        log::{put_log, get_log_page, transfer_points},
+        log::{get_log_page, put_log, transfer_points},
         players::{create_member, delete_member, update_member},
         tables::{create_table, delete_table, get_tables, update_table},
     },
@@ -40,6 +39,8 @@ use pages::{
     session_week::{change_week, get_week, reset_session},
 };
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
+
+use crate::pages::logo::logo;
 
 // NOTE: this needs to be const (used for type), so cannot be environment
 // Reading environment in at compile time wouldn't be any different from const
@@ -90,7 +91,6 @@ async fn main() -> std::io::Result<()> {
                     .route(get().to(register_qr_attendance))
                     .route(post().to(manual_register_attendance)),
             )
-            .route("/assets/logo.jpg", get().to(logo))
             // mahjong client
             // table page routing
             .service(
@@ -115,9 +115,9 @@ async fn main() -> std::io::Result<()> {
                     .route(get().to(get_log_page))
                     .route(put().to(put_log)),
             )
-            //.service(fs::Files::new("/assets", "./data/assets"))
+            .route(&env::var("LOGO_ROUTE").expect("LOGO_ROUTE required."), get().to(logo))
             // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.
-            .service(fs::Files::new("/", "public"))
+            .service(fs::Files::new("/", env::var("PUBLIC_PATH").expect("PUBLIC_PATH required.")))
     })
     .bind((expect_env!("IP"), parsed_env!("PORT", u16)))?
     .run()

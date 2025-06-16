@@ -31,7 +31,7 @@ pub fn new_session(
     let uuid = Uuid::new_v4();
 
     // Add to user's cookies
-    session.insert("session_key", uuid.to_string()).unwrap();
+    session.insert("session_key", uuid.to_string()).unwrap_or_else(|_| panic!("Failed to insert a session cookie. This could be because it was unable to JSON-serialize the following uuid value: {}", uuid));
 
     // Store on server to check user has a valid session
     authenticated_keys

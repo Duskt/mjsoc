@@ -30,8 +30,7 @@ pub async fn authenticate(
     if is_authenticated(&session, &data.authenticated_keys) {
         return Ok(HttpResponse::Ok().body(already_authenticated().into_string()));
     }
-
-    let hash = PasswordHash::new(&data.admin_password_hash).unwrap();
+    let hash = PasswordHash::new(&data.admin_password_hash).unwrap_or_else(|_| panic!("Failed to create an argon2i password hash from \"{}\" Are you sure it's the right format?.", &data.admin_password_hash));
     if Argon2::default()
         .verify_password(body.password.as_bytes(), &hash)
         .is_err()

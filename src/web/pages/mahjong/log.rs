@@ -1,3 +1,5 @@
+use std::env;
+
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use lib::util::get_redirect_response;
@@ -28,12 +30,14 @@ pub async fn get_log_page(
     }
     let mjdata_copy = data.mahjong_data.lock().unwrap().clone();
     let cereal = serde_json::to_string(&mjdata_copy).expect("Serialization failed for mjdata");
+    let public_path = env::var("PUBLIC_PATH").expect("Missing PUBLIC_PATH");
+    let script_path = format!("{}/index.js", public_path);
     // webpage
     let html = page(html! {
         script {
             "window.MJDATA = "(PreEscaped(cereal))";"
         }
-        script src="/index.js" {}
+        script src=(script_path) {}
         main {
             table id="log-table" {}
         }
