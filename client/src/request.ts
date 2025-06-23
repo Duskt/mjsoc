@@ -14,6 +14,7 @@ interface PseudoResponse {
 
 
 class RequestIndicator extends Component<"span"> {
+    transitionTimer?: number;
     constructor() {
         super({
             tag: "span",
@@ -28,19 +29,26 @@ class RequestIndicator extends Component<"span"> {
         this.element.classList = "loading request-indicator";
         this.element.textContent = "";
         this.element.style.display = "block";
+        clearTimeout(this.transitionTimer);
+        this.element.style.transition = "none";
+        this.element.style.opacity = "1";
+        this.element.offsetHeight; // flush css changes
+        this.element.style.transition = "";
     }
     fail() {
-        this.element.classList = "failed request-indicator"
+        this.element.classList = "failure request-indicator"
         this.element.textContent = "❌";
-        setTimeout(() => {
-            this.element.style.display = "none"
-        }, 5000);
+        // fade out after 5s
+        this.transitionTimer = setTimeout(() => {
+            this.element.style.opacity = "0";
+        }, 2000);
     }
     success() {
         this.element.classList = "successful request-indicator"
         this.element.textContent = "✅";
-        setTimeout(() => {
-            this.element.style.display = "none"
+        // fade out after 5s
+        this.transitionTimer = setTimeout(() => {
+            this.element.style.opacity = "0";
         }, 1000);
     }
 }
