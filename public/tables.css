@@ -235,9 +235,19 @@ dialog button {
   border-collapse: collapse;
 }
 
+.info-grid th {
+  padding-inline: 16px;
+}
+
 .info-grid td {
-  padding: 4px 8px;
-  border: 1px solid black;
+  padding: 8px 16px;
+  text-align: center;
+}
+
+.info-grid tr:has(td) {
+  outline: 1px solid black;
+  outline-offset: -4px;
+  border-radius: 20px;
 }
 
 #log-table {
@@ -257,10 +267,6 @@ dialog button {
   font-size: 12px;
   align-self: start;
   margin-top: 4px;
-}
-
-.info-grid td {
-  padding-inline: 12px;
 }
 
 @keyframes shake {

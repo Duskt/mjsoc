@@ -3,6 +3,37 @@ import IconButton from "../components/icons";
 import { getMember, POINTS } from "../data";
 import { undoLog } from "../request";
 
+const isNatural = (f: string) =>
+    Array.from(f.trim()).every((i) => "0123456789".includes(i));
+const isInteger = (f: string) =>
+    isNatural(f) || (f[0] === "-" && isNatural(f.slice(1)));
+
+function getLogFilter(query: string) {
+    // names -> STR | STR names
+    // query    -> INTEGER | names
+    query = query.trim();
+    if (query.length === 0) {
+        return (l: Log) => true;
+    }
+    if (isInteger(query)) {
+        let qint = parseInt(query);
+        return (l: Log, s: number | undefined) => l.faan === qint || s === qint;
+    }
+    let names = query.toLowerCase().split(" ");
+    // check that every provided query name is a substring of any log name
+    let nameMatches = (log_names: string[]) =>
+        names.every((q: string) => log_names.some((l) => l.includes(q)));
+    // get all of the member objects for everyone in log 'from' attr
+    let logMembers = (l: Log) =>
+        l.from
+            .concat(l.to)
+            .map((mi) => window.MJDATA.members.find((m) => m.id === mi))
+            .filter((v) => v !== undefined);
+    let logNames = (members: Member[]) =>
+        members.map((m) => m.name.trim().toLowerCase());
+    return (l: Log) => nameMatches(logNames(logMembers(l)));
+}
+
 export default function logPage() {
     let placeholderLogTable = document.getElementById("log-table");
     if (!(placeholderLogTable instanceof HTMLTableElement)) {
@@ -17,20 +48,11 @@ export default function logPage() {
         parent: mainChildDiv.element,
     });
     placeholderLogTable.replaceWith(mainChildDiv.element);
-    let normalizeName = (name: string) => name.trim().toLowerCase();
     let filterForm = new FilterForm({
         oninput: (ev, value) => {
-            let members: Member[] | undefined;
-            if (normalizeName(value) !== "") {
-                members = window.MJDATA.members.filter((m) =>
-                    normalizeName(m.name).includes(normalizeName(value))
-                );
-            }
             logTable.element.innerHTML = "";
             logTable.renderHeaders();
-            logTable.renderLogs(
-                members === undefined ? members : members.map((m) => m.id)
-            );
+            logTable.renderLogs((l, s) => getLogFilter(value)(l, s));
         },
     });
     logTable.element.insertAdjacentElement("beforebegin", filterForm.element);
@@ -101,7 +123,6 @@ class LogTable extends Component<"table"> {
         });
         this.element.style.marginTop = "10px";
         this.element.style.marginInline = "20px";
-        this.element.style.width = "100%";
         this.headerRow = new Component({
             tag: "tr",
             parent: this.element,
@@ -141,7 +162,7 @@ class LogTable extends Component<"table"> {
                 textContent: "Session",
             })
         );
-        this.headers[0].element.style["width"] = "5%";
+        this.headers[0].element.style["width"] = "8%";
         this.headers.push(
             new Component({
                 tag: "th",
@@ -149,7 +170,7 @@ class LogTable extends Component<"table"> {
                 textContent: "Faan",
             })
         );
-        this.headers[1].element.style["width"] = "5%";
+        this.headers[1].element.style["width"] = "8%";
         this.headers.push(
             new Component({
                 tag: "th",
@@ -157,7 +178,7 @@ class LogTable extends Component<"table"> {
                 textContent: "Win type",
             })
         );
-        this.headers[2].element.style["width"] = "10%";
+        this.headers[2].element.style["width"] = "14%";
         this.headers.push(
             new Component({
                 tag: "th",
@@ -165,6 +186,7 @@ class LogTable extends Component<"table"> {
                 textContent: "Winner",
             })
         );
+        this.headers[3].element.style["width"] = "20%";
         this.headers.push(
             new Component({
                 tag: "th",
@@ -172,6 +194,14 @@ class LogTable extends Component<"table"> {
                 textContent: "Losers",
             })
         );
+        this.headers.push(
+            new Component({
+                tag: "th",
+                parent: this.headerRow.element,
+                textContent: "Del.",
+            })
+        );
+        this.headers[5].element.style["width"] = "5%";
     }
     renderHeaders() {
         let header: Component<"th">;
@@ -179,30 +209,33 @@ class LogTable extends Component<"table"> {
             this.element.appendChild(header.element);
         }
     }
-    renderLogs(memberIds?: MemberId[]) {
+    renderLogs(
+        filter: (log: Log, session: number | undefined) => boolean = () => true
+    ) {
         this.logs = [];
         let reverseLog = [...window.MJDATA.log].reverse();
         let log: Log;
         let matchedIds: MemberId[] | undefined;
+        let session: number | undefined;
         for (log of reverseLog) {
             if (log.disabled) continue;
-            if (memberIds !== undefined) {
+            session =
+                log.datetime === null
+                    ? undefined
+                    : this.weekMap.get(new Date(log.datetime).toDateString());
+            if (!filter(log, session)) continue;
+            /* if (memberIds !== undefined) {
                 matchedIds = log.from
                     .concat(log.to)
                     .filter((m) => memberIds.includes(m));
                 if (matchedIds.length === 0) continue;
-            }
+            } */
             this.logs.push(
                 new LogRow({
                     log,
                     parent: this.element,
                     boldIds: matchedIds,
-                    session:
-                        log.datetime === null
-                            ? undefined
-                            : this.weekMap.get(
-                                  new Date(log.datetime).toDateString()
-                              ),
+                    session,
                 })
             );
         }
@@ -301,6 +334,8 @@ class LogRow extends Component<"tr"> {
             parent: this.disableTd.element,
             onclick: async (ev) => this.disable(),
         });
+        this.disableButton.element.style.width = "16px";
+        this.disableButton.element.style.paddingBottom = "26px";
     }
     disable() {
         undoLog(
