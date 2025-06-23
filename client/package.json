@@ -1,12 +1,13 @@
 {
   "devDependencies": {
-    "esbuild": "0.21.5",
+    "esbuild": "^0.25.5",
     "typescript": "^5.4.5"
   },
   "scripts": {
     "build": "esbuild src/index.ts --bundle --outfile=../public/index.js"
   },
   "dependencies": {
+    "@stdlib/stats-base-dists-normal-quantile": "^0.2.2",
     "canvas-confetti": "^1.9.3"
   }
 }

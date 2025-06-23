@@ -56,7 +56,7 @@ interface RoundWindParams extends Params<"p"> {
 
 class RoundWind extends Component<"p"> {
     wind: Wind;
-    ddb: DropdownButton;
+    ddb: DropdownButton<"div", "button">;
     ddbSpan: Component<"span">;
     br: HTMLBRElement;
     lock: boolean;
@@ -69,6 +69,7 @@ class RoundWind extends Component<"p"> {
         this.lock = false;
         this.wind = wind;
         this.ddb = new DropdownButton({
+            dropdownTag: "div",
             parent: this.element,
             options: (["east", "south", "west", "north"] as Wind[]).map(
                 (w) =>

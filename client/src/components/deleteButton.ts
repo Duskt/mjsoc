@@ -1,8 +1,8 @@
 import Component, { Params } from ".";
-import { request } from "../request";
+import { deleteTable } from "../request";
 
 interface DeleteButtonParameters extends Params<"button"> {
-    tableNo: number;
+    tableNo: TableNo;
     ondelete?: () => void;
 }
 export default class DeleteButton extends Component<"button"> {
@@ -27,19 +27,9 @@ export default class DeleteButton extends Component<"button"> {
                     }
                     return;
                 }
-                // todo: use custom request
-                let r = await request(
-                    "/tables",
-                    { table_no: params.tableNo },
-                    "DELETE"
-                );
-                if (!r.redirected) {
-                    window.MJDATA.tables = window.MJDATA.tables.filter(
-                        (v) => v.table_no !== params.tableNo
-                    );
-                    if (params.ondelete) {
-                        params.ondelete();
-                    }
+                let r = await deleteTable({table_no: params.tableNo});
+                if (r.ok && params.ondelete) {
+                    params.ondelete();
                 }
             });
         let classList = params.classList || ["small-button", "delete-button"];

@@ -5,6 +5,7 @@ import {
     MahjongUnknownTableError,
 } from "../data";
 import { addTable, editTable } from "../request";
+import quantile from "@stdlib/stats-base-dists-normal-quantile";
 
 // todo: refactor into a 'seating hashmap'
 export function isSat(mem: Member) {
@@ -48,10 +49,12 @@ async function seatMemberLast(
             continue;
         }
         return await editTable(
-            {
-                tableNo: t.table_no,
-                newTable: t,
-            },
+            [
+                {
+                    tableNo: t.table_no,
+                    newTable: t,
+                },
+            ],
             eventTarget
         );
     }
@@ -130,69 +133,57 @@ function gaussianRandom(mean = 0, stdev = 1) {
     return z * stdev + mean;
 }
 
-/** Inserts ``item`` into ``array`` at the sorted position
- * @param array a **SORTED** array to insert into (**not modified in place**)
- * @param item to insert
- * @param key [(x) => x] compares (key(item) to key(array[index]))
- * @returns new array containing inserted item
+/** Used while randomising the seats with weightedNormalShuffle. See ``MATCHMAKING.md``.
+ * Formula: sigma = 1/(sqrt2 Phi^-1((1+MC)/2)) where
+ *  Phi^-1 is the quantile function (inverse CDF) of the normal dist.
+ * @param mc Matchmaking coefficient, 0<mc<=1, representing how relevant
+ * ranks are to seating.
+ * - mc = 1, seats are completely fixed
+ * - mc -> 0, seats are completely random
+ * @returns stdev (to supply to weightedNormalShuffle)
  */
-function insertSorted<X>(
-    array: Array<X>,
-    item: X,
-    key: (item: X) => any = (x) => x
-) {
-    if (array.length == 0) {
-        return [item];
-    }
-    let newArray: typeof array | undefined;
-    // ``every`` is a for each loop which you can break out of
-    if (
-        array.every((i, index) => {
-            if (key(item) < key(i)) {
-                newArray = array
-                    .slice(undefined, index)
-                    .concat(item, ...array.slice(index, undefined));
-                return false;
-            }
-            return true;
-        })
-    ) {
-        return array.concat(item);
-    }
-    if (newArray === undefined) {
-        throw new Error("impossible");
-    }
-    return newArray;
+function matchmakingCoefficientToStdev(mc: number) {
+    let arg = (1 + mc) / 2;
+    // assumes already standardised to the standard normal distribution
+    let inv_sigma = Math.SQRT2 * quantile(arg, 0, 1);
+    console.log(mc, 1 / inv_sigma);
+    return 1 / inv_sigma;
 }
 
-/** Maps each item of an array to a new index given by a random point from a normal distribution
+// a named tuple. there's probably an existing shorthand for this
+class OrderableElement<Item, Order> {
+    item: Item;
+    order: Order;
+    constructor(item: Item, order: Order) {
+        this.item = item;
+        this.order = order;
+    }
+}
+
+/** Return a new shuffled array by sampling the new index of each item from a normal distribution.
+ * Each item's normal distribution has a mean of the old index and a shared stdev (from the parameter sigma multiplied by the length of the array).
+ * TODO: alternative supply a custom key for the mean
  * @param array to shuffle (**not modified in-place**)
- * @param stdev [1] shared stdev of normal dist.
+ * @param sigma [1] sigma*array.length = shared stdev of normal distributions of each item. reflects 'randomness', chance of moving.
  * @param key [(_, index) => index] the mean of the normal distribution sampled for that item
  * @returns new shuffled array
  */
 function weightedNormalShuffle<X>(
     array: Array<X>,
-    stdev = 1,
-    key: (item: X, index: number, array: Array<X>) => number = (
-        item,
-        index,
-        array
-    ) => index
+    sigma = 1,
+    key: (item: X, index: number, array: Array<X>) => number = (_, index) =>
+        index
 ) {
-    // map each item to a point sampled from a normal distribution N(mu=index of item, sigma=stdev)
-    let shuffleMap: Map<X, number> = new Map();
-    array.forEach((item, index) => {
-        shuffleMap.set(item, gaussianRandom(index, stdev));
-    });
-
-    // add each key (item) to the new list, sorting them by value (N dist point) as it goes along
-    let result: X[] = [];
-    // O(n^2) but could be O(nlogn) if i used a binary tree insertion or sorted afterwards
-    shuffleMap.forEach((_, item) => {
-        result = insertSorted(result, item, (i) => shuffleMap.get(i));
-    });
-    return result;
+    let stdev = sigma * array.length;
+    let elements = array.map(
+        (item, index) =>
+            new OrderableElement(
+                item,
+                gaussianRandom(key(item, index, array), stdev)
+            )
+    );
+    elements = elements.sort((a, b) => a.order - b.order);
+    return elements.map((elem) => elem.item);
 }
 
 /** Shuffles seats slightly, swapping one by one.
@@ -241,7 +232,10 @@ function randomizeSeats(array: (MemberId | 0)[]) {
         return pts(memberB) - pts(memberA);
     });
     // partially randomise the seats
-    return window.MJSeating.shuffle(array);
+    let sigma = matchmakingCoefficientToStdev(
+        window.MJDATA.settings.matchmakingCoefficient
+    );
+    return weightedNormalShuffle(array, sigma);
 }
 
 /** Get a map of each registered council member to another random registered council member.
@@ -274,8 +268,8 @@ export async function shuffleSeats(
     let councilMap = getRandomCouncilMap();
     // most of the work is keeping the shuffle function abstract, so it takes any array
     // load tables as [x-east, x-south, x-west, x-north, y-east...]
-    // preserve table order in [x, y, ...]
     let flatTables: (MemberId | 0)[] = [];
+    // keep record of the table orders. this doesn't really matter, though
     let tableOrders: TableNo[] = [];
     for (let t of window.MJDATA.tables) {
         tableOrders.push(t.table_no);
@@ -296,6 +290,7 @@ export async function shuffleSeats(
      * new members to their new seats */
     let tableNo: TableNo;
     let tableIndex = 0;
+    let edits: TableEdit[] = [];
     // for each table
     while (tableIndex < tableOrders.length) {
         tableNo = tableOrders[tableIndex];
@@ -320,18 +315,13 @@ export async function shuffleSeats(
                 newTable.west = flatTables[tableIndex * 4 + seatIndex];
             } else if (seatIndex === 3) {
                 newTable.north = flatTables[tableIndex * 4 + seatIndex];
-                await editTable(
-                    {
-                        tableNo,
-                        newTable,
-                    },
-                    eventTarget
-                );
+                edits.push({ tableNo, newTable });
             }
             seatIndex++;
         }
         tableIndex++;
     }
+    await editTable(edits, eventTarget);
 }
 
 function test(f: (array: Array<any>) => Array<any>, N = 10000, l = 20) {

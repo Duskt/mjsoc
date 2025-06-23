@@ -3,11 +3,9 @@ use std::{
     io::{BufReader, Write},
     time::{SystemTime, UNIX_EPOCH},
 };
-
+use lib::env;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
-use crate::expect_env;
 
 // Week data
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -176,6 +174,12 @@ fn get_new_index(indices: Vec<u32>) -> u32 {
     maxi + 1
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Settings {
+    #[serde(rename(serialize="matchmakingCoefficient", deserialize="matchmakingCoefficient"))]
+    pub matchmaking_coefficient: f32,
+}
+
 // player data
 // overall structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -184,6 +188,7 @@ pub struct MahjongData {
     pub tables: Vec<TableData>,
     pub members: Vec<Member>,
     pub log: Vec<Log>,
+    pub settings: Settings,
 }
 
 impl MahjongData {
@@ -245,7 +250,7 @@ impl MahjongData {
     }
 
     pub fn save_backup() {
-        let path = expect_env!("MAHJONG_DATA_PATH");
+        let path = env::expect_env("MAHJONG_DATA_PATH");
         let mut backup_path = path.clone();
         // remove ".json" ending
         backup_path.truncate(backup_path.len() - 5);
@@ -267,6 +272,9 @@ impl MahjongData {
                     .as_secs(),
             },
             log: Vec::new(),
+            settings: Settings {
+                matchmaking_coefficient: 0.0,
+            },
         }
     }
 
@@ -277,7 +285,7 @@ impl MahjongData {
     }
 
     pub fn save_to_file(&self) {
-        let mut file = File::create(expect_env!("MAHJONG_DATA_PATH")).unwrap();
+        let mut file = File::create(env::expect_env("MAHJONG_DATA_PATH")).unwrap();
         file.write_all(serde_json::to_string_pretty(&self).unwrap().as_bytes())
             .unwrap();
     }

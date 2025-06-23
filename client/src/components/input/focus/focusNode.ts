@@ -1,5 +1,7 @@
 import { ClickListener, InputListenerParameters } from "../listener";
 
+type AnyElement = HTMLElement | SVGElement;
+
 export interface FocusNodeParameters<T extends keyof HTMLElementTagNameMap>
     extends InputListenerParameters<T> {
     exclude?: HTMLElement[];
@@ -16,7 +18,7 @@ export interface FocusNodeParameters<T extends keyof HTMLElementTagNameMap>
 export default abstract class FocusNode<
     T extends keyof HTMLElementTagNameMap
 > extends ClickListener<T> {
-    exclude: HTMLElement[];
+    exclude: AnyElement[];
     excludeSelf: boolean;
     excludeChildren: boolean;
     active: boolean;
@@ -29,15 +31,20 @@ export default abstract class FocusNode<
             initListener: false,
         });
         this.exclude = params.exclude || [];
-        this.excludeSelf = params.excludeSelf || true;
-        this.excludeChildren = params.excludeChildren || true;
+        this.excludeSelf = params.excludeSelf === undefined ? true : params.excludeSelf;
+        this.excludeChildren = params.excludeChildren === undefined ? true : params.excludeChildren;
         this.active = false;
         return this;
     }
     generateListener(): EventListener {
         return (evt: Event) => {
             let target = evt.target;
-            if (!(target instanceof HTMLElement)) return;
+            if (!((target instanceof HTMLElement) || (target instanceof SVGElement))) {
+                if (target !== null) {
+                    console.warn("Target was not null but also wasn't a HTMLElement or SVGElement. (see focusNode.ts/FocusNode", target)
+                }
+                return
+            }
             // check if excluding self
             if (this.excludeSelf && target.isSameNode(this.element)) return;
             // check if this event propagates from a child node
@@ -98,5 +105,15 @@ export class FocusButton extends FocusNode<"button"> {
                 this.activate();
             }
         };
+    }
+
+    temporarilyDisable(message = "Loading...") {
+        this.element.disabled = true;
+        let oldContent = this.element.textContent;
+        this.element.textContent = message;
+        return () => {
+            this.element.disabled = false;
+            this.element.textContent = oldContent;
+        }
     }
 }

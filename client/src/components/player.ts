@@ -1,4 +1,4 @@
-import Component from ".";
+import Component, { Params } from ".";
 import {
     DropdownButton,
     DropdownButtonParameters,
@@ -49,8 +49,8 @@ class WinButton extends UsesMember(FocusButton) {
     popup: Component<"div">;
     // there are two types of wins:
     zimo: FaanDropdownButton; // 'self-draw' points are split between the table's other 3 players
-    dachut: DropdownButton; // 'direct hit' points are taken from one player, needing two dropdowns.
-    baozimo: DropdownButton; // edge case of self-draw where all points taken from one player
+    dachut: DropdownButton<"div", "button">; // 'direct hit' points are taken from one player, needing two dropdowns.
+    baozimo: DropdownButton<"div", "button">; // edge case of self-draw where all points taken from one player
 
     tableNo: TableNo;
     memberId: MemberId;
@@ -78,6 +78,7 @@ class WinButton extends UsesMember(FocusButton) {
             },
         });
         this.dachut = new DropdownButton({
+            dropdownTag: "div",
             textContent: "打出",
             parent: this.popup.element,
             // don't set onclick here - do it in updatePlayers
@@ -86,6 +87,7 @@ class WinButton extends UsesMember(FocusButton) {
             },
         });
         this.baozimo = new DropdownButton({
+            dropdownTag: "div",
             textContent: "包自摸",
             parent: this.popup.element,
             other: {
@@ -151,7 +153,9 @@ class WinButton extends UsesMember(FocusButton) {
             },
             this.element
         );
-        if (r.ok) {
+        if (r.type == "pseudo") {
+            alert("Network error.");
+        } else if (r.ok) {
             if (faan === 10) {
                 triggerCelebration();
             }
@@ -236,13 +240,43 @@ class WinButton extends UsesMember(FocusButton) {
     }
 }
 
-interface FaanDropdownButtonParameters extends DropdownButtonParameters {
+interface AwaitButtonParams extends Omit<Params<"button">, "tag"> {
+    onclick?: (ev: MouseEvent) => any;
+}
+
+class AwaitButton extends Component<"button"> {
+    waiting: boolean = false;
+    constructor(params: AwaitButtonParams) {
+        super({ tag: "button", ...params });
+        if (params.other?.onclick !== undefined) {
+            throw Error("Pass onclick directly to an AwaitButton");
+        }
+        let passedOnclick = params.onclick || (() => {});
+        let onclick = async (ev: MouseEvent) => {
+            if (this.waiting) {
+                console.warn(
+                    "Prevented a repeat input because the previous request from this element had not completed yet.",
+                    this
+                );
+                return;
+            }
+            this.waiting = true;
+            let r = await passedOnclick(ev);
+            this.waiting = false;
+            return r;
+        };
+        this.element.onclick = onclick;
+    }
+}
+
+interface FaanDropdownButtonParameters
+    extends Omit<DropdownButtonParameters<"div", "button">, "dropdownTag"> {
     min?: number;
     max?: number;
     includePenalty?: boolean;
     onclick?: (ev: MouseEvent, faan: number) => void;
 }
-class FaanDropdownButton extends DropdownButton {
+class FaanDropdownButton extends DropdownButton<"div", "button"> {
     min: number;
     max: number;
     includePenalty: boolean;
@@ -254,22 +288,19 @@ class FaanDropdownButton extends DropdownButton {
         let faanRange = Array.from(Array(max + 1).keys()).slice(min);
         if (params.includePenalty) faanRange.push(-10);
         // makes dropdown item buttons for each number in range
-        let passedOnclick = params.onclick;
-        if (!passedOnclick) passedOnclick = () => {};
-        let onclick;
+        let passedOnclick = params.onclick || (() => {});
         let options = faanRange.map((faan) => {
-            onclick = (ev: MouseEvent) => passedOnclick(ev, faan);
-            return new Component({
-                tag: "button",
+            let onclick = (ev: MouseEvent) => passedOnclick(ev, faan);
+            return new AwaitButton({
                 classList: ["small-button"],
                 textContent: faan == -10 ? "Penalty" : faan.toString(),
+                onclick,
                 other: {
-                    onclick,
                     title: "",
                 },
             }).element;
         });
-        super({ ...params, options });
+        super({ dropdownTag: "div", ...params, options });
         this.min = min;
         this.max = max;
         this.includePenalty = params.includePenalty || false;
@@ -436,10 +467,12 @@ export default class PlayerTag extends UsesSeat(InputListener<"td">) {
             }
             tableCopy[this.seat] = newMember.id;
             editTable(
-                {
-                    tableNo: this.tableNo,
-                    newTable: tableCopy,
-                },
+                [
+                    {
+                        tableNo: this.tableNo,
+                        newTable: tableCopy,
+                    },
+                ],
                 this.nameTag.element
             );
         };

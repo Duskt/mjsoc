@@ -3,10 +3,8 @@ use std::{
     io::Write,
     path::Path,
 };
-
 use clap::{Args, Parser};
-use dotenv::dotenv;
-use lib::{expect_env, qr::get_qr_data, util::get_file_bytes};
+use lib::{qr::get_qr_data, util::get_file_bytes, env};
 use zip::{write::FileOptions, ZipWriter};
 
 /// CLI for Mahjong Soc Attendance
@@ -39,7 +37,7 @@ struct BulkQrArgs {
 }
 
 pub fn main() {
-    dotenv().ok();
+    dotenvy::dotenv().expect(".env file not found.");
     let args = AppArgs::parse();
 
     match args {
@@ -62,7 +60,7 @@ fn bulk_qr(args: BulkQrArgs) {
         );
     }
 
-    let hmac_key_path = expect_env!("HMAC_KEY_PATH");
+    let hmac_key_path = env::expect_env("HMAC_KEY_PATH");
     let hmac_key = get_file_bytes(&hmac_key_path);
 
     let path = Path::new(&args.output_file);

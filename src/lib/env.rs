@@ -15,3 +15,11 @@ macro_rules! expect_env {
         std::env::var($name).expect(&format!("No {} environment variable found", $name))
     };
 }
+
+pub fn expect_env(key: &str) -> String {
+    let var = std::env::var(key);
+    match var {
+        Ok(res) => res,
+        Err(_) => panic!("No {} environment variable found", key)
+    }
+}

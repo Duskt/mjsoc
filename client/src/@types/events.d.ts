@@ -16,4 +16,6 @@ type EditLogEvent = CustomEvent<{
 type EditTableEvent = CustomEvent<{
     tableNo: TableNo;
     newTable: TableData;
-}>;
+}[]>;
+
+type SettingsUpdateEvent = CustomEvent<{}>

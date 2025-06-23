@@ -12,6 +12,12 @@ interface TableData extends PlayerWinds {
     round_wind: RoundWind;
 }
 
+// for requests
+interface TableEdit {
+    tableNo: TableNo,
+    newTable: TableData
+}
+
 type MemberId = number & { __brand: "memberId" };
 
 interface TournamentData {
@@ -44,9 +50,14 @@ interface Log {
     disabled: boolean;
 }
 
+type Settings = {
+    matchmakingCoefficient: number;
+}
+
 interface MahjongData {
     week: {};
     tables: TableData[];
     members: Member[];
     log: Log[];
+    settings: Settings;
 }

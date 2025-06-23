@@ -149,6 +149,7 @@ class EditMembersBar extends Component<"div"> {
             },
         });
         this.resetButton = new IconButton({
+            // passed as an activator to confirmation (below)
             icon: "reset",
             parent: this.topDiv.element,
             other: {
@@ -177,6 +178,8 @@ class EditMembersBar extends Component<"div"> {
             },
         });
         this.removeButton = new RemoveMemberButton({
+            dropdownTag: "div",
+            options: [],
             parent: this.bottomDiv.element,
         });
         this.topDiv.element.style["display"] = "flex";
@@ -184,12 +187,11 @@ class EditMembersBar extends Component<"div"> {
     }
 }
 
-class RemoveMemberButton extends DropdownButton {
-    constructor(params: DropdownButtonParameters) {
+class RemoveMemberButton extends DropdownButton<"div", "button"> {
+    constructor(params: DropdownButtonParameters<"div", "button">) {
         super({
             textContent: "Delete member",
             classList: ["member-button"],
-            options: [],
             ...params,
         });
         this.update();

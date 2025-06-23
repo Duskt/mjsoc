@@ -1,11 +1,9 @@
-use std::env;
-
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use maud::html;
 use serde::Deserialize;
 use urlencoding::encode;
-
+use lib::env;
 use crate::{
     auth::is_authenticated, components::page::page, util::get_redirect_response, AppState,
 };
@@ -20,7 +18,7 @@ pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
 
     let mjdata = data.mahjong_data.lock().unwrap();
     let html = page(html! {
-        img src=(env::var("LOGO_ROUTE").expect("Missing LOGO_ROUTE")) class="logo";
+        img src=(env::expect_env("LOGO_ROUTE")) class="logo";
         p {
             "Enter week number:"
         }

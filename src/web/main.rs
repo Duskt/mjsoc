@@ -15,14 +15,15 @@ use actix_web::{
     App, HttpServer,
 };
 use lib::{
-    expect_env, parsed_env,
+    env, expect_env, parsed_env,
     util::{self, get_file_bytes},
 };
 
 use chrono::Duration as chronoDuration;
 use circular_buffer::CircularBuffer;
-use dotenv::dotenv;
-use std::{env, sync::{Arc, Mutex, RwLock}};
+use std::{
+    sync::{Arc, Mutex, RwLock},
+};
 
 use mahjongdata::MahjongData;
 use pages::{
@@ -40,7 +41,7 @@ use pages::{
 };
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
 
-use crate::pages::logo::logo;
+use crate::pages::{logo::logo, mahjong::settings::update_settings};
 
 // NOTE: this needs to be const (used for type), so cannot be environment
 // Reading environment in at compile time wouldn't be any different from const
@@ -57,7 +58,7 @@ pub struct AppState {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenv().ok();
+    dotenvy::dotenv_override().expect(".env file not found.");
 
     let key = cookie::Key::generate();
     let state = web::Data::new(get_intial_state());
@@ -115,22 +116,26 @@ async fn main() -> std::io::Result<()> {
                     .route(get().to(get_log_page))
                     .route(put().to(put_log)),
             )
-            .route(&env::var("LOGO_ROUTE").expect("LOGO_ROUTE required."), get().to(logo))
+            .route("/settings", put().to(update_settings))
+            .route(&env::expect_env("LOGO_ROUTE"), get().to(logo))
             // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.
-            .service(fs::Files::new("/", env::var("PUBLIC_PATH").expect("PUBLIC_PATH required.")))
+            .service(fs::Files::new(
+                "/public",
+                env::expect_env("PUBLIC_PATH"),
+            ))
     })
-    .bind((expect_env!("IP"), parsed_env!("PORT", u16)))?
+    .bind((env::expect_env("IP"), parsed_env!("PORT", u16)))?
     .run()
     .await
 }
 
 fn get_intial_state() -> AppState {
-    let admin_password_hash = expect_env!("ADMIN_PASSWORD_HASH");
+    let admin_password_hash = env::expect_env("ADMIN_PASSWORD_HASH");
 
-    let hmac_key_path = expect_env!("HMAC_KEY_PATH");
+    let hmac_key_path = env::expect_env("HMAC_KEY_PATH");
     let hmac_key = get_file_bytes(&hmac_key_path);
 
-    let mahjong_data_path = expect_env!("MAHJONG_DATA_PATH");
+    let mahjong_data_path = env::expect_env("MAHJONG_DATA_PATH");
 
     AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),

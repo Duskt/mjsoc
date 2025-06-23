@@ -1,4 +1,6 @@
-use std::env;
+use std::sync::MutexGuard;
+
+use lib::env;
 
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
@@ -8,7 +10,7 @@ use serde_json;
 use urlencoding::encode;
 
 use crate::{
-    auth::is_authenticated, components::page::page, mahjongdata::TableData,
+    auth::is_authenticated, components::page::page, mahjongdata::{MahjongData, TableData},
     util::get_redirect_response, AppState,
 };
 
@@ -28,7 +30,7 @@ pub async fn get_tables(
     }
     let mjdata_copy = data.mahjong_data.lock().unwrap().clone();
     let cereal = serde_json::to_string(&mjdata_copy).expect("Serialization failed for mjdata");
-    let public_path = env::var("PUBLIC_PATH").expect("Missing PUBLIC_PATH");
+    let public_path = env::expect_env("PUBLIC_PATH");
     let script_path = format!("{}/index.js", public_path);
     // webpage
     let html = page(html! {
@@ -70,6 +72,16 @@ pub struct TableDeleteRequest {
     table_no: u32,
 }
 
+fn decrement_tables(mut mjdata: MutexGuard<'_, MahjongData>, after_table_no: u32) -> MutexGuard<'_, MahjongData> {
+    for i in &mut mjdata.tables {
+        if i.table_no > after_table_no {
+            i.table_no -= 1
+        }
+    }
+    mjdata.save_to_file();
+    mjdata
+}
+
 pub async fn delete_table(
     session: Session,
     data: web::Data<AppState>,
@@ -91,10 +103,11 @@ pub async fn delete_table(
         .iter()
         .position(|x| x.table_no == body.table_no)
     {
+        // tables are sorted by id, so their vector index matters not!
         mjdata.tables.swap_remove(index);
-        mjdata.save_to_file();
+        drop(decrement_tables(mjdata, body.table_no));
         // redirect (instead we could use js to do this?)
-        HttpResponse::ResetContent().body("Deleted table")
+        HttpResponse::Ok().body("Deleted table.")
     } else {
         HttpResponse::BadRequest().body(format!(
             "Could not find index with table number {}",
@@ -104,7 +117,7 @@ pub async fn delete_table(
 }
 
 #[derive(Deserialize)]
-pub struct UpdateTablePostRequest {
+pub struct EditTable {
     table_no: u32,
     table: TableData,
 }
@@ -112,24 +125,27 @@ pub struct UpdateTablePostRequest {
 pub async fn update_table(
     session: Session,
     data: web::Data<AppState>,
-    body: web::Json<UpdateTablePostRequest>,
+    body: web::Json<Vec<EditTable>>,
 ) -> impl Responder {
     if !is_authenticated(&session, &data.authenticated_keys) {
         return get_redirect_response("/login?redirect=tables");
     }
     let mut mjdata = data.mahjong_data.lock().unwrap();
-    if let Some(table_index) = mjdata
-        .tables
-        .iter()
-        .position(|x| x.table_no == body.table_no)
-    {
-        mjdata.tables[table_index] = body.table.clone();
-        mjdata.save_to_file();
-        HttpResponse::Ok().body("Updated table as desired.")
-    } else {
-        HttpResponse::BadRequest().body(format!(
-            "Could not find index with table number {}",
-            body.table_no
-        ))
+    let mut tables_copy = mjdata.tables.clone();
+    for t in body.iter() {
+        if let Some(table_index) = tables_copy
+            .iter()
+            .position(|x| x.table_no == t.table_no)
+        {
+            tables_copy[table_index] = t.table.clone();
+        } else {
+            return HttpResponse::BadRequest().body(format!(
+                "Could not find index with table number {}",
+                t.table_no
+            ));
+        }
     }
+    mjdata.tables = tables_copy;
+    mjdata.save_to_file();
+    HttpResponse::Ok().body("Updated table(s) as desired.")
 }

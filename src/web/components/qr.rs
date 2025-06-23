@@ -1,11 +1,11 @@
-use std::env;
+use lib::env;
 
-use maud::{html, PreEscaped};
 use lib::qr::QrData;
+use maud::{html, PreEscaped};
 use urlencoding::encode;
 
 pub fn qr_display(qr_data: Option<QrData>) -> PreEscaped<String> {
-    let public_path = env::var("PUBLIC_PATH").expect("Missing PUBLIC_PATH");
+    let public_path = env::expect_env("PUBLIC_PATH");
     let script_path = format!("{}/index.js", public_path);
     html!(
         script src=(script_path) {}

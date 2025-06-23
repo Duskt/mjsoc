@@ -69,3 +69,54 @@ nav * {
 .nav-link:hover {
   background-color: rgba(0, 0, 0, 0.1);
 }
+
+.settings-button {
+  padding: 0px;
+  font-size: 12px;
+  text-align: center;
+  margin: 0 12px 0 auto;
+  width: 30px;
+  height: 20px;
+  align-self: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.loading {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+  margin:15px auto;
+  background: #FFF;
+  box-shadow: -14px 0 #FFF, 14px 0 #FFF;
+  box-sizing: border-box;
+  animation: shadowPulse 2s linear infinite;
+  --pulse-color: #559241;
+}
+
+svg, path {
+  pointer-events: none;
+}
+
+.request-indicator {
+  position: absolute;
+  right: 5%;
+  bottom: 3%;
+}
+
+@keyframes shadowPulse {
+  33% {
+    background: #FFF;
+    box-shadow: -14px 0 var(--pulse-color), 14px 0 #FFF;
+  }
+  66% {
+    background: var(--pulse-color);
+    box-shadow: -14px 0 #FFF, 14px 0 #FFF;
+  }
+  100% {
+    background: #FFF;
+    box-shadow: -14px 0 #FFF, 14px 0 var(--pulse-color);
+  }
+}
