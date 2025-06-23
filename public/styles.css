@@ -83,6 +83,40 @@ nav * {
   cursor: pointer;
 }
 
+.settings-button form.dropdown {
+  width: 300px;
+  height: fit-content;
+  z-index: 2;
+  left: initial;
+  right: 24px;
+  background-color: darkgreen;
+  cursor: initial;
+  margin: 0px;
+  border-radius: 10px;
+  color: white;
+}
+
+.settings-button form.dropdown fieldset {
+  border: none;
+  font-size: 12px;
+  border-radius: 10px;
+  font-weight: bold;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.settings-button form.dropdown fieldset input {
+  border: none;
+  border-radius: 8px;
+  width: 20%;
+  font-size: 14px;
+  margin-block: auto;
+}
+
 .loading {
   width: 8px;
   height: 8px;

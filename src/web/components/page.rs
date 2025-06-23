@@ -17,7 +17,7 @@ pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
                     a href="/" { img src=(env::expect_env("LOGO_ROUTE")) class="home-icon" {} }
                     a href="/tables" class="nav-link" { "Tables" }
                     a href="/log" class="nav-link" { "Log" }
-                    button class="settings-button dropdown-button" { "Settings" }
+                    button class="settings-button dropdown-button" style="display: none" { "" }
                 }
                 div class="centre-container" {
                     (inner)

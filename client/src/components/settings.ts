@@ -43,11 +43,7 @@ class SettingField extends Component<"fieldset"> {
             if (onupdate !== undefined) {
                 onupdate(ev);
             }
-        };
-        this.element.style.width = "80%";
-        this.input.element.style.width = "10%";
-        this.input.element.style.fontSize = "10px";
-        this.input.element.style.marginBlock = "auto";
+        }
     }
 }
 
@@ -84,13 +80,6 @@ export class SettingsPanel extends Dropdown<"form", "fieldset"> {
             }
         };
         this.options = [this.matchmaking.element];
-        this.element.style.width = "40%";
-        this.element.style.height = "60%";
-        this.element.style.zIndex = "2"; // above sidebar button...
-        this.element.style.left = "initial";
-        this.element.style.backgroundColor = "forestgreen"; // TODO: CHANGE
-        this.element.style.cursor = "initial";
-        this.element.style.right = "24px";
     }
 }
 

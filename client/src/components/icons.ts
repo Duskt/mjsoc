@@ -80,7 +80,7 @@ export default class IconButton extends Component<"button"> {
         this.element.onclick = (ev) => {
             (params.onclick || (() => {}))(ev);
             if (ev.defaultPrevented) return;
-            this.svg.style.fill = "lime";
+            this.svg.style.fill = "green";
             window.setTimeout(() => {
                 this.svg.style.transitionDuration = "0.3s";
                 this.svg.style.fill = "black";
