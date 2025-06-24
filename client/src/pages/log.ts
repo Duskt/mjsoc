@@ -1,6 +1,6 @@
 import Component, { Params } from "../components";
 import IconButton from "../components/icons";
-import { getMember, POINTS } from "../data";
+import { getMember, isMember, POINTS } from "../data";
 import { undoLog } from "../request";
 
 const isNatural = (f: string) =>
@@ -8,30 +8,50 @@ const isNatural = (f: string) =>
 const isInteger = (f: string) =>
     isNatural(f) || (f[0] === "-" && isNatural(f.slice(1)));
 
-function getLogFilter(query: string) {
-    // names -> STR | STR names
-    // query    -> INTEGER | names
-    query = query.trim();
-    if (query.length === 0) {
-        return (l: Log) => true;
-    }
-    if (isInteger(query)) {
-        let qint = parseInt(query);
-        return (l: Log, s: number | undefined) => l.faan === qint || s === qint;
-    }
-    let names = query.toLowerCase().split(" ");
-    // check that every provided query name is a substring of any log name
-    let nameMatches = (log_names: string[]) =>
-        names.every((q: string) => log_names.some((l) => l.includes(q)));
+type LogFilterPredicate = (log: Log, session_no?: number) => boolean;
+
+const normalizeQueryString = (s: string) => s.trim().toLowerCase();
+
+function getIntegerMatchPredicate(subquery: number): LogFilterPredicate {
+    return (l, sn) => l.faan === subquery || sn === subquery;
+}
+
+function getNameMatchPredicate(subquery: string): LogFilterPredicate {
+    subquery = normalizeQueryString(subquery);
     // get all of the member objects for everyone in log 'from' attr
+    let logMemberIds = (l: Log) => l.from.concat(l.to);
     let logMembers = (l: Log) =>
-        l.from
-            .concat(l.to)
-            .map((mi) => window.MJDATA.members.find((m) => m.id === mi))
-            .filter((v) => v !== undefined);
-    let logNames = (members: Member[]) =>
-        members.map((m) => m.name.trim().toLowerCase());
-    return (l: Log) => nameMatches(logNames(logMembers(l)));
+        logMemberIds(l)
+            .map(getMember)
+            .filter((m) => isMember(m));
+    let logMemberNames = (l: Log) =>
+        logMembers(l).map((m) => normalizeQueryString(m.name));
+    return (l: Log) => logMemberNames(l).includes(subquery);
+}
+
+function parseQuery(query: string): LogFilterPredicate {
+    // for a query string, split by spaces into subqueries
+    // every subquery must match
+    // int subquery present in faan / session #
+    // str subquery present in name of relevant players
+    query = query.trim().toLowerCase();
+    // using a predicate closure which contains a bunch of nested predicates fails in JS
+    let predicateList: LogFilterPredicate[] = [(l, sn) => true];
+    for (let sq of query.split(" ")) {
+        if (sq === "") {
+            continue;
+        }
+        if (isInteger(sq)) {
+            let predicate: LogFilterPredicate = (l, sn) =>
+                getIntegerMatchPredicate(parseInt(sq))(l, sn);
+            predicateList.push(predicate);
+        } else {
+            let predicate: LogFilterPredicate = (l, sn) =>
+                getNameMatchPredicate(sq)(l, sn);
+            predicateList.push(predicate);
+        }
+    }
+    return (l, sn) => predicateList.every((v) => v(l, sn));
 }
 
 export default function logPage() {
@@ -52,7 +72,7 @@ export default function logPage() {
         oninput: (ev, value) => {
             logTable.element.innerHTML = "";
             logTable.renderHeaders();
-            logTable.renderLogs((l, s) => getLogFilter(value)(l, s));
+            logTable.renderLogs(parseQuery(value));
         },
     });
     logTable.element.insertAdjacentElement("beforebegin", filterForm.element);
