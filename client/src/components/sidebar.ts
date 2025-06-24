@@ -162,7 +162,10 @@ class EditMembersBar extends Component<"div"> {
             parent: this.topDiv.element, // NOT INSIDE THE BUTTON otherwise it will reactivate itself
             message:
                 "Are you sure you want to reset the session?\n\nThis will sum the current points to each member's total points. This cannot be undone. It will also mark everyone as absent.",
-            onconfirm: (ev) => resetSession(),
+            onconfirm: (ev) => {
+                resetSession();
+                setTimeout(() => location.reload(), 50);
+            },
         });
         this.bottomDiv = new Component({
             tag: "div",
