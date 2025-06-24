@@ -187,8 +187,7 @@ svg, path {
   visibility: hidden;
   opacity: 0;
   position: absolute;
-  top: 50%;
-  left: 0px;
+  top: 120%;
   z-index: 3;
   background-color: rgb(177 169 163);
   font-size: 12px;

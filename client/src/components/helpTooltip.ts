@@ -3,7 +3,8 @@ import Component, { Params } from ".";
 export interface TooltipParameters extends Omit<Params<"div">, "tag"> {
     message: string
     parent: HTMLElement
-    width?: string
+    widthExpandDirection?: "left" | "right"
+    width: string
 }
 
 export default class HelpHoverTooltip extends Component<"span"> {
@@ -21,13 +22,18 @@ export default class HelpHoverTooltip extends Component<"span"> {
 
 // parent:onhover tooltip { display: block }
 class Tooltip extends Component<"div"> {
-    constructor({message, width = "200px", ...params}: TooltipParameters) {
+    constructor({message, width = "200px", widthExpandDirection = "right", ...params}: TooltipParameters) {
         super({
             tag: "div",
             classList: ["tooltip"],
             ...params
         });
         this.element.style.width = width;
+        if (widthExpandDirection === "right") {
+            this.element.style.left = "0";
+        } else {
+            this.element.style.right = "0";
+        }
         let lastBr;
         for (let line of message.split('\n')) {
             let pElem = document.createElement('p');

@@ -1,5 +1,6 @@
 import Component, { Params } from ".";
 import { updateSettings } from "../request";
+import HelpHoverTooltip from "./helpTooltip";
 import IconButton from "./icons";
 import Dropdown, {
     DropdownButton,
@@ -9,12 +10,14 @@ import Dropdown, {
 interface SettingParameters extends Params<"fieldset"> {
     labelText: string;
     settingId: keyof Settings;
+    helpTooltip?: string;
     onupdate?: (ev: Event) => void;
 }
 
 class SettingField extends Component<"fieldset"> {
     label: Component<"label">;
     input: Component<"input">;
+    helpTooltip: HelpHoverTooltip;
     constructor({
         labelText,
         settingId,
@@ -31,6 +34,13 @@ class SettingField extends Component<"fieldset"> {
             parent: this.element,
         });
         this.label.element.setAttribute("for", "matchmakingInput");
+        this.helpTooltip = new HelpHoverTooltip({
+            message:
+                "A number between 0 and 1 which determines the behaviour of the table shuffling algorithm.\n0 is an entirely random shuffle and 1 is completely fixed by order of total points.",
+            width: "200px",
+            widthExpandDirection: "left",
+            parent: this.element,
+        });
         this.input = new Component({
             tag: "input",
             parent: this.element,
@@ -43,7 +53,7 @@ class SettingField extends Component<"fieldset"> {
             if (onupdate !== undefined) {
                 onupdate(ev);
             }
-        }
+        };
     }
 }
 
@@ -83,11 +93,10 @@ export class SettingsPanel extends Dropdown<"form", "fieldset"> {
     }
 }
 
-
 export class SettingsButton extends DropdownButton<"form", "fieldset"> {
     constructor() {
         let iconbutton = new IconButton({
-            icon: 'settings'
+            icon: "settings",
         });
         let settingsPanel = new SettingsPanel({
             onupdate: (ev) => {
@@ -97,8 +106,8 @@ export class SettingsButton extends DropdownButton<"form", "fieldset"> {
         super({
             dropdownTag: "form",
             dropdown: settingsPanel,
-            element: iconbutton.element
+            element: iconbutton.element,
         });
-        this.element.classList = "settings-button dropdown-button"
+        this.element.classList = "settings-button dropdown-button";
     }
 }
