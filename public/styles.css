@@ -163,3 +163,36 @@ svg, path {
     box-shadow: -14px 0 #FFF, 14px 0 var(--pulse-color);
   }
 }
+
+.tooltip-parent {
+  position: relative;
+  border: 1px solid #111111;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 100px;
+  width: 10px;
+  height: 10px;
+  font-size: 10px;
+  text-align: center;
+  padding: 1px;
+  color: #111111;
+}
+
+.tooltip-parent:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 50%;
+  left: 0px;
+  z-index: 3;
+  background-color: rgb(177 169 163);
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 1px solid black;
+  transition: visibility 0.1s, opacity 0.1s ease-in-out;
+}

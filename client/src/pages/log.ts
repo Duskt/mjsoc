@@ -1,4 +1,5 @@
 import Component, { Params } from "../components";
+import HelpHoverTooltip from "../components/helpTooltip";
 import IconButton from "../components/icons";
 import { getMember, isMember, POINTS } from "../data";
 import { undoLog } from "../request";
@@ -101,6 +102,7 @@ interface FilterParams extends Params<"form"> {
 class FilterForm extends Component<"form"> {
     input: Component<"input">;
     label: Component<"label">;
+    help: HelpHoverTooltip;
     oninput: (ev: Event, value: string) => void;
     constructor({ oninput, ...params }: FilterParams) {
         super({
@@ -128,6 +130,11 @@ class FilterForm extends Component<"form"> {
         this.input.element.style.fontSize = "12px";
         this.input.element.oninput = (ev) =>
             this.oninput(ev, this.input.element.value);
+        this.help = new HelpHoverTooltip({
+            parent: this.element,
+            width: "200px",
+            message: "You can enter search terms such as names (included in log) or numbers (matches session # or faan). Terms are separated by spaces and every term must match a log."
+        })
     }
 }
 
