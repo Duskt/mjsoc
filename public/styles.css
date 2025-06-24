@@ -196,3 +196,8 @@ svg, path {
   border: 1px solid black;
   transition: visibility 0.1s, opacity 0.1s ease-in-out;
 }
+
+.tooltip p {
+  width: 100%;
+  margin: 0;
+}

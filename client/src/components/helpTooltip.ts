@@ -1,31 +1,41 @@
 import Component, { Params } from ".";
 
-export interface HelpTooltipParameters extends Omit<Params<"span">, "tag"> {
+export interface TooltipParameters extends Omit<Params<"div">, "tag"> {
     message: string
+    parent: HTMLElement
     width?: string
 }
 
 export default class HelpHoverTooltip extends Component<"span"> {
     tooltip: Tooltip;
-    constructor({message, width = "200px", ...params}: HelpTooltipParameters) {
+    constructor({parent, ...params}: TooltipParameters) {
         super({
             tag: "span",
             classList: ["tooltip-parent"],
+            parent,
             textContent: "?",
-            ...params
         });
-        this.tooltip = new Tooltip({parent: this.element, textContent: message});
-        this.tooltip.element.style.width = width;
+        this.tooltip = new Tooltip({parent: this.element, ...params});
     }
 }
 
 // parent:onhover tooltip { display: block }
-class Tooltip extends Component<"p"> {
-    constructor(params: Omit<Params<"p"> , "tag">) {
+class Tooltip extends Component<"div"> {
+    constructor({message, width = "200px", ...params}: TooltipParameters) {
         super({
-            tag: "p",
+            tag: "div",
             classList: ["tooltip"],
             ...params
         });
+        this.element.style.width = width;
+        let lastBr;
+        for (let line of message.split('\n')) {
+            let pElem = document.createElement('p');
+            pElem.textContent = line;
+            this.element.appendChild(pElem);
+            lastBr = document.createElement('br')
+            this.element.appendChild(lastBr);
+        }
+        lastBr?.remove()
     }
 }
