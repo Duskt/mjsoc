@@ -16,7 +16,5 @@ FROM debian:bullseye-slim
 RUN apt-get update && apt-get install -y libc-bin ca-certificates && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/target/release/web .
-COPY ./public ./public
-
 
 CMD ["./web"]

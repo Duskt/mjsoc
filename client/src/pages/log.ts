@@ -44,7 +44,7 @@ export default function logPage() {
     });
     mainChildDiv.element.style.width = "100%";
     let logTable = new LogTable({
-        classList: ["info-grid"],
+        classList: ["info-grid", "log"],
         parent: mainChildDiv.element,
     });
     placeholderLogTable.replaceWith(mainChildDiv.element);
