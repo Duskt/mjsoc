@@ -21,9 +21,7 @@ use lib::{
 
 use chrono::Duration as chronoDuration;
 use circular_buffer::CircularBuffer;
-use std::{
-    sync::{Arc, Mutex, RwLock},
-};
+use std::sync::{Arc, Mutex, RwLock};
 
 use mahjongdata::MahjongData;
 use pages::{
@@ -41,7 +39,10 @@ use pages::{
 };
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
 
-use crate::pages::{logo::logo, mahjong::settings::update_settings};
+use crate::pages::{
+    logo::logo,
+    mahjong::{data::get_data, settings::update_settings},
+};
 
 // NOTE: this needs to be const (used for type), so cannot be environment
 // Reading environment in at compile time wouldn't be any different from const
@@ -117,12 +118,10 @@ async fn main() -> std::io::Result<()> {
                     .route(put().to(put_log)),
             )
             .route("/settings", put().to(update_settings))
+            .route("/data.json", get().to(get_data))
             .route(&env::expect_env("LOGO_ROUTE"), get().to(logo))
             // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.
-            .service(fs::Files::new(
-                "/public",
-                env::expect_env("PUBLIC_PATH"),
-            ))
+            .service(fs::Files::new("/public", env::expect_env("PUBLIC_PATH")))
     })
     .bind((env::expect_env("IP"), parsed_env!("PORT", u16)))?
     .run()

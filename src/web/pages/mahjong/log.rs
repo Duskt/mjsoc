@@ -3,7 +3,7 @@ use lib::env;
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use lib::util::get_redirect_response;
-use maud::{html, PreEscaped};
+use maud::html;
 use serde::{Deserialize, Serialize};
 use urlencoding::encode;
 
@@ -28,15 +28,10 @@ pub async fn get_log_page(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    let mjdata_copy = data.mahjong_data.lock().unwrap().clone();
-    let cereal = serde_json::to_string(&mjdata_copy).expect("Serialization failed for mjdata");
     let public_path = env::expect_env("PUBLIC_PATH");
     let script_path = format!("{}/index.js", public_path);
     // webpage
     let html = page(html! {
-        script {
-            "window.MJDATA = "(PreEscaped(cereal))";"
-        }
         script src=(script_path) {}
         main {
             table id="log-table" {}
