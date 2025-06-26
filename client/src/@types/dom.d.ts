@@ -9,17 +9,12 @@ interface CustomEventMap {
     mjAddTable: AddTableEvent;
     mjEditTable: EditTableEvent;
 }
-interface Seating {
-    shuffle: (array: Array<any>) => Array<any>;
-    weightedNormalShuffle: any;
-    test: (f: (array: Array<any>) => Array<any>, N: number, l: number) => void;
-}
+
 declare global {
     interface GlobalEventHandlersEventMap extends CustomEventMap {}
     interface Window {
         MJDATA: MahjongData;
-        MJSeating: Seating;
-        _request: any;
+        DEBUG: any;
     }
 }
 export {};

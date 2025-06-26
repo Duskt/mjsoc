@@ -324,7 +324,12 @@ export async function shuffleSeats(
     await editTable(edits, eventTarget);
 }
 
-function test(f: (array: Array<any>) => Array<any>, N = 10000, l = 20) {
+/** Test a shuffle function in the console.
+ * @param f the function to test (f: array -> array)
+ * @param N how many shuffles to simulate
+ * @param l the length of the input array to supply to f
+ */
+function testFunction(f: (array: Array<any>) => Array<any>, N = 10000, l = 20) {
     let array = Array.from(Array(l).keys());
     let elementCount: Map<any, number>;
     let indexMap: Map<number, typeof elementCount> = new Map();
@@ -349,8 +354,6 @@ function test(f: (array: Array<any>) => Array<any>, N = 10000, l = 20) {
     });
 }
 
-window.MJSeating = {
-    test,
-    weightedNormalShuffle,
-    shuffle: (a) => weightedNormalShuffle(a, a.length),
-};
+if (window.DEBUG === undefined) window.DEBUG = {};
+window.DEBUG.weightedNormalShuffle = weightedNormalShuffle;
+window.DEBUG.testFunction = testFunction;

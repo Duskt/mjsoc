@@ -61,6 +61,7 @@ export class RequestIndicator extends Component<"div"> {
     errorPanel?: ErrorPanel;
     msShowFail = 5000;
     msShowSuccess = 1000;
+    minSkipLoadingDelay = 100; // when sending a request, wait 100ms before showing the loading icon, otherwise jump straight to the result
     constructor() {
         super({
             tag: "div",
@@ -83,8 +84,10 @@ export class RequestIndicator extends Component<"div"> {
     }
     load() {
         this.reset();
-        this.element.classList = "loading request-indicator";
         this.appear();
+        this.transitionTimer = setTimeout(() => {
+            this.element.classList = "loading request-indicator";
+        }, this.minSkipLoadingDelay);
     }
     fail(err: AppError) {
         this.reset();
@@ -523,3 +526,6 @@ export async function updateSettings(
     target.dispatchEvent(event);
     return r;
 }
+
+if (window.DEBUG === undefined) window.DEBUG = {};
+window.DEBUG.request = RequestController;
