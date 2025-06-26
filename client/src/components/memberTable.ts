@@ -1,4 +1,5 @@
 import Component, { Params } from ".";
+import { AppError } from "../errors";
 import { editMember, manualRegister } from "../request";
 import FocusNode from "./input/focus/focusNode";
 import { isSat } from "./seatingUtils";
@@ -228,12 +229,7 @@ class NameTd extends FocusNode<"td"> {
                         council: member.council,
                     },
                 });
-                if (!r.ok) {
-                    alert(
-                        "An unknown error occurred trying to delete this member."
-                    );
-                    return;
-                }
+                if (r instanceof AppError) return;
             }
             if (ev.key === "Escape" || ev.key === "Enter") {
                 this.deactivate();

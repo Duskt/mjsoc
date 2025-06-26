@@ -1,4 +1,5 @@
 import Component, { Params } from ".";
+import { AppError } from "../errors";
 import { updateSettings } from "../request";
 import HelpHoverTooltip from "./helpTooltip";
 import IconButton from "./icons";
@@ -85,9 +86,8 @@ export class SettingsPanel extends Dropdown<"form", "fieldset"> {
                     this.matchmaking.input.element.value
                 ),
             });
-            if (r?.ok === true && onupdate !== undefined) {
-                onupdate(ev);
-            }
+            if (r instanceof AppError) return;
+            if (onupdate !== undefined) onupdate(ev);
         };
         this.options = [this.matchmaking.element];
     }

@@ -1,59 +1,110 @@
 import Component from "./components";
 import { getMember, isMember, updateMembers } from "./data";
+import { AppError, NetworkError, CodeError } from "./errors";
 
 const MJ_EVENT_PREFIX = "mj";
 
 type RequestMethod = "GET" | "POST" | "PUT" | "DELETE";
 
-interface PseudoResponse {
-    ok: false;
-    type: "pseudo";
-    statusText: "rate" | "network";
+interface SuccessfulResponse extends Response {
+    ok: true;
+}
+function respSuccessful(r: Response): r is SuccessfulResponse {
+    return r.ok;
 }
 
+class ErrorPanel {
+    panelContainer: Component<"div">
+    panelSummary?: Component<"p">
+    panelMessage: Component<"p">
+    errorIcon: Component<"span">
+    constructor(err: AppError) {
+        this.panelContainer = new Component({
+            tag: "div",
+            classList: ["error-panel"]
+        });
+        if (err.summary !== undefined) {
+            this.panelSummary = new Component({
+                tag: "p",
+                textContent: err.summary,
+                classList: ["summary"],
+                parent: this.panelContainer.element
+            });
+        }
+        this.panelMessage = new Component({
+            tag: "p",
+            textContent: err.message,
+            parent: this.panelContainer.element
+        });
+        this.errorIcon = new Component({
+            tag: "span",
+            textContent: "❌"
+        });
+    }
+    attach(parent: HTMLElement) {
+        if (parent.children.length > 0) {
+            console.warn("ErrorPanel shouldn't be attached to non-empty parent.")
+        }
+        parent.appendChild(this.panelContainer.element);
+        parent.appendChild(this.errorIcon.element);
+        return this
+    }
+    remove() {
+        this.errorIcon.element.remove();
+        this.panelContainer.element.remove();
+        return undefined
+    }
+}
 
-
-class RequestIndicator extends Component<"span"> {
+export class RequestIndicator extends Component<"div"> {
     transitionTimer?: number;
+    errorPanel?: ErrorPanel;
+    msShowFail = 5000;
+    msShowSuccess = 1000;
     constructor() {
         super({
-            tag: "span",
+            tag: "div",
             classList: ["request-indicator"],
-            style: {
-                display: "none",
-            },
             parent: document.body,
         });
     }
-    loading() {
-        this.element.classList = "loading request-indicator";
+    reset() {
+        if (this.errorPanel !== undefined) {
+            this.errorPanel = this.errorPanel.remove();
+        }
         this.element.textContent = "";
-        this.element.style.display = "block";
         clearTimeout(this.transitionTimer);
+    }
+    appear() {
         this.element.style.transition = "none";
         this.element.style.opacity = "1";
         this.element.offsetHeight; // flush css changes
         this.element.style.transition = "";
     }
-    fail() {
-        this.element.classList = "failure request-indicator"
-        this.element.textContent = "❌";
-        // fade out after 5s
+    load() {
+        this.reset();
+        this.element.classList = "loading request-indicator";
+        this.appear();
+    }
+    fail(err: AppError) {
+        this.reset();
+        this.element.classList = "failure request-indicator";
+        this.errorPanel = new ErrorPanel(err).attach(this.element);
         this.transitionTimer = setTimeout(() => {
             this.element.style.opacity = "0";
-        }, 2000);
+        }, this.msShowFail);
     }
     success() {
-        this.element.classList = "successful request-indicator"
+        this.reset();
+        this.element.classList = "success request-indicator";
         this.element.textContent = "✅";
-        // fade out after 5s
         this.transitionTimer = setTimeout(() => {
             this.element.style.opacity = "0";
-        }, 1000);
+        }, this.msShowSuccess);
     }
 }
 
-var RequestRateLimiter = {
+var RequestController = {
     lastRequest: 0,
     delay: 200,
     indicator: new RequestIndicator(),
@@ -63,9 +114,20 @@ var RequestRateLimiter = {
         this.lastRequest = d;
         return valid;
     },
-    warn(): PseudoResponse {
+    blockRequest(): AppError {
         console.warn("Requests sent too fast.");
-        return { ok: false, type: "pseudo", statusText: "rate"};
+        // don't display error panel; the previous error has all the message
+        return new NetworkError({});
+    },
+    handleRejection(r: TypeError | DOMException): AppError {
+        let err = new CodeError({summary: "Server communication (fetch) error", error: r});
+        this.indicator.fail(err);
+        return err;
+    },
+    handleBadResponse(r: Response): AppError {
+        let err = new CodeError({summary: "Server response error", debug: r});
+        this.indicator.fail(err);
+        return err;
     },
 
     async request(
@@ -73,33 +135,25 @@ var RequestRateLimiter = {
         payload: any,
         method: RequestMethod = "POST",
         rate_exemption: boolean = false
-    ): Promise<Response | PseudoResponse> {
+    ): Promise<SuccessfulResponse | AppError> {
         // update regardless, only warn if not exempt
         if (this.update() && !rate_exemption) {
-            return this.warn();
+            return this.blockRequest();
         }
-        this.indicator.loading();
+        this.indicator.load();
         let url = `${window.origin}/` + (path[0] != "/" ? path : path.slice(1));
-        let r: Response | PseudoResponse;
-        try {
-            r = await fetch(url, {
-                method,
-                body: JSON.stringify(payload),
-                headers: {
-                    "Content-Type": "application/json; charset=UTF-8",
-                },
-            });
-        } catch (err) {
-            console.error(err);
-            r = {ok: false, type: "pseudo", statusText: "network"}
-        }
-
-        if (r.ok) {
+        let promise = fetch(url, {
+            method,
+            body: JSON.stringify(payload),
+            headers: {
+                "Content-Type": "application/json; charset=UTF-8",
+            },
+        });
+        return promise.then((r) => {
+            if (!respSuccessful(r)) return this.handleBadResponse(r);
             this.indicator.success();
-        } else {
-            this.indicator.fail();
-        }
-        return r;
+            return r;
+        }, this.handleRejection);
         // todo: some redirecting stuff
         /*if (r.redirected && method != "GET") {
         let oldHref = window.location.href;
@@ -134,18 +188,14 @@ export async function pointTransfer(
     payload: Log,
     target: HTMLElement | Document = document
 ) {
-    let r = await RequestRateLimiter.request(
+    let r = await RequestController.request(
         "/members/transfer",
         payload,
         "POST"
     );
-    if (!r.ok) {
-        console.error("Invalid transfer: ", payload, r);
-        return r;
-    }
+    if (r instanceof AppError) return r;
     window.MJDATA.log.push(payload);
     updateMembers(await r.json());
-
     let event: PointTransferEvent = new CustomEvent("mjPointTransfer", {
         detail: payload,
         bubbles: true,
@@ -166,15 +216,12 @@ export async function manualRegister(
     leaveTables: boolean,
     target: HTMLElement | Document = document
 ) {
-    let r = await RequestRateLimiter.request(
+    let r = await RequestController.request(
         "/register",
         { member_id: payload.memberId },
         "POST"
     );
-    if (!r.ok) {
-        console.error(r);
-        return false;
-    }
+    if (r instanceof AppError) return r;
     let present: boolean = await r.json();
     window.MJDATA.members = window.MJDATA.members.map((member) => {
         if (member.id === payload.memberId) {
@@ -250,10 +297,12 @@ export async function editMember(
         payload.newMember === undefined ? "DELETE" : "PUT";
     let oldMember = getMember(payload.id);
     if (!isMember(oldMember)) {
-        throw new Error(`Couldn't find the member ${payload.id} to modify.`);
+        let err = new CodeError({summary: "Couldn't find the player being modified", debug: {payload, target, oldMember}});
+        RequestController.indicator.fail(err);
+        return err
     }
 
-    let r = await RequestRateLimiter.request(
+    let r = await RequestController.request(
         "/members",
         {
             id: payload.id,
@@ -261,11 +310,7 @@ export async function editMember(
         },
         mode
     );
-    if (!r.ok) {
-        console.error(`Failed to modify/delete member "${payload.id}"`, r);
-        return r;
-    }
-
+    if (r instanceof AppError) return r;
     let index = window.MJDATA.members.indexOf(oldMember);
     let newId: MemberId | 0;
     if (payload.newMember === undefined) {
@@ -302,11 +347,8 @@ export async function addMember(
     payload: { name: string },
     target: HTMLElement | Document = document
 ) {
-    let r = await RequestRateLimiter.request("/members", payload);
-    if (!r.ok) {
-        console.error("Failed to POST new member:", r);
-        return r;
-    }
+    let r = await RequestController.request("/members", payload);
+    if (r instanceof AppError) return r;
     let newMember = await r.json();
     window.MJDATA.members.push(newMember);
     let event: AddMemberEvent = new CustomEvent("mjAddMember", {
@@ -320,10 +362,8 @@ export async function addMember(
 const ResetSessionEvent = new Event(`${MJ_EVENT_PREFIX}ResetSession`);
 
 export async function resetSession() {
-    let r = await RequestRateLimiter.request("/week", null, "DELETE");
-    if (!r.ok) {
-        console.error("Failed to reset the session.", r);
-    }
+    let r = await RequestController.request("/week", null, "DELETE");
+    if (r instanceof AppError) return r;
     // repeated computation but its better than a big payload?
     let m: Member;
     for (m of window.MJDATA.members) {
@@ -343,9 +383,11 @@ export async function editLog(
 ) {
     let oldLogIndex = window.MJDATA.log.findIndex((l) => l.id === payload.id);
     if (oldLogIndex === -1) {
-        throw new Error("Couldn't find that log");
+        let err = new CodeError({summary: "Unable to find log", debug: {payload, target}});
+        RequestController.indicator.fail(err);
+        return err
     }
-    let r = await RequestRateLimiter.request(
+    let r = await RequestController.request(
         "/log",
         {
             id: payload.id,
@@ -353,10 +395,7 @@ export async function editLog(
         },
         "PUT"
     );
-    if (!r.ok) {
-        console.error(r);
-        return r;
-    }
+    if (r instanceof AppError) return r;
     window.MJDATA.log[oldLogIndex] = payload.newLog;
     let event: EditLogEvent = new CustomEvent("mjEditLog", {
         detail: payload,
@@ -374,22 +413,22 @@ export async function undoLog(
 ) {
     let log = window.MJDATA.log.find((l) => l.id === payload.id);
     if (log === undefined) {
-        throw new Error("Couldn't find that log");
+        let err = new CodeError({summary: "Unable to find log", debug: {payload, target}});
+        RequestController.indicator.fail(err);
+        return err
     } else if (log.disabled) {
-        console.warn("log was already disabled:", log);
-        return;
+        let err = new CodeError({summary: "Log already disabled", debug: {log, payload, target}});
+        RequestController.indicator.fail(err);
+        return err
     }
-    let r = await RequestRateLimiter.request(
+    let r = await RequestController.request(
         "/log",
         {
             id: payload.id,
         },
         "PUT"
     );
-    if (!r.ok) {
-        console.error(r);
-        return r;
-    }
+    if (r instanceof AppError) return r;
     log.disabled = true;
     updateMembers(await r.json());
     let event: UndoLogEvent = new CustomEvent("mjUndoLog", {
@@ -401,14 +440,8 @@ export async function undoLog(
 }
 
 export async function addTable(target: HTMLElement | Document = document) {
-    let r = await RequestRateLimiter.request("/tables", null, "POST");
-    if (!r.ok) {
-        console.error(r);
-        alert(
-            "An error occurred while trying to create a new table. Please refresh the page and try again."
-        );
-        return;
-    }
+    let r = await RequestController.request("/tables", null, "POST");
+    if (r instanceof AppError) return r;
     let newTable: TableData = await r.json();
     window.MJDATA.tables.push(newTable);
     let event: AddTableEvent = new CustomEvent("mjAddTable", {
@@ -426,7 +459,7 @@ export async function editTable(
     }[],
     target: HTMLElement | Document = document
 ) {
-    let r = await RequestRateLimiter.request(
+    let r = await RequestController.request(
         "/tables",
         payload.map((i) => {
             return {
@@ -436,13 +469,7 @@ export async function editTable(
         }),
         "PUT"
     );
-    if (!r.ok) {
-        console.error(r);
-        alert(
-            "An error occurred while modifying the table. Please contact a member of the council."
-        );
-        return;
-    }
+    if (r instanceof AppError) return r;
     for (let edit of payload) {
         window.MJDATA.tables[
             window.MJDATA.tables.findIndex((t) => t.table_no == edit.tableNo)
@@ -462,16 +489,9 @@ export async function deleteTable(
     },
     target: HTMLElement | Document = document
 ) {
-    let r = await RequestRateLimiter.request(
-        "/tables",
-        payload,
-        "DELETE",
-        true
-    );
-    if (!r.ok) {
-        console.error(r);
-        return r;
-    } else if (r.redirected) {
+    let r = await RequestController.request("/tables", payload, "DELETE", true);
+    if (r instanceof AppError) return r;
+    if (r.redirected) {
         return r;
     } else
         window.MJDATA.tables = window.MJDATA.tables.filter(
@@ -492,14 +512,8 @@ export async function updateSettings(
     },
     target: HTMLElement | Document = document
 ) {
-    let r = await RequestRateLimiter.request("/settings", payload, "PUT", true);
-    if (!r.ok) {
-        console.error(r);
-        alert(
-            "An error occurred while modifying the settings. Try refreshing the page?"
-        );
-        return;
-    }
+    let r = await RequestController.request("/settings", payload, "PUT", true);
+    if (r instanceof AppError) return r;
     for (let k in payload) {
         if (k === "matchmakingCoefficient") {
             window.MJDATA.settings[k] = payload[k];

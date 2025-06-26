@@ -5,7 +5,7 @@
 
 /* Table styling */
 .mahjong-table-display {
-  border: 2px solid black;
+  border: 2px solid var(--table-edge);
   border-radius: 6px;
   padding: 20px;
   position: relative;
@@ -95,7 +95,7 @@
   flex-direction: column;
   z-index: 1;
   padding: 0px;
-  border: 1px solid black;
+  border: 1px solid var(--dropdown-edge);
 }
 
 /* dropdown buttons are within the dropdown container, summoned by a DropdownButton (.dropdown-button)*/
@@ -103,12 +103,12 @@
   font-size: 12px;
   width: 6em;
   margin: 0px;
-  background-color: grey;
+  background-color: var(--dropdown-background);
   border: 0px;
 }
 
 .dropdown button:hover {
-  background-color: lightgrey;
+  background-color: var(--dropdown-selected);
 }
 
 /* relational tag specifying an indent for a dropdown from another dropdown*/
@@ -175,7 +175,7 @@ h1 {
 #sidebar>div {
   width: 100%;
   height: 100%;
-  border-right: 2px solid rgba(0, 0, 0, 0.2);
+  border-right: 2px solid var(--sidebar-edge);
 }
 
 #sidebar>button {
@@ -246,11 +246,11 @@ dialog button {
 
 .info-grid:not(.log) td {
   padding: 4px 12px;
-  border: 1px solid black;
+  border: 1px solid var(--info-grid-edge);
 }
 
 .log.info-grid tr:has(td) {
-  outline: 1px solid black;
+  outline: 1px solid var(--info-grid-edge);
   outline-offset: -4px;
   border-radius: 20px;
 }
@@ -294,8 +294,8 @@ dialog button {
   width: 11em;
   font-size: 14px;
   z-index: 1;
-  background-color: #c5bcb5;
-  border: 1px solid black;
+  background-color: var(--legend-background);
+  border: 1px solid var(--legend-edge);
 }
 
 .legend-panel ul {
@@ -330,5 +330,5 @@ dialog button {
   transform: rotate(-40deg);
   top: -50%;
   font-size: 1.3em;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  text-shadow: -1px -1px 0 var(--winner-crown-shadow), 1px -1px 0 var(--winner-crown-shadow), -1px 1px 0 var(--winner-crown-shadow), 1px 1px 0 var(--winner-crown-shadow);
 }

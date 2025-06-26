@@ -21,6 +21,7 @@ import {
 import { InputListener, InputListenerParameters } from "./input/listener";
 import { editTable, pointTransfer } from "../request";
 import { triggerCelebration } from "./successAnim";
+import { AppError } from "../errors";
 
 // type predicate for checking list purity/homogeny
 const allK = <K>(array: (K | undefined)[]): array is K[] => {
@@ -153,25 +154,11 @@ class WinButton extends UsesMember(FocusButton) {
             },
             this.element
         );
-        if (r.type == "pseudo") {
-            alert("Network error.");
-        } else if (r.ok) {
-            if (faan === 10) {
-                triggerCelebration();
-            }
-            this.deactivate();
-        } else if (r.status === 401) {
-            // You have to be logged in to see this page, so it must be a timeout.
-            alert(
-                "The session timed out. Please tell a committee member to sign-in again so you can enter your points. Thank you!"
-            );
-            window.location.reload();
-        } else {
-            alert(
-                "An unknown error occurred while processing your win. Please let a member of the committee know."
-            );
-            console.error(r);
+        if (r instanceof AppError) return;
+        if (faan === 10) {
+            triggerCelebration();
         }
+        this.deactivate();
     }
 
     updatePlayers() {

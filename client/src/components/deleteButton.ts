@@ -1,4 +1,5 @@
 import Component, { Params } from ".";
+import { AppError } from "../errors";
 import { deleteTable } from "../request";
 
 interface DeleteButtonParameters extends Params<"button"> {
@@ -28,7 +29,8 @@ export default class DeleteButton extends Component<"button"> {
                     return;
                 }
                 let r = await deleteTable({table_no: params.tableNo});
-                if (r.ok && params.ondelete) {
+                if (r instanceof AppError) return;
+                if (params.ondelete !== undefined) {
                     params.ondelete();
                 }
             });

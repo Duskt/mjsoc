@@ -2,6 +2,7 @@ import Component, { Params } from "../components";
 import HelpHoverTooltip from "../components/helpTooltip";
 import IconButton from "../components/icons";
 import { getMember, isMember, POINTS } from "../data";
+import { AppError } from "../errors";
 import { undoLog } from "../request";
 
 const isNatural = (f: string) =>
@@ -133,8 +134,9 @@ class FilterForm extends Component<"form"> {
         this.help = new HelpHoverTooltip({
             parent: this.element,
             width: "200px",
-            message: "You can enter search terms such as names (included in log) or numbers (matches session # or faan).\nTerms are separated by spaces and every term must match a log."
-        })
+            message:
+                "You can enter search terms such as names (included in log) or numbers (matches session # or faan).\nTerms are separated by spaces and every term must match a log.",
+        });
     }
 }
 
@@ -149,7 +151,6 @@ class LogTable extends Component<"table"> {
             ...params,
         });
         this.element.style.marginTop = "10px";
-        this.element.style.marginInline = "20px";
         this.headerRow = new Component({
             tag: "tr",
             parent: this.element,
@@ -359,20 +360,19 @@ class LogRow extends Component<"tr"> {
         this.disableButton = new IconButton({
             icon: "trash",
             parent: this.disableTd.element,
-            onclick: async (ev) => this.disable(),
+            onclick: this.disable,
         });
         this.disableButton.element.style.width = "16px";
         this.disableButton.element.style.paddingBottom = "26px";
     }
-    disable() {
-        undoLog(
+    async disable() {
+        let r = await undoLog(
             {
                 id: this.log.id,
             },
             this.element
-        ).then((r) => {
-            if (r !== undefined && r.ok)
-                window.sessionStorage.removeItem("undoButton");
-        });
+        );
+        if (r instanceof AppError) return;
+        window.sessionStorage.removeItem("undoButton");
     }
 }
