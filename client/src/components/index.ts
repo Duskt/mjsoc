@@ -10,6 +10,7 @@ export interface ComponentParameters<K extends keyof HTMLElementTagNameMap> {
     textContent?: string;
     classList?: string[];
     value?: K extends "input" ? string : never;
+    id?: string;
     other?: HTMLElementMap<HTMLElementTagNameMap[K]>;
 }
 
@@ -40,7 +41,7 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
         if (params.textContent) this.element.textContent = params.textContent;
         if (params.value)
             (this.element as HTMLInputElement).value = params.value;
-
+        if (params.id) this.element.id = params.id;
         let classList = params.classList || [];
         for (const c of classList) {
             this.element.classList.add(c);

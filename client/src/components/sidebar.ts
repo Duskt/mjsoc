@@ -1,308 +1,158 @@
 import Component, { Params } from ".";
-import {
-    addMember,
-    editMember,
-    manualRegister,
-    replaceMemberOnTables,
-    resetSession,
-} from "../request";
-import IconButton from "./icons";
-import Dialog, { ConfirmationDialog } from "./input/focus/dialog";
-import {
-    DropdownButton,
-    DropdownButtonParameters,
-} from "./input/focus/dropdown";
+import EditMembersPanel from "./editMembersPanel";
 import MemberGrid from "./memberTable";
 
 export default function renderSidebar() {
     // container of sidebar and the button which opens it
-    let sidebar = document.getElementById("sidebar");
+    let sidebar_elem = document.getElementById("sidebar");
     let main_article = document.getElementById("tables");
-    if (!(sidebar instanceof HTMLElement)) {
+    if (!(sidebar_elem instanceof HTMLElement)) {
         throw Error("Could not find sidebar");
     }
     if (!(main_article instanceof HTMLElement)) {
         throw Error("Could not find main tables article");
     }
-    // the actual inner part of the sidebar
-    let innerSidebar = new Component({
-        tag: "div",
-        parent: sidebar,
-    });
-    let sidebarButton = new Component({
-        tag: "button",
-        textContent: ">",
-        parent: sidebar,
-    });
-
-    let closeSidebar = () => {
-        window.sessionStorage.setItem("sidebar", "closed");
-        main_article.removeAttribute("style");
-        sidebar.removeAttribute("style"); // source of disgrace
-        sidebar.classList.replace("open", "closed");
-        sidebarButton.element.textContent = ">";
-    };
-
-    let openSidebar = () => {
-        window.sessionStorage.setItem("sidebar", "open");
-        sidebar.classList.replace("closed", "open");
-        if (window.innerWidth < 900) {
-            sidebar.style["width"] = "100%";
-            main_article.style["display"] = "none";
-        } else {
-            sidebar.style["width"] = "30%";
-        }
-        sidebarButton.element.textContent = "<";
-    };
-
-    // close by default (without transition)
-    sidebar.style["transition"] = "none";
-    sidebar.classList.add("closed");
-    if (window.sessionStorage.getItem("sidebar") === "open") {
-        openSidebar();
-    }
-    setTimeout(() => (sidebar.style["transition"] = ""), 1);
-
-    sidebarButton.element.onclick = () => {
-        if (sidebarButton.element.textContent == ">") openSidebar();
-        else closeSidebar();
-    };
-
-    let editMembersBar = new EditMembersBar({ parent: innerSidebar.element });
-
-    let form = document.getElementById("name")?.parentElement;
-    if (!(form instanceof HTMLFormElement)) {
-        throw Error("no form");
-    }
-    let addMemberDialog = document.getElementById("add-member-dialog");
-    if (!(addMemberDialog instanceof HTMLDialogElement))
-        throw new Error("Couldn't find add member dialog");
-    let dialog = new Dialog({
-        element: addMemberDialog,
-        activator: editMembersBar.addButton,
-    });
-    let memberList = new MemberGrid({
-        parent: innerSidebar.element,
-        classList: ["info-grid"],
-    });
+    let sidebar = new Sidebar({
+        antagonist: main_article,
+        element: sidebar_elem as HTMLDivElement,
+    })
 
     // dialog isn't added as a child of listener
     document.addEventListener("mjEditMember", (ev) => {
-        memberList.updateMembers();
-        editMembersBar.removeButton.update();
-        editMembersBar.register.updateMembers();
+        sidebar.membersTable.updateMembers();
+        sidebar.editMembersPanel.removeButton.update();
+        sidebar.editMembersPanel.register.updateMembers();
     });
     document.addEventListener("mjAddMember", (ev) => {
-        memberList.updateMembers();
-        editMembersBar.removeButton.update();
-        editMembersBar.register.updateMembers();
+        sidebar.membersTable.updateMembers();
+        sidebar.editMembersPanel.removeButton.update();
+        sidebar.editMembersPanel.register.updateMembers();
     });
-    sidebar.addEventListener("mjRegister", (ev) => {
+    sidebar.element.addEventListener("mjRegister", (ev) => {
         // optimize
-        memberList.updateMembers();
-        editMembersBar.register.input.element.value = "";
+        sidebar.membersTable.updateMembers();
+        sidebar.editMembersPanel.register.input.element.value = "";
     });
     document.addEventListener("mjUndoLog", (ev) => {
-        memberList.updateMembers();
+        sidebar.membersTable.updateMembers();
     });
-
-    form.onsubmit = async (ev) => {
-        ev.preventDefault();
-        let name = new FormData(form).get("name")?.toString();
-        if (!name) {
-            throw Error("no name");
-        }
-        await addMember({ name }, form);
-    };
-    form.addEventListener("mjAddMember", () => dialog.deactivate());
-    editMembersBar.checkbox.element.onchange = () => {
-        memberList.showAbsent = editMembersBar.checkbox.element.checked;
-        memberList.updateMembers();
-    };
 }
 
-class EditMembersBar extends Component<"div"> {
-    register: Register;
-    topDiv: Component<"div">;
-    resetButton: IconButton;
-    bottomDiv: Component<"div">;
-    addButton: Component<"button">;
-    removeButton: RemoveMemberButton;
+interface ExpandSidebarButtonParams extends Params<"button"> {
+    open: () => void;
+    close: () => void;
+}
+
+class ExpandSidebarButton extends Component<"button"> {
+    isOpen: boolean = false;
+    constructor({open, close, ...params}: ExpandSidebarButtonParams) {
+        super({
+            tag: "button",
+            textContent: ">",
+            ...params,
+        });
+    }
+}
+
+class ShowAllCheckboxPanel extends Component<"div"> {
     checkbox: Component<"input">;
     constructor(params: Params<"div">) {
         super({
             tag: "div",
+            id: "show-all-checkbox-panel",
+            textContent: "Show unregistered members?",
             ...params,
         });
-        this.topDiv = new Component({
-            tag: "div",
-            parent: this.element,
-        });
-        this.register = new Register({ parent: this.topDiv.element });
         this.checkbox = new Component({
             tag: "input",
-            parent: this.topDiv.element,
             classList: ["register-checkbox"],
+            parent: this.element,
             other: {
                 title: "Show all members?",
                 type: "checkbox",
             },
         });
-        this.resetButton = new IconButton({
-            // passed as an activator to confirmation (below)
-            icon: "reset",
-            parent: this.topDiv.element,
-            other: {
-                title: "Reset the session (prompted to confirm)",
-            },
-        });
-        this.resetButton.element.style.margin = "10px";
-        let confirmation = new ConfirmationDialog({
-            activator: this.resetButton,
-            parent: this.topDiv.element, // NOT INSIDE THE BUTTON otherwise it will reactivate itself
-            message:
-                "Are you sure you want to reset the session?\n\nThis will sum the current points to each member's total points. This cannot be undone. It will also mark everyone as absent.",
-            onconfirm: (ev) => {
-                resetSession();
-                setTimeout(() => location.reload(), 50);
-            },
-        });
-        this.bottomDiv = new Component({
+    }
+}
+
+interface SidebarParams extends Params<"div"> {
+    antagonist: HTMLElement,
+}
+
+class Sidebar extends Component<"div"> {
+    antagonist: HTMLElement;
+    expandButton: ExpandSidebarButton;
+    contents: Component<"div">;
+    editMembersPanel: EditMembersPanel;
+    showAllCheckboxPanel: ShowAllCheckboxPanel;
+    membersTable: MemberGrid;
+    constructor({ antagonist, ...params }: SidebarParams) {
+        super({
             tag: "div",
-            parent: this.element,
-        });
-        this.addButton = new Component({
-            tag: "button",
-            classList: ["member-button"],
-            parent: this.bottomDiv.element,
-            textContent: "New member",
-            other: {
-                id: "add-member",
-            },
-        });
-        this.removeButton = new RemoveMemberButton({
-            dropdownTag: "div",
-            options: [],
-            parent: this.bottomDiv.element,
-        });
-        this.topDiv.element.style["display"] = "flex";
-        this.bottomDiv.element.style["display"] = "flex";
-    }
-}
-
-class RemoveMemberButton extends DropdownButton<"div", "button"> {
-    constructor(params: DropdownButtonParameters<"div", "button">) {
-        super({
-            textContent: "Delete member",
-            classList: ["member-button"],
+            id: "sidebar",
             ...params,
         });
-        this.update();
-    }
-    update() {
-        this.dropdown.options = window.MJDATA.members.map(
-            (m) =>
-                new Component({
-                    tag: "button",
-                    textContent: m.name,
-                    other: {
-                        onclick: async (ev: MouseEvent) =>
-                            editMember({ id: m.id }, this.element),
-                    },
-                }).element
-        );
-    }
-}
-
-class Register extends Component<"form"> {
-    label: Component<"label">;
-    input: Component<"input">;
-    datalist: Component<"datalist">;
-    constructor(params: Params<"form">) {
-        super({
-            tag: "form",
-            classList: ["register"],
-            ...params,
-        });
-        this.label = new Component({
-            tag: "label",
-            textContent: "Register",
+        this.antagonist = antagonist;
+        this.contents = new Component({
+            tag: "div",
+            id: "sidebar-contents",
             parent: this.element,
-            other: {
-                htmlFor: "register",
-            },
         });
-        this.datalist = new Component({
-            tag: "datalist",
+        this.expandButton = new ExpandSidebarButton({
+            open: this.open,
+            close: this.close,
             parent: this.element,
-            other: {
-                id: "registerList",
-            },
         });
-        this.updateMembers();
-        this.input = new Component({
-            tag: "input",
-            parent: this.element,
-            other: {
-                id: "register",
-            },
+        this.editMembersPanel = new EditMembersPanel({
+            parent: this.contents.element,
         });
-        this.input.element.setAttribute("list", "registerList");
-        this.input.element.style["fontSize"] = "14px";
-        this.element.onsubmit = (ev) => {
-            ev.preventDefault();
-            let name = this.input.element.value.trim();
-            let members = window.MJDATA.members.filter(
-                (m) => m.name.trim() == name
-            );
-            if (members.length > 1) {
-                console.error(`Multiple members named ${name}`);
-                alert(
-                    "There seem to be multiple members with this name. If this is unlikely, try refreshing. Otherwise, you should rename one, I guess."
-                );
-                return;
-            } else if (members.length === 0) {
-                console.error(`No member named ${name}`);
-                alert(
-                    "There was no member with that name found. Try refreshing?"
-                );
-                return;
-            }
-            let member = members[0];
-            let r = manualRegister(
-                { memberId: member.id },
-                true, // leaveTables
-                this.input.element
-            );
-            r.then((success) => {
-                if (!success) {
-                    alert("Please try again.");
-                    window.location.reload;
-                }
-            });
+        this.showAllCheckboxPanel = new ShowAllCheckboxPanel({
+            parent: this.contents.element,
+        });
+        this.membersTable = new MemberGrid({
+            classList: ["info-grid"],
+            parent: this.contents.element,
+        });
+        this.showAllCheckboxPanel.checkbox.element.onchange = () => {
+            this.membersTable.showAbsent =
+                this.showAllCheckboxPanel.checkbox.element.checked;
+            this.membersTable.updateMembers();
         };
-    }
-    updateMembers() {
-        this.datalist.element.innerHTML = "";
-        let sortedMembers = [...window.MJDATA.members].sort((a, b) => {
-            if (a.name > b.name) {
-                return 1;
-            } else if (a.name < b.name) {
-                return -1;
+        this.expandButton.element.onclick = () => {
+            if (this.expandButton.isOpen) {
+                this.close();
+                this.expandButton.element.textContent = ">";
             } else {
-                return 0;
+                this.open();
+                this.expandButton.element.textContent = "<";
             }
-        });
-        let member: Member;
-        for (member of sortedMembers) {
-            this.renderOption(member);
+        };
+        this.closeByDefault();
+    }
+    open() {
+        this.expandButton.isOpen = true;
+        window.sessionStorage.setItem("sidebar", "open");
+        this.element.classList.replace("closed", "open");
+        if (window.innerWidth < 1000) {
+            this.element.style.width = "100%";
+            this.antagonist.style["display"] = "none";
+        } else {
+            this.element.style.width = "30%";
         }
     }
-    renderOption(member: Member) {
-        let option = new Component({
-            tag: "option",
-            parent: this.datalist.element,
-            textContent: member.name,
-        });
+    close() {
+        this.expandButton.isOpen = false;
+        window.sessionStorage.setItem("sidebar", "closed");
+        this.antagonist.removeAttribute("style");
+        this.element.removeAttribute("style"); // source of disgrace
+        this.element.classList.replace("open", "closed");
+    }
+    closeByDefault() {
+        this.element.style["transition"] = "none";
+        this.element.classList.add("closed");
+        if (window.sessionStorage.getItem("sidebar") === "open") {
+            this.open();
+        }
+        setTimeout(() => (this.element.style["transition"] = ""), 1);
     }
 }

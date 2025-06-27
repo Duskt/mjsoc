@@ -13,6 +13,7 @@ export default class MemberGrid extends Component<"table"> {
     constructor(params: Params<"table">) {
         super({
             tag: "table",
+            id: "member-table",
             ...params,
         });
         this.updateMembers();
@@ -45,11 +46,10 @@ export default class MemberGrid extends Component<"table"> {
         ).length;
         let present = new Component({
             tag: "th",
-            textContent: `Reg. (${regCount})`,
+            classList: ["header", "registered"],
+            textContent: `Here? (${regCount})`,
             parent: headerRow.element,
         });
-        present.element.style.width = "10px";
-        present.element.style.fontSize = "12px";
     }
     updateMembers() {
         this.renderNewHeaders(); // also clears children
@@ -150,9 +150,9 @@ export default class MemberGrid extends Component<"table"> {
         });
         let presentTd = new Component({
             tag: "td",
+            classList: ["registered"],
             parent: row.element,
         });
-        presentTd.element.style.padding = "0";
         let checkbox = new Component({
             tag: "input",
             classList: ["present-checkbox"],

@@ -108,12 +108,9 @@ class FilterForm extends Component<"form"> {
     constructor({ oninput, ...params }: FilterParams) {
         super({
             tag: "form",
+            id: "filter-form",
             ...params,
         });
-        this.element.style.flexDirection = "row";
-        this.element.style.justifyContent = "center";
-        this.element.style.width = "100%";
-        this.element.style.maxWidth = "initial";
         this.label = new Component({
             tag: "label",
             textContent: "Filter:",

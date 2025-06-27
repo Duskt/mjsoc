@@ -90,7 +90,7 @@
 /* dropdown container */
 .dropdown {
   position: absolute;
-  left: 24px;
+  margin-top: 4px;
   display: flex;
   flex-direction: column;
   z-index: 1;
@@ -152,7 +152,7 @@ h1 {
 }
 
 .register-checkbox {
-  margin: 0;
+  margin: 0 20px;
   width: 20px;
 }
 
@@ -261,10 +261,14 @@ dialog button {
 }
 
 .register {
+  width: 50%;
   margin: 0 15px;
 }
 
 .register input {
+  width: calc(100% - 15px);
+  width: stretch; /* VERY NEW (google chrome implemented this 2 days before me writing this code) but actually quite widely supported - although I didn't have it until i looked at my chrome version and it updated!*/
+  display: block;
   margin: 0 0 18px 0;
 }
 
