@@ -5,7 +5,7 @@ use maud::{html, PreEscaped, DOCTYPE};
 pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
     html! {
         (DOCTYPE)
-        html {
+        html lang="en" {
             head {
                 title { "Mahjong Bath" }
                 link rel="stylesheet" href="/public/styles.css";

@@ -10,9 +10,7 @@ mod rate_limit;
 use actix_files as fs;
 use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
-    cookie::{self, time::Duration},
-    web::{self, delete, get, post, put},
-    App, HttpServer,
+    cookie::{self, time::Duration}, middleware::DefaultHeaders, web::{self, delete, get, post, put}, App, HttpServer
 };
 use lib::{
     env, expect_env, parsed_env,
@@ -21,6 +19,7 @@ use lib::{
 
 use chrono::Duration as chronoDuration;
 use circular_buffer::CircularBuffer;
+use reqwest::header::CONTENT_LANGUAGE;
 use std::sync::{Arc, Mutex, RwLock};
 
 use mahjongdata::MahjongData;
@@ -76,6 +75,7 @@ async fn main() -> std::io::Result<()> {
                     )
                     .build(),
             )
+            .wrap(DefaultHeaders::new().add((CONTENT_LANGUAGE, "en, zh")))
             .route("/qr", get().to(generate_qr))
             .route("/download", get().to(download_qr))
             .route("/", get().to(index))
