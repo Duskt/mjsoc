@@ -15,7 +15,7 @@ export default function renderSidebar() {
     let sidebar = new Sidebar({
         antagonist: main_article,
         element: sidebar_elem as HTMLDivElement,
-    })
+    });
 
     // dialog isn't added as a child of listener
     document.addEventListener("mjEditMember", (ev) => {
@@ -45,7 +45,7 @@ interface ExpandSidebarButtonParams extends Params<"button"> {
 
 class ExpandSidebarButton extends Component<"button"> {
     isOpen: boolean = false;
-    constructor({open, close, ...params}: ExpandSidebarButtonParams) {
+    constructor({ open, close, ...params }: ExpandSidebarButtonParams) {
         super({
             tag: "button",
             textContent: ">",
@@ -76,7 +76,7 @@ class ShowAllCheckboxPanel extends Component<"div"> {
 }
 
 interface SidebarParams extends Params<"div"> {
-    antagonist: HTMLElement,
+    antagonist: HTMLElement;
 }
 
 class Sidebar extends Component<"div"> {

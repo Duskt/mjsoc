@@ -109,7 +109,10 @@ export default class MemberGrid extends Component<"table"> {
         );
         let wMember: Member;
         for (wMember of winners) {
-            let wRow = (this.memberElems[wMember.id] || [undefined, undefined])[0];
+            let wRow = (this.memberElems[wMember.id] || [
+                undefined,
+                undefined,
+            ])[0];
             if (wRow === undefined) continue;
             this.renderCrown(wRow);
         }
@@ -173,7 +176,7 @@ export default class MemberGrid extends Component<"table"> {
                 },
             },
         });
-        this.memberElems[member.id] = [row, name]
+        this.memberElems[member.id] = [row, name];
     }
 }
 

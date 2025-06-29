@@ -14,45 +14,47 @@ function respSuccessful(r: Response): r is SuccessfulResponse {
 }
 
 class ErrorPanel {
-    panelContainer: Component<"div">
-    panelSummary?: Component<"p">
-    panelMessage: Component<"p">
-    errorIcon: Component<"span">
+    panelContainer: Component<"div">;
+    panelSummary?: Component<"p">;
+    panelMessage: Component<"p">;
+    errorIcon: Component<"span">;
     constructor(err: AppError) {
         this.panelContainer = new Component({
             tag: "div",
-            classList: ["error-panel"]
+            classList: ["error-panel"],
         });
         if (err.summary !== undefined) {
             this.panelSummary = new Component({
                 tag: "p",
                 textContent: err.summary,
                 classList: ["summary"],
-                parent: this.panelContainer.element
+                parent: this.panelContainer.element,
             });
         }
         this.panelMessage = new Component({
             tag: "p",
             textContent: err.message,
-            parent: this.panelContainer.element
+            parent: this.panelContainer.element,
         });
         this.errorIcon = new Component({
             tag: "span",
-            textContent: "❌"
+            textContent: "❌",
         });
     }
     attach(parent: HTMLElement) {
         if (parent.children.length > 0) {
-            console.warn("ErrorPanel shouldn't be attached to non-empty parent.")
+            console.warn(
+                "ErrorPanel shouldn't be attached to non-empty parent."
+            );
         }
         parent.appendChild(this.panelContainer.element);
         parent.appendChild(this.errorIcon.element);
-        return this
+        return this;
     }
     remove() {
         this.errorIcon.element.remove();
         this.panelContainer.element.remove();
-        return undefined
+        return undefined;
     }
 }
 
@@ -109,11 +111,11 @@ export class RequestIndicator extends Component<"div"> {
 
 var RequestController = {
     lastRequest: 0,
-    delay: 200,
+    minDelay: 200,
     indicator: new RequestIndicator(),
     update() {
         let d = Date.now();
-        let valid = d - this.lastRequest < this.delay;
+        let valid = d - this.lastRequest < this.minDelay;
         this.lastRequest = d;
         return valid;
     },
@@ -123,12 +125,15 @@ var RequestController = {
         return new NetworkError({});
     },
     handleRejection(r: TypeError | DOMException): AppError {
-        let err = new CodeError({summary: "Server communication (fetch) error", error: r});
+        let err = new CodeError({
+            summary: "Server communication (fetch) error",
+            error: r,
+        });
         this.indicator.fail(err);
         return err;
     },
     handleBadResponse(r: Response): AppError {
-        let err = new CodeError({summary: "Server response error", debug: r});
+        let err = new CodeError({ summary: "Server response error", debug: r });
         this.indicator.fail(err);
         return err;
     },
@@ -233,6 +238,8 @@ export async function manualRegister(
         return member;
     });
     if (leaveTables && !present) {
+        // TODO: is this the best way to exempt this request from the rate controller?
+        RequestController.lastRequest = 0;
         replaceMemberOnTables(payload.memberId, 0, target);
     }
     let event: RegisterEvent = new CustomEvent("mjRegister", {
@@ -300,9 +307,12 @@ export async function editMember(
         payload.newMember === undefined ? "DELETE" : "PUT";
     let oldMember = getMember(payload.id);
     if (!isMember(oldMember)) {
-        let err = new CodeError({summary: "Couldn't find the player being modified", debug: {payload, target, oldMember}});
+        let err = new CodeError({
+            summary: "Couldn't find the player being modified",
+            debug: { payload, target, oldMember },
+        });
         RequestController.indicator.fail(err);
-        return err
+        return err;
     }
 
     let r = await RequestController.request(
@@ -386,9 +396,12 @@ export async function editLog(
 ) {
     let oldLogIndex = window.MJDATA.log.findIndex((l) => l.id === payload.id);
     if (oldLogIndex === -1) {
-        let err = new CodeError({summary: "Unable to find log", debug: {payload, target}});
+        let err = new CodeError({
+            summary: "Unable to find log",
+            debug: { payload, target },
+        });
         RequestController.indicator.fail(err);
-        return err
+        return err;
     }
     let r = await RequestController.request(
         "/log",
@@ -416,13 +429,19 @@ export async function undoLog(
 ) {
     let log = window.MJDATA.log.find((l) => l.id === payload.id);
     if (log === undefined) {
-        let err = new CodeError({summary: "Unable to find log", debug: {payload, target}});
+        let err = new CodeError({
+            summary: "Unable to find log",
+            debug: { payload, target },
+        });
         RequestController.indicator.fail(err);
-        return err
+        return err;
     } else if (log.disabled) {
-        let err = new CodeError({summary: "Log already disabled", debug: {log, payload, target}});
+        let err = new CodeError({
+            summary: "Log already disabled",
+            debug: { log, payload, target },
+        });
         RequestController.indicator.fail(err);
-        return err
+        return err;
     }
     let r = await RequestController.request(
         "/log",

@@ -277,19 +277,16 @@ class ButtonPanel extends Component<"div"> {
             parent: this.element,
             disabled: this.table.table_no < 0,
             onclick: (ev) => {
-                console.log("onclick", new Date());
                 // put in sessionstorage
                 let ssTables: TableData[] = JSON.parse(
                     window.sessionStorage.getItem("savedTables") || "[]"
                 );
-                console.log("parsed tables", new Date());
                 let newTable = { ...this.table };
                 newTable.table_no = (Math.min(
                     0,
                     ...ssTables.map((t) => t.table_no)
                 ) - 1) as TableNo;
                 ssTables.push(newTable);
-                console.log("pushing tables", new Date());
                 window.sessionStorage.setItem(
                     "savedTables",
                     JSON.stringify(ssTables)

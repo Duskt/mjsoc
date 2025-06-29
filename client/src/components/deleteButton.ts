@@ -28,7 +28,7 @@ export default class DeleteButton extends Component<"button"> {
                     }
                     return;
                 }
-                let r = await deleteTable({table_no: params.tableNo});
+                let r = await deleteTable({ table_no: params.tableNo });
                 if (r instanceof AppError) return;
                 if (params.ondelete !== undefined) {
                     params.ondelete();

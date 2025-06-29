@@ -1,7 +1,8 @@
 import Component, { ComponentParameters } from "..";
 
-export interface ToggleComponentParameters<K extends keyof HTMLElementTagNameMap>
-    extends ComponentParameters<K> {
+export interface ToggleComponentParameters<
+    K extends keyof HTMLElementTagNameMap
+> extends ComponentParameters<K> {
     mode: "block";
 }
 

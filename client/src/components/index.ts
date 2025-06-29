@@ -52,6 +52,15 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
             this.element[i] = params.other[i];
         }
     }
+    clearChildNodes() {
+        while (this.element.lastChild !== null) {
+            this.element.removeChild(this.element.lastChild);
+        }
+    }
+    appendChildNodes(...children: HTMLElement[]) {
+        this.clearChildNodes();
+        children.forEach((c) => this.element.appendChild(c));
+    }
 }
 
 export type Params<K extends keyof HTMLElementTagNameMap> = Omit<

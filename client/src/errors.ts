@@ -21,7 +21,7 @@ export class AppError {
     // alerts are handled by RequestIndicator
     report() {
         // specify class name for easy default?
-        console.log("Error occurred:", this.debug, this.error);
+        console.error("Error occurred:", this.debug, this.error);
     }
 }
 
@@ -33,7 +33,7 @@ export class CodeError extends AppError {
 
     // show developer debug summaryrmation (TODO: disable with production envvar)
     report() {
-        console.log("CodeError occurred:", this.debug, this.error);
+        console.error("CodeError occurred:", this.debug, this.error);
     }
 }
 

@@ -170,7 +170,6 @@ class LogTable extends Component<"table"> {
         this.createHeaders();
         this.renderLogs();
         this.element.addEventListener("mjUndoLog", () => {
-            console.log("editlog");
             this.element.innerHTML = "";
             this.renderHeaders();
             this.renderLogs();

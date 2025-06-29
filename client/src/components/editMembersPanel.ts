@@ -1,11 +1,17 @@
 import Component, { Params } from ".";
-import { addMember, editMember, manualRegister, resetSession } from "../request";
+import {
+    addMember,
+    editMember,
+    manualRegister,
+    resetSession,
+} from "../request";
 import IconButton from "./icons";
 import Dialog, { ConfirmationDialog } from "./input/focus/dialog";
 import {
     DropdownButton,
     DropdownButtonParameters,
 } from "./input/focus/dropdown";
+import { LabelledInput, SmartInput } from "./input/form/input";
 
 class RemoveMemberButton extends DropdownButton<"div", "button"> {
     constructor(params: DropdownButtonParameters<"div", "button">) {
@@ -54,7 +60,7 @@ class AddMemberButton extends Component<"button"> {
         this.dialog = new Dialog({
             activator: this,
             parent: document.body,
-            id: "add-member-dialog"
+            id: "add-member-dialog",
         });
         this.form = new Component({
             tag: "form",
@@ -84,9 +90,9 @@ class AddMemberButton extends Component<"button"> {
             textContent: "New member",
             parent: this.form.element,
             other: {
-                htmlFor: "name"
-            }
-        })
+                htmlFor: "name",
+            },
+        });
         this.input = new Component({
             tag: "input",
             parent: this.form.element,
@@ -94,51 +100,42 @@ class AddMemberButton extends Component<"button"> {
             other: {
                 name: "name",
                 autocomplete: "name",
-                placeholder: "Username"
-            }
+                placeholder: "Username",
+            },
         });
         this.submit = new Component({
             tag: "button",
             textContent: "Submit",
-            parent: this.form.element
-        })
+            parent: this.form.element,
+        });
     }
 }
 
 class Register extends Component<"form"> {
-    label: Component<"label">;
-    input: Component<"input">;
-    datalist: Component<"datalist">;
+    input: LabelledInput<SmartInput>;
+    sortMembers: (...members: Member[]) => Member[] = (...members) =>
+        members.sort((a, b) => {
+            if (a.name > b.name) {
+                return 1;
+            } else if (a.name < b.name) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
     constructor(params: Params<"form">) {
         super({
             tag: "form",
             classList: ["register"],
             ...params,
         });
-        this.label = new Component({
-            tag: "label",
-            textContent: "Register",
+        this.input = new SmartInput({
+            id: "register-input",
             parent: this.element,
-            other: {
-                htmlFor: "register",
-            },
-        });
-        this.datalist = new Component({
-            tag: "datalist",
-            parent: this.element,
-            other: {
-                id: "registerList",
-            },
-        });
-        this.updateMembers();
-        this.input = new Component({
-            tag: "input",
-            parent: this.element,
-            other: {
-                id: "register",
-            },
-        });
-        this.input.element.setAttribute("list", "registerList");
+            optionsValues: this.sortMembers(...window.MJDATA.members).map(
+                (v) => v.name
+            ),
+        }).label("Register");
         this.input.element.style["fontSize"] = "14px";
         this.element.onsubmit = (ev) => {
             ev.preventDefault();
@@ -174,27 +171,9 @@ class Register extends Component<"form"> {
         };
     }
     updateMembers() {
-        this.datalist.element.innerHTML = "";
-        let sortedMembers = [...window.MJDATA.members].sort((a, b) => {
-            if (a.name > b.name) {
-                return 1;
-            } else if (a.name < b.name) {
-                return -1;
-            } else {
-                return 0;
-            }
-        });
-        let member: Member;
-        for (member of sortedMembers) {
-            this.renderOption(member);
-        }
-    }
-    renderOption(member: Member) {
-        let option = new Component({
-            tag: "option",
-            parent: this.datalist.element,
-            textContent: member.name,
-        });
+        this.input.renderOptions(
+            this.sortMembers(...window.MJDATA.members).map((m) => m.name)
+        );
     }
 }
 
@@ -258,7 +237,7 @@ export default class EditMembersPanel extends Component<"div"> {
         });
         this.exportButton.element.appendChild(
             new IconButton({
-                icon: "save",
+                icon: "download",
                 other: {
                     title: "Download raw game data as JSON",
                 },

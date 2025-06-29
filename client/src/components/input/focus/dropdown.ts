@@ -36,7 +36,7 @@ export interface DropdownButtonParameters<
 > extends FocusButtonParameters {
     dropdownTag: D;
     dropdown?: Dropdown<D, O>;
-    dropdownDestination?: HTMLElement
+    dropdownDestination?: HTMLElement;
     options?: HTMLElementTagNameMap[O][]; // if dropdown is provided, this does not apply
 }
 /** A FocusButton which when clicked displays a dropdown of each element
@@ -67,7 +67,7 @@ export class DropdownButton<
                 tag: params.dropdownTag,
                 options,
             });
-        this.dest = params.dropdownDestination || this.element
+        this.dest = params.dropdownDestination || this.element;
     }
     activate(): this {
         this.dest.appendChild(this.dropdown.element);

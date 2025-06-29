@@ -10,7 +10,7 @@ export interface ListenerParameters<
 /** A `Listener` is a `Component` that keeps track of one specific
  * listener. Setting the listener twice will delete the first one,
  * and getting the listener will return only the active listener.
- * 
+ *
  * This is an abstract class which requires an implementation for `generateListener`
  */
 export default abstract class Listener<
