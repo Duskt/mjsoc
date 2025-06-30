@@ -13,6 +13,7 @@ use crate::{
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AuthBody {
+    pub username: Option<String>,
     pub password: String,
 }
 

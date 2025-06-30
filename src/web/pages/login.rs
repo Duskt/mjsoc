@@ -22,7 +22,9 @@ pub async fn login(
     let html = page(html! {
         p { "Enter admin password to accept member attendance:"}
         form action=(format!("/auth?redirect={redirect_encoded}")) method="POST" {
-            input name="password" id="password" type="password" autofocus {}
+            input name="username" type="text" autocomplete="off" value="admin" style="display: none;" {}
+            input name="password" id="password" type="password" autocomplete="current-password" autofocus {}
+            input type="submit"  style="display: none;" {}
         }
     });
 

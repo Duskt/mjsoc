@@ -2,6 +2,7 @@ import Component, { Params } from "../..";
 
 interface InputParams extends Params<"input"> {
     id: string;
+    autocomplete: AutoFill;
 }
 
 export type LabelledInput<T extends Input> = Omit<T, "label"> & {
@@ -15,6 +16,7 @@ export class Input extends Component<"input"> {
             id,
             ...params,
         });
+        this.element.autocomplete = params.autocomplete;
     }
     label(text: string): LabelledInput<typeof this> {
         let obj = {
@@ -31,7 +33,7 @@ export class Input extends Component<"input"> {
     }
 }
 
-interface SmartInputParams extends InputParams {
+interface SmartInputParams extends Omit<InputParams, "autocomplete"> {
     optionsValues: string[];
 }
 
@@ -63,6 +65,7 @@ export class SmartInput extends Input {
         super({
             id,
             parent,
+            autocomplete: "off", // not relevant for this component - we know all possible values
             ...params,
         });
         let dlid = `${id}-datalist`;

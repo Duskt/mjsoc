@@ -22,8 +22,7 @@ export default abstract class FocusNode<
     excludeSelf: boolean;
     excludeChildren: boolean;
     active: boolean;
-    // todo: add more DocumentEventMaps
-    deactivation: "click" = "click";
+    deactivation: keyof DocumentEventMap = "click";
     constructor(params: FocusNodeParameters<T>) {
         super({
             ...params,
