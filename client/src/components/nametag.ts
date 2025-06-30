@@ -14,7 +14,7 @@ export default class NameTag extends InputListener<"select"> {
             ...params,
             value: undefined,
         });
-
+        this.element.setAttribute("name", "nametag");
         this.nameOptions = {};
         // render selected option first
         if (params.value) {

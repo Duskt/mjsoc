@@ -34,7 +34,7 @@ pub async fn get_tables(
         script src=(script_path) {}
         main {
         div id="sidebar" {}
-        article id="tables" {
+        article id="tables" style="margin-top: 20px" {
             // table and header-bar are both filled with js on frontend
             div id="header-bar" { h1 { "Tables" } }
             table id="table" {}
