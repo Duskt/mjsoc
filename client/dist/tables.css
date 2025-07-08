@@ -1,14 +1,17 @@
 :root {
-  --name-tag-length: 100px;
+  --name-tag-length: 120px;
   --name-tag-depth: 24px;
 }
 
 /* Table styling */
 .mahjong-table-display {
-  border: 2px solid var(--table-edge);
+  background: var(--champagne);
   border-radius: 6px;
   padding: 20px;
   position: relative;
+  color: var(--lion);
+  font-size: 80px;
+  padding-inline-start: 46px;
 }
 
 .button-panel {
@@ -27,13 +30,6 @@
   margin: 0px;
   font-size: 12px;
   text-align: center;
-}
-
-.win-button {
-  position: relative;
-  width: 24px;
-  height: 24px;
-  font-size: 16px;
 }
 
 /* dropdown-button is the button summoning a dropdown */
@@ -56,20 +52,52 @@
   width: 24px;
 }
 
-/* General table element styling */
-.name-tag {
-  margin: 0px;
-  padding: 0px;
-  height: var(--name-tag-depth);
-  width: var(--name-tag-length);
-  font-size: 12px;
-}
-
 /* Name tag styling */
 .player {
   display: flex;
   float: left;
+  justify-content: space-between;
   align-items: center;
+  border: 3px solid var(--coffee);
+  border-radius: 16px;
+  margin: 2px;
+  padding: 4px;
+  height: var(--name-tag-depth); /* overriden for other orientations */
+  width: var(--name-tag-length);
+  .name-tag {
+    font-weight: bold;
+    height: 120%;
+    background: inherit;
+    padding: 2px;
+    border: none;
+    color: inherit;
+    flex-grow: 1;
+    margin-inline-end: 4px;
+  }
+  .name-tag.south,
+  .name-tag.north {
+    writing-mode: tb;
+  }
+  .win-button {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--celadon);
+    background: var(--hunter-green);
+    border-radius: 40px;
+    color: var(--celadon);
+    padding-bottom: 2px;
+    padding-right: 1px;
+    font-size: 16px;
+    .win-button-popup {
+      padding-top: 24px;
+    }
+  }
+}
+
+.player:has(.north), .player:has(.south) {
+  width: var(--name-tag-depth);
+  height: var(--name-tag-length);
 }
 
 .player:has(.south) {
@@ -84,11 +112,10 @@
   flex-direction: row-reverse;
 }
 
-.name-tag.south,
-.name-tag.north {
-  writing-mode: tb;
-  width: var(--name-tag-depth);
-  height: var(--name-tag-length);
+.player .win-button:hover {
+  border: 2px solid var(--hunter-green);
+  background: var(--celadon);
+  color: var(--hunter-green);
 }
 
 /* dropdown container */
@@ -334,7 +361,7 @@ dialog button {
 .winner-crown {
   position: absolute;
   user-select: none;
-  left: -4%;
+  left: calc(-16px + 0.8%);
   transform: rotate(-40deg);
   top: -50%;
   font-size: 1.3em;

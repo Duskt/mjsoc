@@ -1,13 +1,13 @@
 :root {
-  --almond: #EFDECDff;
-  --beaver: #B09A89ff;
-  --coffee: #705644ff;
-  --black-bean: #311200ff;
+  --champagne: #FCE7CAff;
+  --lion: #C09F87ff;
+  --coffee: #835643ff;
+  --black-bean: #470E00ff;
 
-  --celadon: #A8C69F;
+  --celadon: #ACFFD8;
   --hunter-green: #3c5233;
 
-  --global-background: var(--almond);
+  --global-background: white;
   --legend-background: var(--almond);
   --tooltip-background: var(--beaver);
   --nav-link-hover-background: var(--beaver);
@@ -111,30 +111,33 @@ button {
 
 .logo {
   max-width: 150px;
+  max-width: 150px;
+  background-color: var(--celadon);
+  border-radius: 150px;
+  padding: 10px;
 }
 
 nav {
   display: flex;
-  border-bottom: 2px solid var(--nav-edge);
-  border-radius: 10px;
-}
-
-nav * {
-  margin-left: 4px;
-  margin-right: 4px;
+  background-color: var(--champagne);
+  border-radius: 0 0 12px 12px;
+  border: none;
+  border-bottom: 2px solid var(--lion);
+  * {
+    margin-left: 4px;
+    margin-right: 4px;
+  }
+  .nav-link {
+    padding: 8px;
+    align-content: center;
+  }
+  .nav-link:hover {
+    background-color: white;
+  }
 }
 
 .home-icon {
   max-height: 40px;
-}
-
-.nav-link {
-  padding: 8px;
-  align-content: center;
-}
-
-.nav-link:hover {
-  background-color: var(--nav-link-hover-background);
 }
 
 .settings-button {
@@ -310,6 +313,7 @@ svg, path {
   .header.registered {
     width: 10%;
     font-size: 14px;
+    text-align: start;
   }
   .registered:not(.header) {
     display: flex;
