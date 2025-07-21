@@ -3,9 +3,9 @@ FROM rust:bullseye AS build
 # RUN USER=root cargo new --bin app
 WORKDIR /app
 
-COPY ./Cargo.toml ./Cargo.toml
-COPY ./Cargo.lock ./Cargo.lock
-COPY ./src ./src
+COPY ./server/Cargo.toml ./Cargo.toml
+COPY ./server/Cargo.lock ./Cargo.lock
+COPY ./server/src ./src
 
 RUN cargo build --release
 
@@ -17,4 +17,4 @@ RUN apt-get update && apt-get install -y libc-bin ca-certificates && rm -rf /var
 
 COPY --from=build /app/target/release/web .
 
-CMD ["./web"]
+CMD ["./server/web"]
