@@ -1,4 +1,4 @@
-use std::sync::MutexGuard;
+use std::iter;
 
 use lib::env;
 
@@ -9,8 +9,7 @@ use serde::Deserialize;
 use urlencoding::encode;
 
 use crate::{
-    auth::is_authenticated, components::page::page, mahjongdata::{MahjongData, TableData},
-    util::get_redirect_response, AppState,
+    auth::is_authenticated, components::page::page, data::{mutator::MahjongDataMutator, structs::TableData}, util::get_redirect_response, AppState
 };
 
 // display tables webpage
@@ -48,24 +47,16 @@ pub async fn create_table(session: Session, data: web::Data<AppState>) -> impl R
     if !is_authenticated(&session, &data.authenticated_keys) {
         return get_redirect_response("/login?redirect=tables");
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
-    let td = mjdata.create_table();
-    HttpResponse::Created().json(td)
+    let mut mj = data.mahjong_data.lock().unwrap();
+    match mj.new_table().await {
+        Ok(td) => HttpResponse::Created().json(td),
+        Err(_) => HttpResponse::InternalServerError().body("Unknown database error occurred.")
+    }
 }
 
 #[derive(Deserialize)]
 pub struct TableDeleteRequest {
     table_no: u32,
-}
-
-fn decrement_tables(mut mjdata: MutexGuard<'_, MahjongData>, after_table_no: u32) -> MutexGuard<'_, MahjongData> {
-    for i in &mut mjdata.tables {
-        if i.table_no > after_table_no {
-            i.table_no -= 1
-        }
-    }
-    mjdata.save_to_file();
-    mjdata
 }
 
 pub async fn delete_table(
@@ -83,22 +74,16 @@ pub async fn delete_table(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
-    if let Some(index) = mjdata
-        .tables
-        .iter()
-        .position(|x| x.table_no == body.table_no)
-    {
-        // tables are sorted by id, so their vector index matters not!
-        mjdata.tables.swap_remove(index);
-        drop(decrement_tables(mjdata, body.table_no));
-        // redirect (instead we could use js to do this?)
-        HttpResponse::Ok().body("Deleted table.")
-    } else {
-        HttpResponse::BadRequest().body(format!(
+    let mut mj = data.mahjong_data.lock().unwrap();
+    let Some(table_index) = mj.data.tables.iter().position(|td| td.table_no == body.table_no) else {
+        return HttpResponse::BadRequest().body(format!(
             "Could not find index with table number {}",
             body.table_no
         ))
+    };
+    match mj.del_table(table_index).await {
+        Ok(_) => HttpResponse::Ok().body("Deleted table."),
+        Err(_) => HttpResponse::InternalServerError().body("Unknown database error occurred.")
     }
 }
 
@@ -116,22 +101,21 @@ pub async fn update_table(
     if !is_authenticated(&session, &data.authenticated_keys) {
         return get_redirect_response("/login?redirect=tables");
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
-    let mut tables_copy = mjdata.tables.clone();
-    for t in body.iter() {
-        if let Some(table_index) = tables_copy
-            .iter()
-            .position(|x| x.table_no == t.table_no)
-        {
-            tables_copy[table_index] = t.table.clone();
-        } else {
+    let mut mj = data.mahjong_data.lock().unwrap();
+    let mut table_indices: Vec<usize> = Vec::new();
+    for update in body.iter() {
+        let Some(table_index) = mj.data.tables.iter().position(|td| td.table_no == update.table_no) else {
             return HttpResponse::BadRequest().body(format!(
-                "Could not find index with table number {}",
-                t.table_no
-            ));
-        }
+                "Could not find index with table number {}. No changes made.",
+                update.table_no
+            ))
+        };
+        table_indices.push(table_index);
     }
-    mjdata.tables = tables_copy;
-    mjdata.save_to_file();
+    for (i, EditTable {table, ..}) in iter::zip(table_indices.into_iter(), body.iter()) {
+        let Ok(_) = mj.mut_table(i, table.clone()).await else {
+            return HttpResponse::InternalServerError().body("Unknown database error occurred. Some updates may have been made.")
+        };
+    }
     HttpResponse::Ok().body("Updated table(s) as desired.")
 }

@@ -10,7 +10,7 @@ use urlencoding::encode;
 use crate::{
     auth::is_authenticated,
     components::page::page,
-    mahjongdata::{get_points, Log, LogId, Member},
+    data::structs::{Faan, Log, LogId, Member},
     AppState,
 };
 
@@ -50,20 +50,20 @@ pub async fn transfer_points(
         // todo: should include WW-Authentication header...
         return HttpResponse::Unauthorized().finish();
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
-    if mjdata.log.iter().any(|l| l.id == body.id) {
+    let mut mj = data.mahjong_data.lock().unwrap();
+    if mj.data.log.iter().any(|l| l.id == body.id) {
         return HttpResponse::BadRequest().body("id already exists");
     }
 
     // calc points, defaulting to body.points (legacy) which frontend calculates
-    let points = match get_points(body.faan, body.win_kind.clone()) {
+    let points = match Faan::get_base_points(body.faan, body.win_kind.clone()) {
         Some(calc_pts) => calc_pts,
         None => body.points,
     };
     // take the points from...
     let mut update_members: Vec<Member> = vec![];
     for id in body.from.iter() {
-        for member in mjdata.members.iter_mut() {
+        for member in mj.data.members.iter_mut() {
             if member.id == *id {
                 member.tournament.session_points -= points;
                 update_members.push(member.clone());
@@ -72,13 +72,13 @@ pub async fn transfer_points(
     }
     // and give points*n to...
     let winner_points = ((points as isize) * (body.from.len() as isize)) as i32;
-    if let Some(mem) = mjdata.members.iter_mut().find(|mem| mem.id == body.to) {
+    if let Some(mem) = mj.data.members.iter_mut().find(|mem| mem.id == body.to) {
         mem.tournament.session_points += winner_points;
         update_members.push(mem.clone());
     }
     // log the PointTransfer request
-    mjdata.log.push(body.to_owned());
-    mjdata.save_to_file();
+    mj.data.log.push(body.to_owned());
+    mj.save();
     // send back the affected members as confirmation
     HttpResponse::Ok().json(update_members)
 }
@@ -109,10 +109,10 @@ pub async fn put_log(
 }
 
 fn edit_log(data: web::Data<AppState>, log_id: LogId, new_log: Log) -> HttpResponse {
-    let mut mahjongdata = data.mahjong_data.lock().unwrap();
-    if let Some(old_log) = mahjongdata.log.iter_mut().find(|l| l.id == log_id) {
+    let mut mj = data.mahjong_data.lock().unwrap();
+    if let Some(old_log) = mj.data.log.iter_mut().find(|l| l.id == log_id) {
         *old_log = new_log;
-        mahjongdata.save_to_file();
+        mj.save();
         HttpResponse::Ok().finish()
     } else {
         HttpResponse::BadRequest().body("id not found")
@@ -121,8 +121,8 @@ fn edit_log(data: web::Data<AppState>, log_id: LogId, new_log: Log) -> HttpRespo
 
 fn undo_log(data: web::Data<AppState>, log_id: LogId) -> HttpResponse {
     let mut changes = Vec::<Member>::new();
-    let mut mjdata = data.mahjong_data.lock().unwrap();
-    let Some(log) = mjdata.log.iter_mut().find(|l| l.id == log_id) else {
+    let mut mj = data.mahjong_data.lock().unwrap();
+    let Some(log) = mj.data.log.iter_mut().find(|l| l.id == log_id) else {
         return HttpResponse::BadRequest().body("id not found");
     };
     if log.disabled {
@@ -138,17 +138,17 @@ fn undo_log(data: web::Data<AppState>, log_id: LogId) -> HttpResponse {
     };
     let mut points_from_winner: i32 = 0;
     for loser_id in log_copy.from {
-        if let Some(loser) = mjdata.members.iter_mut().find(|m| m.id == loser_id) {
+        if let Some(loser) = mj.data.members.iter_mut().find(|m| m.id == loser_id) {
             // give points back to each member in `log.from`
             loser.tournament.session_points += points;
             points_from_winner += points;
             changes.push(loser.clone());
         }
     }
-    if let Some(winner) = mjdata.members.iter_mut().find(|m| m.id == log_copy.to) {
+    if let Some(winner) = mj.data.members.iter_mut().find(|m| m.id == log_copy.to) {
         winner.tournament.session_points -= points_from_winner;
         changes.push(winner.clone());
     }
-    mjdata.save_to_file();
+    mj.save();
     HttpResponse::Ok().json(changes)
 }

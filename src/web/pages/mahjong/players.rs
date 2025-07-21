@@ -32,13 +32,13 @@ pub async fn update_member(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
-    let optmember = mjdata.members.iter_mut().find(|x| x.id == body.id);
+    let mut mj = data.mahjong_data.lock().unwrap();
+    let optmember = mj.data.members.iter_mut().find(|x| x.id == body.id);
     let response = match optmember {
         None => HttpResponse::BadRequest().body("Player ID could not be found."),
         Some(member) => HttpResponse::Ok().json(mem::replace(member, body.new_member.clone())),
     };
-    mjdata.save_to_file();
+    mj.save();
     response
 }
 
@@ -61,9 +61,9 @@ pub async fn create_member(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
+    let mut mj = data.mahjong_data.lock().unwrap();
     // defaults to 1 (0+1) as 0 represents an empty seat
-    let id = mjdata.members.iter().map(|x| x.id).max().unwrap_or(0) + 1;
+    let id = mj.data.members.iter().map(|x| x.id).max().unwrap_or(0) + 1;
     let new_member = Member {
         id,
         name: body.name.clone(),
@@ -74,8 +74,8 @@ pub async fn create_member(
         },
         council: false,
     };
-    mjdata.members.push(new_member.clone());
-    mjdata.save_to_file();
+    mj.data.members.push(new_member.clone());
+    mj.save();
     // no need to redirect as they already see the changes they've made
     HttpResponse::Created().json(new_member)
 }
@@ -100,12 +100,12 @@ pub async fn delete_member(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
+    let mut mj = data.mahjong_data.lock().unwrap();
 
-    if let Some(index) = mjdata.members.iter().position(|x| x.id == body.id) {
-        let member_id = mjdata.members[index].id;
+    if let Some(index) = mj.data.members.iter().position(|x| x.id == body.id) {
+        let member_id = mj.data.members[index].id;
         // remove references to the member
-        for t in mjdata.tables.iter_mut() {
+        for t in mj.data.tables.iter_mut() {
             // todo: surely a better way
             if t.east == member_id {
                 t.east = 0
@@ -121,8 +121,8 @@ pub async fn delete_member(
             }
         }
         // now remove the member from the members list
-        mjdata.members.swap_remove(index);
-        mjdata.save_to_file();
+        mj.data.members.swap_remove(index);
+        mj.save();
         HttpResponse::ResetContent().body("Deleted member")
     } else {
         HttpResponse::BadRequest().body(format!("Could not find a member with the id {}", body.id))

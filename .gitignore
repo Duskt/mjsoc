@@ -2,6 +2,7 @@
 /public/assets/*
 node_modules/
 /data
+/.sqlx
 
 /.env
 /public/index.js

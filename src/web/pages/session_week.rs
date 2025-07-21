@@ -16,14 +16,14 @@ pub struct WeekForm {
 pub async fn get_week(data: web::Data<AppState>) -> impl Responder {
     println!("Week requested");
 
-    let mjdata = data.mahjong_data.lock().unwrap();
+    let mj = data.mahjong_data.lock().unwrap();
     let html = page(html! {
         img src=(env::expect_env("LOGO_ROUTE")) class="logo";
         p {
             "Enter week number:"
         }
         form action="/week" method="POST" {
-            input name="week" id="week" value=(format!("{}", mjdata.week.get())) autofocus {}
+            input name="week" id="week" value=(format!("{}", mj.data.week.get())) autofocus {}
         }
     });
     HttpResponse::Ok().body(html.into_string())
@@ -48,9 +48,9 @@ pub async fn change_week(
     println!("Changing week to {}", week);
 
     // Set week
-    let mut mjdata = data.mahjong_data.lock().unwrap();
-    mjdata.week.set(week);
-    mjdata.save_to_file();
+    let mut mj = data.mahjong_data.lock().unwrap();
+    mj.data.week.set(week);
+    mj.save();
     HttpResponse::NoContent().finish()
 }
 
@@ -67,12 +67,12 @@ pub async fn reset_session(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
-    mjdata.members.iter_mut().for_each(|m| {
+    let mut mj = data.mahjong_data.lock().unwrap();
+    mj.data.members.iter_mut().for_each(|m| {
         m.tournament.registered = false;
         m.tournament.total_points += m.tournament.session_points;
         m.tournament.session_points = 0;
     });
-    mjdata.save_to_file();
+    mj.save();
     HttpResponse::Ok().body("Success")
 }

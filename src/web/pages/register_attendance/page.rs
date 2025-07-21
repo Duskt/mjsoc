@@ -5,7 +5,6 @@ use crate::{
         signature_error::SignatureErr,
     },
     google::sheets::insert_new_member,
-    mahjongdata::MemberId,
     pages::register_attendance::data::flip_names,
     util::get_redirect_response,
     AppState,
@@ -47,7 +46,7 @@ pub async fn register_qr_attendance(
 
     // Flip before giving it to the sheets api
     let flipped_name = flip_names(&info.name);
-    let session_week_number = data.mahjong_data.lock().unwrap().week.increment();
+    let session_week_number = data.mahjong_data.lock().unwrap().data.week.increment();
 
     insert_new_member(&flipped_name, session_week_number)
         .await
@@ -71,10 +70,10 @@ pub async fn manual_register_attendance(
         // should do headers
         return HttpResponse::Unauthorized().finish();
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
+    let mut mj = data.mahjong_data.lock().unwrap();
     let present: bool;
     {
-        let member = mjdata
+        let member = mj.data
             .members
             .iter_mut()
             .find(|m| m.id == body.member_id)
@@ -82,6 +81,6 @@ pub async fn manual_register_attendance(
         present = !member.tournament.registered;
         member.tournament.registered = present;
     }
-    mjdata.save_to_file();
+    // TODO: mj.save();
     HttpResponse::Ok().json(present)
 }

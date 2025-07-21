@@ -24,13 +24,13 @@ pub async fn update_settings(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    let mut mjdata = data.mahjong_data.lock().unwrap();
+    let mut mj = data.mahjong_data.lock().unwrap();
     // needs a macro rly
     if let Some(mcoeff) = body.matchmaking_coefficient {
-        mjdata.settings.matchmaking_coefficient = mcoeff;
+        mj.data.settings.matchmaking_coefficient = mcoeff;
     } else {
         return HttpResponse::BadRequest().body("Couldn't find mcoeff?");
     }
-    mjdata.save_to_file();
+    mj.save();
     HttpResponse::Ok().body("Updated settings.")
 }

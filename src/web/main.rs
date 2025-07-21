@@ -2,7 +2,7 @@ mod auth;
 mod components;
 mod errors;
 mod google;
-mod mahjongdata;
+mod data;
 mod notification;
 mod pages;
 mod rate_limit;
@@ -22,26 +22,22 @@ use circular_buffer::CircularBuffer;
 use reqwest::header::CONTENT_LANGUAGE;
 use std::sync::{Arc, Mutex, RwLock};
 
-use mahjongdata::MahjongData;
 use pages::{
     auth::authenticate,
     index::index,
     login::login,
     mahjong::{
-        log::{get_log_page, put_log, transfer_points},
-        players::{create_member, delete_member, update_member},
         tables::{create_table, delete_table, get_tables, update_table},
     },
     qr::page::{download_qr, generate_qr},
-    register_attendance::page::{manual_register_attendance, register_qr_attendance},
-    session_week::{change_week, get_week, reset_session},
+    //register_attendance::page::{manual_register_attendance, register_qr_attendance},
 };
 use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
 
-use crate::pages::{
+use crate::{data::{sqlite::MahjongDataSqlite3, MahjongDB}, pages::{
     logo::logo,
-    mahjong::{data::get_data, settings::update_settings},
-};
+    mahjong::data::get_data,
+}};
 
 // NOTE: this needs to be const (used for type), so cannot be environment
 // Reading environment in at compile time wouldn't be any different from const
@@ -53,7 +49,7 @@ pub struct AppState {
     authenticated_keys: RwLock<CircularBuffer<MAX_AUTHENTICATED_USERS, String>>,
     admin_password_hash: String,
     hmac_key: Vec<u8>,
-    mahjong_data: Mutex<MahjongData>,
+    mahjong_data: Mutex<MahjongDB>,
 }
 
 #[actix_web::main]
@@ -61,7 +57,7 @@ async fn main() -> std::io::Result<()> {
     dotenvy::dotenv_override().expect(".env file not found.");
 
     let key = cookie::Key::generate();
-    let state = web::Data::new(get_intial_state());
+    let state = web::Data::new(get_initial_state().await);
     let quotas_mtx = Arc::new(RwLock::new(get_quota()));
 
     HttpServer::new(move || {
@@ -82,17 +78,11 @@ async fn main() -> std::io::Result<()> {
             // authentication
             .route("/login", get().to(login))
             .route("/auth", post().to(authenticate))
-            .service(
-                web::resource("/week")
-                    .route(get().to(get_week))
-                    .route(post().to(change_week))
-                    .route(delete().to(reset_session)),
-            )
-            .service(
-                web::resource("/register")
-                    .route(get().to(register_qr_attendance))
-                    .route(post().to(manual_register_attendance)),
-            )
+            //.service(
+            //    web::resource("/register")
+            //        .route(get().to(register_qr_attendance))
+            //        .route(post().to(manual_register_attendance)),
+            //)
             // mahjong client
             // table page routing
             .service(
@@ -102,22 +92,22 @@ async fn main() -> std::io::Result<()> {
                     .route(delete().to(delete_table))
                     .route(put().to(update_table)),
             )
-            .service(
-                web::resource("/members")
-                    .route(post().to(create_member))
-                    .route(put().to(update_member))
-                    .route(delete().to(delete_member)),
-            )
-            .service(
-                web::scope("/members")
-                    .service(web::resource("/transfer").route(post().to(transfer_points))),
-            )
-            .service(
-                web::resource("/log")
-                    .route(get().to(get_log_page))
-                    .route(put().to(put_log)),
-            )
-            .route("/settings", put().to(update_settings))
+            //.service(
+            //    web::resource("/members")
+            //        .route(post().to(create_member))
+            //        .route(put().to(update_member))
+            //        .route(delete().to(delete_member)),
+            //)
+            //.service(
+            //    web::scope("/members")
+            //        .service(web::resource("/transfer").route(post().to(transfer_points))),
+            //)
+            //.service(
+            //    web::resource("/log")
+            //        .route(get().to(get_log_page))
+            //        .route(put().to(put_log)),
+            //)
+            //.route("/settings", put().to(update_settings))
             .route("/data.json", get().to(get_data))
             .route(&env::expect_env("LOGO_ROUTE"), get().to(logo))
             // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.
@@ -128,19 +118,20 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-fn get_intial_state() -> AppState {
+async fn get_initial_state() -> AppState {
     let admin_password_hash = env::expect_env("ADMIN_PASSWORD_HASH");
 
     let hmac_key_path = env::expect_env("HMAC_KEY_PATH");
     let hmac_key = get_file_bytes(&hmac_key_path);
 
     let mahjong_data_path = env::expect_env("MAHJONG_DATA_PATH");
+    let mahjong_data_mutator = MahjongDataSqlite3::load(&mahjong_data_path).await;
 
     AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),
         admin_password_hash,
         hmac_key,
-        mahjong_data: Mutex::new(MahjongData::from_file(&mahjong_data_path)),
+        mahjong_data: Mutex::new(mahjong_data_mutator),
     }
 }
 
