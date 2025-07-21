@@ -139,10 +139,7 @@ impl MahjongDataSqlite3 {
     async fn connect(path: &PathBuf) -> SqliteConnection {
         sqlx::SqliteConnection::connect(path.to_str().unwrap())
             .await
-            .expect(&format!(
-                "Couldn't connect to database at {}",
-                path.display()
-            ))
+            .unwrap_or_else(|_| panic!("Couldn't connect to database at {}", path.display()))
     }
 
     pub async fn remake_log(conn: &mut SqliteConnection, lr: LogRow) -> Log {
@@ -241,9 +238,13 @@ impl MahjongDataMutator<sqlx::Error> for MahjongDataSqlite3 {
         Ok(table)
     }
 
-    async fn mut_table(&mut self, table_index: usize, new_table: TableData) -> Result<(), sqlx::Error> {
+    async fn mut_table(
+        &mut self,
+        table_index: usize,
+        new_table: TableData,
+    ) -> Result<(), sqlx::Error> {
         let table_no = self.data.tables[table_index].table_no;
-        self.data.mut_table(table_index, new_table.clone()).await;
+        let Ok(_) = self.data.mut_table(table_index, new_table.clone()).await; // infallible
         let mut conn = MahjongDataSqlite3::connect(&self.path).await;
         sqlx::query("UPDATE tables SET table_no = ?, east = ?, south = ?, west = ?, north = ? WHERE table_no = ?")
             .bind(new_table.table_no)
@@ -259,9 +260,9 @@ impl MahjongDataMutator<sqlx::Error> for MahjongDataSqlite3 {
 
     async fn del_table(&mut self, table_index: usize) -> Result<(), sqlx::Error> {
         let table_no = self.data.tables[table_index].table_no;
-        self.data.del_table(table_index).await;
+        let Ok(_) = self.data.del_table(table_index).await; // infallible
         let mut conn = MahjongDataSqlite3::connect(&self.path).await;
-        sqlx::query("DELETE FROM tables WHERE table_no = ?")
+        sqlx::query("DELETE FROM mahjong_tables WHERE table_no = ?")
             .bind(table_no)
             .execute(&mut conn)
             .await?;

@@ -9,7 +9,11 @@ use serde::Deserialize;
 use urlencoding::encode;
 
 use crate::{
-    auth::is_authenticated, components::page::page, data::{mutator::MahjongDataMutator, structs::TableData}, util::get_redirect_response, AppState
+    auth::is_authenticated,
+    components::page::page,
+    data::{mutator::MahjongDataMutator, structs::TableData},
+    util::get_redirect_response,
+    AppState,
 };
 
 // display tables webpage
@@ -50,7 +54,7 @@ pub async fn create_table(session: Session, data: web::Data<AppState>) -> impl R
     let mut mj = data.mahjong_data.lock().unwrap();
     match mj.new_table().await {
         Ok(td) => HttpResponse::Created().json(td),
-        Err(_) => HttpResponse::InternalServerError().body("Unknown database error occurred.")
+        Err(_) => HttpResponse::InternalServerError().body("Unknown database error occurred."),
     }
 }
 
@@ -75,15 +79,23 @@ pub async fn delete_table(
         ));
     }
     let mut mj = data.mahjong_data.lock().unwrap();
-    let Some(table_index) = mj.data.tables.iter().position(|td| td.table_no == body.table_no) else {
+    let Some(table_index) = mj
+        .data
+        .tables
+        .iter()
+        .position(|td| td.table_no == body.table_no)
+    else {
         return HttpResponse::BadRequest().body(format!(
             "Could not find index with table number {}",
             body.table_no
-        ))
+        ));
     };
     match mj.del_table(table_index).await {
         Ok(_) => HttpResponse::Ok().body("Deleted table."),
-        Err(_) => HttpResponse::InternalServerError().body("Unknown database error occurred.")
+        Err(e) => {
+            println!("{e}");
+            HttpResponse::InternalServerError().body("Unknown database error occurred.")
+        }
     }
 }
 
@@ -104,17 +116,23 @@ pub async fn update_table(
     let mut mj = data.mahjong_data.lock().unwrap();
     let mut table_indices: Vec<usize> = Vec::new();
     for update in body.iter() {
-        let Some(table_index) = mj.data.tables.iter().position(|td| td.table_no == update.table_no) else {
+        let Some(table_index) = mj
+            .data
+            .tables
+            .iter()
+            .position(|td| td.table_no == update.table_no)
+        else {
             return HttpResponse::BadRequest().body(format!(
                 "Could not find index with table number {}. No changes made.",
                 update.table_no
-            ))
+            ));
         };
         table_indices.push(table_index);
     }
-    for (i, EditTable {table, ..}) in iter::zip(table_indices.into_iter(), body.iter()) {
+    for (i, EditTable { table, .. }) in iter::zip(table_indices.into_iter(), body.iter()) {
         let Ok(_) = mj.mut_table(i, table.clone()).await else {
-            return HttpResponse::InternalServerError().body("Unknown database error occurred. Some updates may have been made.")
+            return HttpResponse::InternalServerError()
+                .body("Unknown database error occurred. Some updates may have been made.");
         };
     }
     HttpResponse::Ok().body("Updated table(s) as desired.")
