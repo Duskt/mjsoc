@@ -1,9 +1,9 @@
-use futures_util::never::Never;
 use lib::env;
 use std::{
     fs::{rename, File},
     io::{BufReader, Write},
     path::PathBuf,
+    convert::Infallible,
 };
 
 use crate::data::{mutator::MahjongDataMutator, structs::{MahjongData, TableData}};
@@ -73,18 +73,18 @@ impl MahjongDataJson {
     }
 }
 
-impl MahjongDataMutator<Never> for MahjongDataJson {
-    async fn new_table(&mut self) -> Result<TableData, Never> {
+impl MahjongDataMutator<Infallible> for MahjongDataJson {
+    async fn new_table(&mut self) -> Result<TableData, Infallible> {
         let td = self.data.new_table().await?;
         self.save();
         Ok(td)
     }
-    async fn del_table(&mut self, table_index: usize) -> Result<(), Never> {
+    async fn del_table(&mut self, table_index: usize) -> Result<(), Infallible> {
         let r = self.data.del_table(table_index).await?;
         self.save();
         Ok(r)
     }
-    async fn mut_table(&mut self, table_index: usize, new_table: TableData) -> Result<(), Never> {
+    async fn mut_table(&mut self, table_index: usize, new_table: TableData) -> Result<(), Infallible> {
         let r = self.data.mut_table(table_index, new_table).await?;
         self.save();
         Ok(r)
