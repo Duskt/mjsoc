@@ -7,11 +7,8 @@ use serde::Deserialize;
 use urlencoding::encode;
 
 use crate::{
-    auth::is_authenticated,
-    components::page::page,
-    data::structs::TableData,
-    util::get_redirect_response,
-    AppState,
+    auth::is_authenticated, components::page::page, data::structs::TableData,
+    util::get_redirect_response, AppState,
 };
 
 // display tables webpage
@@ -99,10 +96,14 @@ pub async fn update_table(
     if !is_authenticated(&session, &data.authenticated_keys) {
         return get_redirect_response("/login?redirect=tables");
     }
-    for EditTable {table_no, table} in body.iter() {
-        let Ok(_) = data.mahjong_data.mut_table(*table_no, table.clone()).await else {
-            return HttpResponse::InternalServerError()
-                .body("Unknown database error occurred. Some updates may have been made.");
+    for EditTable { table_no, table } in body.iter() {
+        match data.mahjong_data.mut_table(*table_no, table.clone()).await {
+            Ok(_) => continue,
+            Err(e) => {
+                println!("{e}");
+                return HttpResponse::InternalServerError()
+                    .body("Unknown database error occurred. Some updates may have been made.");
+            }
         };
     }
     HttpResponse::Ok().body("Updated table(s) as desired.")

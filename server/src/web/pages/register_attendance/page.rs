@@ -1,13 +1,8 @@
 use crate::{
-    auth::is_authenticated,
-    errors::{
+    auth::is_authenticated, data::structs::MemberId, errors::{
         either_error::EitherError, insert_member_error::InsertMemberErr,
         signature_error::SignatureErr,
-    },
-    google::sheets::insert_new_member,
-    pages::register_attendance::data::flip_names,
-    util::get_redirect_response,
-    AppState,
+    }, google::sheets::insert_new_member, pages::register_attendance::data::flip_names, util::get_redirect_response, AppState
 };
 
 use actix_session::Session;
@@ -20,6 +15,7 @@ use super::data::QrAttendanceQuery;
 
 // This is the URL that a QR code links to, with the appropriate query.
 // When sending a GET, it uses this path.
+/*
 pub async fn register_qr_attendance(
     info: web::Query<QrAttendanceQuery>,
     data: web::Data<AppState>,
@@ -54,6 +50,7 @@ pub async fn register_qr_attendance(
 
     Ok(HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name)))
 }
+*/
 
 #[derive(Deserialize)]
 pub struct RegisterMemberPostRequest {
@@ -70,17 +67,14 @@ pub async fn manual_register_attendance(
         // should do headers
         return HttpResponse::Unauthorized().finish();
     }
-    let mut mj = data.mahjong_data.lock().unwrap();
-    let present: bool;
-    {
-        let member = mj.data
-            .members
-            .iter_mut()
-            .find(|m| m.id == body.member_id)
-            .expect("No member with that id");
-        present = !member.tournament.registered;
-        member.tournament.registered = present;
+    let Ok(mut member) = data.mahjong_data.get_member(body.member_id).await else {
+        return HttpResponse::BadRequest().body(format!("Couldn't find member with ID {}", body.member_id))
+    };
+    member.tournament.registered = !(member.tournament.registered);
+    let is_now_registered = member.tournament.registered;
+    match data.mahjong_data.mut_member(body.member_id, member).await {
+        // todo: responses
+        Ok(_) => HttpResponse::Ok().json(is_now_registered),
+        Err(_) => HttpResponse::InternalServerError().body("todo")
     }
-    // TODO: mj.save();
-    HttpResponse::Ok().json(present)
 }

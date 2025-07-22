@@ -37,7 +37,7 @@ use rate_limit::{quota::Quota, rate_limit_handler::RateLimit};
 
 use crate::{data::{sqlite::MahjongDataSqlite3, MahjongDB}, pages::{
     logo::logo,
-    mahjong::data::get_data,
+    mahjong::data::get_data, register_attendance::page::manual_register_attendance,
 }};
 
 // NOTE: this needs to be const (used for type), so cannot be environment
@@ -79,11 +79,11 @@ async fn main() -> std::io::Result<()> {
             // authentication
             .route("/login", get().to(login))
             .route("/auth", post().to(authenticate))
-            //.service(
-            //    web::resource("/register")
+            .service(
+                web::resource("/register")
             //        .route(get().to(register_qr_attendance))
-            //        .route(post().to(manual_register_attendance)),
-            //)
+                    .route(post().to(manual_register_attendance)),
+            )
             // mahjong client
             // table page routing
             .service(

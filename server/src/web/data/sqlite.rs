@@ -76,12 +76,12 @@ impl MahjongDataSqlite3 {
         // members, who exist independently of a particular session
         sqlx::query(
             "CREATE TABLE members(
-                member_id INT PRIMARY KEY,
-                name TEXT,
-                council INTEGER DEFAULT 0,
-                session_points NUMERIC DEFAULT 0,
-                total_points NUMERIC DEFAULT 0,
-                registered INTEGER DEFAULT 0
+                member_id INT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                council INTEGER NOT NULL DEFAULT 0,
+                session_points NUMERIC NOT NULL DEFAULT 0,
+                total_points NUMERIC NOT NULL DEFAULT 0,
+                registered INTEGER NOT NULL DEFAULT 0
             );",
         )
         .execute(&mut conn)
@@ -90,11 +90,11 @@ impl MahjongDataSqlite3 {
         // tables, dependent on member ids and used in a particular session
         sqlx::query(
             "CREATE TABLE mahjong_tables(
-                table_no INT PRIMARY KEY,
-                east INT,
-                south INT,
-                west INT,
-                north INT,
+                table_no INT NOT NULL PRIMARY KEY,
+                east INT DEFAULT NULL,
+                south INT DEFAULT NULL,
+                west INT DEFAULT NULL,
+                north INT DEFAULT NULL,
                 FOREIGN KEY(east) REFERENCES members(member_id),
                 FOREIGN KEY(south) REFERENCES members(member_id),
                 FOREIGN KEY(west) REFERENCES members(member_id),
@@ -107,10 +107,10 @@ impl MahjongDataSqlite3 {
         // point transfers are linked to a certain log, acting like an array
         sqlx::query(
             "CREATE TABLE point_transfers(
-                points NUMERIC,
-                log_id INT,
-                to_member INT,
-                from_member INT,
+                points NUMERIC NOT NULL,
+                log_id INT NOT NULL,
+                to_member INT NOT NULL,
+                from_member INT NOT NULL,
                 FOREIGN KEY(log_id) REFERENCES logs(id),
                 FOREIGN KEY(to_member) REFERENCES members(member_id),
                 FOREIGN KEY(from_member) REFERENCES MEMBERS(member_id)
@@ -122,14 +122,14 @@ impl MahjongDataSqlite3 {
         // logs, to which point transfers are attached
         sqlx::query(
             "CREATE TABLE logs(
-                id INT PRIMARY KEY,
-                win_kind TEXT,
+                id INT NOT NULL PRIMARY KEY,
+                win_kind TEXT NOT NULL,
                 points NUMERIC,
                 faan NUMERIC,
                 datetime TEXT,
                 round_wind TEXT,
                 seat_wind TEXT,
-                disabled INTEGER
+                disabled INTEGER NOT NULL DEFAULT 0
             );",
         )
         .execute(&mut conn)
@@ -226,6 +226,14 @@ impl MahjongDataSqlite3 {
 
 impl MahjongDataError for sqlx::Error {}
 
+fn memberify(id: MemberId) -> Option<MemberId> {
+    if id == 0 {
+        None
+    } else {
+        Some(id)
+    }
+}
+
 impl MahjongDataSqlite3 {
     pub async fn new_table(&self) -> Result<TableData, sqlx::Error> {
         // TODO: ASAP replace w/ much more efficient sqlite version
@@ -244,12 +252,12 @@ impl MahjongDataSqlite3 {
         new_table: TableData,
     ) -> Result<(), sqlx::Error> {
         let mut conn = self.connect().await;
-        sqlx::query("UPDATE tables SET table_no = ?, east = ?, south = ?, west = ?, north = ? WHERE table_no = ?")
+        sqlx::query("UPDATE mahjong_tables SET table_no = ?, east = ?, south = ?, west = ?, north = ? WHERE table_no = ?")
             .bind(new_table.table_no)
-            .bind(new_table.east)
-            .bind(new_table.south)
-            .bind(new_table.west)
-            .bind(new_table.north)
+            .bind(memberify(new_table.east))
+            .bind(memberify(new_table.south))
+            .bind(memberify(new_table.west))
+            .bind(memberify(new_table.north))
             .bind(table_no)
             .execute(&mut conn)
             .await?;
@@ -263,6 +271,24 @@ impl MahjongDataSqlite3 {
             .execute(&mut conn)
             .await?;
         Ok(())
+    }
+
+    pub async fn get_member(&self, member_id: MemberId) -> Result<Member, sqlx::Error> {
+        let mut conn = self.connect().await;
+        let mr: MemberRow = sqlx::query_as("SELECT * FROM members WHERE member_id = ?")
+            .bind(member_id)
+            .fetch_one(&mut conn)
+            .await?;
+        Ok(Member {
+            id: mr.member_id,
+            name: mr.name,
+            council: mr.council,
+            tournament: TournamentData {
+                total_points: mr.total_points,
+                session_points: mr.session_points,
+                registered: mr.registered,
+            },
+        })
     }
 
     pub async fn new_member(&self, name: String) -> Result<Member, sqlx::Error> {
