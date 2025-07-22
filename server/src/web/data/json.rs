@@ -6,7 +6,7 @@ use std::{
     convert::Infallible,
 };
 
-use crate::data::{mutator::MahjongDataMutator, structs::{MahjongData, TableData}};
+use crate::data::{mutator::MahjongDataMutator, structs::{MahjongData, TableData, TableNo, TableNotFoundError}};
 
 pub struct MahjongDataJson {
     pub data: MahjongData,
@@ -73,19 +73,19 @@ impl MahjongDataJson {
     }
 }
 
-impl MahjongDataMutator<Infallible> for MahjongDataJson {
+impl MahjongDataMutator<Infallible, TableNotFoundError> for MahjongDataJson {
     async fn new_table(&mut self) -> Result<TableData, Infallible> {
         let td = self.data.new_table().await?;
         self.save();
         Ok(td)
     }
-    async fn del_table(&mut self, table_index: usize) -> Result<(), Infallible> {
-        let r = self.data.del_table(table_index).await?;
+    async fn del_table(&mut self, table_no: TableNo) -> Result<(), TableNotFoundError> {
+        let r = self.data.del_table(table_no).await?;
         self.save();
         Ok(r)
     }
-    async fn mut_table(&mut self, table_index: usize, new_table: TableData) -> Result<(), Infallible> {
-        let r = self.data.mut_table(table_index, new_table).await?;
+    async fn mut_table(&mut self, table_no: TableNo, new_table: TableData) -> Result<(), TableNotFoundError> {
+        let r = self.data.mut_table(table_no, new_table).await?;
         self.save();
         Ok(r)
     }

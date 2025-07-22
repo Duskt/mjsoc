@@ -20,7 +20,7 @@ use lib::{
 use chrono::Duration as chronoDuration;
 use circular_buffer::CircularBuffer;
 use reqwest::header::CONTENT_LANGUAGE;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 
 use pages::{
     auth::authenticate,
@@ -49,7 +49,7 @@ pub struct AppState {
     authenticated_keys: RwLock<CircularBuffer<MAX_AUTHENTICATED_USERS, String>>,
     admin_password_hash: String,
     hmac_key: Vec<u8>,
-    mahjong_data: Mutex<MahjongDB>,
+    mahjong_data: MahjongDB,
 }
 
 #[actix_web::main]
@@ -125,13 +125,13 @@ async fn get_initial_state() -> AppState {
     let hmac_key = get_file_bytes(&hmac_key_path);
 
     let mahjong_data_path = env::expect_env("MAHJONG_DATA_PATH");
-    let mahjong_data_mutator = MahjongDataSqlite3::load(&mahjong_data_path).await;
+    let mahjong_data_mutator = MahjongDataSqlite3::from_str(&mahjong_data_path);
 
     AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),
         admin_password_hash,
         hmac_key,
-        mahjong_data: Mutex::new(mahjong_data_mutator),
+        mahjong_data: mahjong_data_mutator,
     }
 }
 

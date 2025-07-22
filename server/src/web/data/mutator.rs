@@ -9,12 +9,12 @@ use std::convert::Infallible;
  * 
  * 
  */
-use crate::data::structs::{MahjongData, TableData};
+use crate::data::structs::{MahjongData, TableData, TableNo, TableNotFoundError};
 
-pub trait MahjongDataMutator<E> {
-    async fn new_table(&mut self) -> Result<TableData, E>;
-    async fn mut_table(&mut self, table_index: usize, new_table: TableData) -> Result<(), E>;
-    async fn del_table(&mut self, table_index: usize) -> Result<(), E>;
+pub trait MahjongDataMutator<A, E> {
+    async fn new_table(&mut self) -> Result<TableData, A>;
+    async fn mut_table(&mut self, table_no: TableNo, new_table: TableData) -> Result<(), E>;
+    async fn del_table(&mut self, table_no: TableNo) -> Result<(), E>;
 
     //async fn add_member(&mut self) -> Member;
     //async fn mut_member(&mut self) -> ();
@@ -26,6 +26,12 @@ pub trait MahjongDataMutator<E> {
     //async fn transfer_points(&mut self) -> ();
 
     //async fn register(&mut self) -> ();
+}
+
+pub trait MahjongDataHandler<A, E> {
+    async fn new_table(&self) -> Result<TableData, A>;
+    async fn mut_table(&self, table_no: TableNo, new_table: TableData) -> Result<(), E>;
+    async fn del_table(&self, table_no: TableNo) -> Result<(), E>;
 }
 
 fn get_new_index(indices: Vec<u32>) -> u32 {
@@ -40,7 +46,7 @@ fn get_new_index(indices: Vec<u32>) -> u32 {
 }
 
 /* In-memory only mutation of the structure; a database storage type needs to implement this too. E.g. a JSON impl. can trivially call this and then write to the file. */
-impl MahjongDataMutator<Infallible> for MahjongData {
+impl MahjongDataMutator<Infallible, TableNotFoundError> for MahjongData {
     async fn new_table(&mut self) -> Result<TableData, Infallible> {
         let new_index = get_new_index(self.tables.iter().map(|x| x.table_no).collect::<Vec<u32>>());
         let new_table = TableData {
@@ -55,13 +61,15 @@ impl MahjongDataMutator<Infallible> for MahjongData {
         Ok(new_table)
     }
     
-    async fn mut_table(&mut self, table_index: usize, new_table: TableData) -> Result<(), Infallible> {
+    async fn mut_table(&mut self, table_no: TableNo, new_table: TableData) -> Result<(), TableNotFoundError> {
+        let table_index = MahjongData::get_table_index(&self, table_no)?;
         self.tables[table_index] = new_table;
         Ok(())
     }
     
-    async fn del_table(&mut self, table_index: usize) -> Result<(), Infallible> {
-        let table_no = self.tables.swap_remove(table_index).table_no;
+    async fn del_table(&mut self, table_no: TableNo) -> Result<(), TableNotFoundError> {
+        let table_index = MahjongData::get_table_index(&self, table_no)?;
+        self.tables.swap_remove(table_index);
         for td in &mut self.tables {
             if td.table_no > table_no {
                 td.table_no -= 1

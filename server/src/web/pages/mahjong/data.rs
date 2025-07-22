@@ -10,5 +10,5 @@ pub async fn get_data(
     if !is_authenticated(&session, &data.authenticated_keys) {
         return HttpResponse::Unauthorized().finish();
     }
-    HttpResponse::Ok().json(data.mahjong_data.lock().unwrap().data.clone())
+    HttpResponse::Ok().json(data.mahjong_data.load().await)
 }

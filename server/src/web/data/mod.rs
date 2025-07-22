@@ -9,4 +9,4 @@ pub mod mutator;
 pub mod sqlite;
 pub mod json;
 
-pub type MahjongDB = MahjongDataSqlite3;
+pub type MahjongDB = MahjongDataSqlite3; // Mutex<MahjongDataJson>;

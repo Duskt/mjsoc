@@ -114,13 +114,13 @@ pub struct MahjongData {
     pub log: Vec<Log>,
 }
 
-struct NotFoundError;
+pub struct TableNotFoundError;
 
 impl MahjongData {
-    pub fn get_table_index(&self, table_no: TableNo) -> Result<usize, NotFoundError> {
+    pub fn get_table_index(&self, table_no: TableNo) -> Result<usize, TableNotFoundError> {
         match self.tables.iter().position(|td| td.table_no == table_no) {
             Some(td) => Ok(td),
-            None => Err(NotFoundError)
+            None => Err(TableNotFoundError)
         }
     }
     pub fn default() -> Self {

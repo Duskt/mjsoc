@@ -2,8 +2,8 @@ use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
 use std::path::PathBuf;
 
 use crate::data::{
-    mutator::MahjongDataMutator,
-    structs::{Log, MahjongData, Member, TableData, TournamentData},
+    mutator::{MahjongDataHandler, MahjongDataMutator},
+    structs::{Log, MahjongData, Member, TableData, TableNo, TournamentData},
 };
 
 use chrono::{DateTime, Utc};
@@ -45,7 +45,6 @@ pub struct PointTransfer {
 }
 
 pub struct MahjongDataSqlite3 {
-    pub data: MahjongData,
     pub path: PathBuf,
 }
 
@@ -63,7 +62,13 @@ fn canonicalize_parent(path: &str) -> PathBuf {
 }
 
 impl MahjongDataSqlite3 {
-    async fn new(path: &PathBuf) -> Self {
+    pub fn from_str(path: &str) -> Self {
+        let path = canonicalize_parent(path);
+        MahjongDataSqlite3 { path }
+    }
+    /* MahjongDataSqlite3 { path } or from_str will refer to an existing database. MahjongDataSqlite3::new(path)
+    or new_from_str will set up a new database, and error if it already exists.*/
+    pub async fn new(path: &PathBuf) -> Self {
         Sqlite::create_database(&format!("sqlite:{}", path.to_str().unwrap()))
             .await
             .expect("err");
@@ -131,9 +136,13 @@ impl MahjongDataSqlite3 {
         .await
         .unwrap();
         MahjongDataSqlite3 {
-            data: MahjongData::default(),
             path: path.to_path_buf(),
         }
+    }
+
+    pub async fn new_from_str(path: &str) -> Self {
+        let path = canonicalize_parent(path);
+        MahjongDataSqlite3::new(&path).await
     }
 
     async fn connect(path: &PathBuf) -> SqliteConnection {
@@ -175,17 +184,16 @@ impl MahjongDataSqlite3 {
         }
     }
 
-    pub async fn load(path: &str) -> Self {
-        let path = canonicalize_parent(path);
-        if !(Sqlite::database_exists(path.to_str().unwrap())
+    pub async fn load(&self) -> MahjongData {
+        if !(Sqlite::database_exists(self.path.to_str().unwrap())
             .await
-            .unwrap_or_else(|_| panic!("Parent path of {} does not exist.", path.display())))
+            .unwrap_or_else(|_| panic!("Parent path of {} does not exist.", self.path.display())))
         {
             println!("Creating new sqlite database...");
-            MahjongDataSqlite3::new(&path).await;
+            MahjongDataSqlite3::new(&self.path).await;
         }
         // TODO: database_exists doesn't check if the file is a database, just if it exists
-        let mut conn = MahjongDataSqlite3::connect(&path).await;
+        let mut conn = MahjongDataSqlite3::connect(&self.path).await;
         let tables = sqlx::query_as::<_, TableData>("SELECT * FROM mahjong_tables;")
             .fetch_all(&mut conn)
             .await
@@ -216,20 +224,21 @@ impl MahjongDataSqlite3 {
         for lr in logrows {
             log.push(MahjongDataSqlite3::remake_log(&mut conn, lr).await)
         }
-        Self {
-            path,
-            data: MahjongData {
-                tables,
-                members,
-                log,
-            },
+        MahjongData {
+            tables,
+            members,
+            log,
         }
     }
 }
 
-impl MahjongDataMutator<sqlx::Error> for MahjongDataSqlite3 {
-    async fn new_table(&mut self) -> Result<TableData, sqlx::Error> {
-        let Ok(table) = self.data.new_table().await;
+impl MahjongDataHandler<sqlx::Error, sqlx::Error> for MahjongDataSqlite3 {
+    async fn new_table(&self) -> Result<TableData, sqlx::Error> {
+        // TODO: ASAP replace w/ much more efficient sqlite version
+        let Ok(table) = self.load()
+            .await
+            .new_table()
+            .await;
         let mut conn = MahjongDataSqlite3::connect(&self.path).await;
         sqlx::query("INSERT INTO mahjong_tables (table_no) VALUES (?)")
             .bind(table.table_no)
@@ -239,12 +248,10 @@ impl MahjongDataMutator<sqlx::Error> for MahjongDataSqlite3 {
     }
 
     async fn mut_table(
-        &mut self,
-        table_index: usize,
+        &self,
+        table_no: TableNo,
         new_table: TableData,
     ) -> Result<(), sqlx::Error> {
-        let table_no = self.data.tables[table_index].table_no;
-        let Ok(_) = self.data.mut_table(table_index, new_table.clone()).await; // infallible
         let mut conn = MahjongDataSqlite3::connect(&self.path).await;
         sqlx::query("UPDATE tables SET table_no = ?, east = ?, south = ?, west = ?, north = ? WHERE table_no = ?")
             .bind(new_table.table_no)
@@ -258,9 +265,7 @@ impl MahjongDataMutator<sqlx::Error> for MahjongDataSqlite3 {
         Ok(())
     }
 
-    async fn del_table(&mut self, table_index: usize) -> Result<(), sqlx::Error> {
-        let table_no = self.data.tables[table_index].table_no;
-        let Ok(_) = self.data.del_table(table_index).await; // infallible
+    async fn del_table(&self, table_no: TableNo) -> Result<(), sqlx::Error> {
         let mut conn = MahjongDataSqlite3::connect(&self.path).await;
         sqlx::query("DELETE FROM mahjong_tables WHERE table_no = ?")
             .bind(table_no)
