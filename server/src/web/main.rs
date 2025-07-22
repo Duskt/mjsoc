@@ -28,6 +28,7 @@ use pages::{
     login::login,
     mahjong::{
         tables::{create_table, delete_table, get_tables, update_table},
+        players::{create_member, delete_member, update_member}
     },
     qr::page::{download_qr, generate_qr},
     //register_attendance::page::{manual_register_attendance, register_qr_attendance},
@@ -92,12 +93,12 @@ async fn main() -> std::io::Result<()> {
                     .route(delete().to(delete_table))
                     .route(put().to(update_table)),
             )
-            //.service(
-            //    web::resource("/members")
-            //        .route(post().to(create_member))
-            //        .route(put().to(update_member))
-            //        .route(delete().to(delete_member)),
-            //)
+            .service(
+                web::resource("/members")
+                    .route(post().to(create_member))
+                    .route(put().to(update_member))
+                    .route(delete().to(delete_member)),
+            )
             //.service(
             //    web::scope("/members")
             //        .service(web::resource("/transfer").route(post().to(transfer_points))),

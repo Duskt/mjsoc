@@ -28,13 +28,17 @@ pub trait MahjongDataMutator<A, E> {
     //async fn register(&mut self) -> ();
 }
 
-pub trait MahjongDataHandler<A, E> {
-    async fn new_table(&self) -> Result<TableData, A>;
-    async fn mut_table(&self, table_no: TableNo, new_table: TableData) -> Result<(), E>;
-    async fn del_table(&self, table_no: TableNo) -> Result<(), E>;
+pub trait MahjongDataError {
+
 }
 
-fn get_new_index(indices: Vec<u32>) -> u32 {
+pub trait MahjongDataHandler {
+    async fn new_table(&self) -> Result<TableData, impl MahjongDataError>;
+    async fn mut_table(&self, table_no: TableNo, new_table: TableData) -> Result<(), impl MahjongDataError>;
+    async fn del_table(&self, table_no: TableNo) -> Result<(), impl MahjongDataError>;
+}
+
+pub fn get_new_index(indices: Vec<u32>) -> u32 {
     let max_index = indices.iter().max();
     let new_index = *max_index.unwrap_or(&0) + 1;
     for i in 1..new_index {

@@ -9,7 +9,7 @@ use urlencoding::encode;
 use crate::{
     auth::is_authenticated,
     components::page::page,
-    data::{mutator::MahjongDataHandler, structs::TableData},
+    data::structs::TableData,
     util::get_redirect_response,
     AppState,
 };
