@@ -104,17 +104,25 @@ pub async fn transfer_points(
             println!("{e}");
             return HttpResponse::BadRequest().body("Err. Some data may have been changed.");
         };
-        if let Err(e) = data.mahjong_data.new_point_transfer(PointTransfer {
-            log_id: body.id,
-            points,
-            to_member: body.to,
-            from_member: l,
-        }).await {
+        if let Err(e) = data
+            .mahjong_data
+            .new_point_transfer(PointTransfer {
+                log_id: body.id,
+                points,
+                to_member: body.to,
+                from_member: l,
+            })
+            .await
+        {
             println!("{e}");
             return HttpResponse::InternalServerError().finish();
         };
     }
-    match data.mahjong_data.get_members([body.from.clone(), [body.to].to_vec()].concat()).await {
+    match data
+        .mahjong_data
+        .get_members([body.from.clone(), [body.to].to_vec()].concat())
+        .await
+    {
         Ok(r) => HttpResponse::Ok().json(r),
         Err(e) => {
             println!("{e}");
@@ -122,17 +130,58 @@ pub async fn transfer_points(
         }
     }
 }
-/*
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PutLogRequest {
     id: LogId,
     log: Option<Log>,
 }
 
+pub async fn put_log(
+    session: Session,
+    data: web::Data<AppState>,
+    body: web::Json<PutLogRequest>,
+) -> impl Responder {
+    if !is_authenticated(&session, &data.authenticated_keys) {
+        return HttpResponse::Unauthorized().finish();
+    };
+    if let Some(_) = &body.log {
+        return HttpResponse::NotImplemented().body("Omit log (provide only id) for undo log.");
+    };
+    let Ok(transfers) = data.mahjong_data.get_point_transfers(body.id).await else {
+        return HttpResponse::InternalServerError().finish();
+    };
+    for pt in transfers {
+        // TODO critical must fix before merge this awful error handling
+        if let Err(e) = data
+            .mahjong_data
+            .add_member_session_points(pt.from_member, pt.points)
+            .await
+        {
+            println!("{e}");
+            return HttpResponse::InternalServerError().finish();
+        }
+        if let Err(e) = data
+            .mahjong_data
+            .add_member_session_points(pt.to_member, -pt.points)
+            .await
+        {
+            println!("{e}");
+            return HttpResponse::InternalServerError().finish();
+        }
+        if let Err(e) = data.mahjong_data.disable_log(body.id).await {
+            println!("{e}");
+            return HttpResponse::InternalServerError().finish();
+        }
+    }
+    HttpResponse::Ok().body("Disabled log successfully.")
+}
+
 /* put_log handles either:
    - body.log = Some<Log>: Log editing (without point transfer)
    - body.log = None: Undo log (with point transfer)
 */
+/*
 pub async fn put_log(
     session: Session,
     data: web::Data<AppState>,

@@ -108,6 +108,7 @@ impl MahjongDataSqlite3 {
         // NULL, indicating a since-deleted member
         sqlx::query(
             "CREATE TABLE point_transfers(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 points NUMERIC NOT NULL,
                 log_id INT NOT NULL,
                 to_member INT,
@@ -274,7 +275,10 @@ impl MahjongDataSqlite3 {
             .await?;
         Ok(())
     }
+}
 
+// MEMBERS
+impl MahjongDataSqlite3 {
     pub async fn get_member(&self, member_id: MemberId) -> Result<Member, sqlx::Error> {
         let mut conn = self.connect().await;
         let mr: MemberRow = sqlx::query_as("SELECT * FROM members WHERE member_id = ?")
@@ -398,6 +402,19 @@ impl MahjongDataSqlite3 {
         Ok(())
     }
 
+    pub async fn get_point_transfers(
+        &self,
+        log_id: LogId,
+    ) -> Result<Vec<PointTransfer>, sqlx::Error> {
+        let mut conn = self.connect().await;
+        let transfers: Vec<PointTransfer> =
+            sqlx::query_as("SELECT * FROM point_transfers WHERE log_id = ?")
+                .bind(log_id)
+                .fetch_all(&mut conn)
+                .await?;
+        Ok(transfers)
+    }
+
     pub async fn new_log(&self, lr: LogRow) -> Result<(), sqlx::Error> {
         let mut conn = self.connect().await;
         sqlx::query("INSERT INTO logs (id, win_kind, points, faan, datetime, round_wind) VALUES (?, ?, ?, ?, ?, ?)")
@@ -421,6 +438,24 @@ impl MahjongDataSqlite3 {
             .bind(pt.from_member)
             .execute(&mut conn)
             .await?;
+        Ok(())
+    }
+
+    pub async fn disable_log(&self, log_id: LogId) -> Result<(), sqlx::Error> {
+        let mut conn = self.connect().await;
+        sqlx::query("UPDATE logs SET disabled = true WHERE id = ?;").bind(log_id).execute(&mut conn).await?;
+        Ok(())
+    }
+
+    pub async fn revert_one_matching_transfer(&self, pt: PointTransfer) -> Result<(), sqlx::Error> {
+        let mut conn = self.connect().await;
+        let (pt_id,): (u32,) = sqlx::query_as("SELECT (id) FROM point_transfers WHERE points = ? AND to_member = ? AND from_member = ?;")
+            .bind(pt.points)
+            .bind(pt.to_member)
+            .bind(pt.from_member)
+            .fetch_one(&mut conn)
+            .await?;
+        sqlx::query("DELETE FROM point_transfers WHERE id = ?").bind(pt_id).execute(&mut conn).await?;
         Ok(())
     }
 }
