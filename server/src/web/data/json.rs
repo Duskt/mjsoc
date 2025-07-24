@@ -149,4 +149,38 @@ impl MahjongDataMutator<Infallible, TableNotFoundError> for MahjongDataJson {
     } else {
         HttpResponse::BadRequest().body(format!("Could not find a member with the id {}", body.id))
     }
+
+
+    POINT TRANSFER
+        let mut mj = data.mahjong_data.lock().unwrap();
+    if mj.data.log.iter().any(|l| l.id == body.id) {
+        return HttpResponse::BadRequest().body("id already exists");
+    }
+
+    // calc points, defaulting to body.points (legacy) which frontend calculates
+    let points = match Faan::get_base_points(body.faan, body.win_kind.clone()) {
+        Some(calc_pts) => calc_pts,
+        None => body.points,
+    };
+    // take the points from...
+    let mut update_members: Vec<Member> = vec![];
+    for id in body.from.iter() {
+        for member in mj.data.members.iter_mut() {
+            if member.id == *id {
+                member.tournament.session_points -= points;
+                update_members.push(member.clone());
+            }
+        }
+    }
+    // and give points*n to...
+    let winner_points = ((points as isize) * (body.from.len() as isize)) as i32;
+    if let Some(mem) = mj.data.members.iter_mut().find(|mem| mem.id == body.to) {
+        mem.tournament.session_points += winner_points;
+        update_members.push(mem.clone());
+    }
+    // log the PointTransfer request
+    mj.data.log.push(body.to_owned());
+    mj.save();
+    // send back the affected members as confirmation
+    HttpResponse::Ok().json(update_members)
 */

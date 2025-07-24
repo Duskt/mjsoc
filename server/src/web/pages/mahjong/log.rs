@@ -10,7 +10,10 @@ use urlencoding::encode;
 use crate::{
     auth::is_authenticated,
     components::page::page,
-    data::structs::{Faan, Log, LogId, Member},
+    data::{
+        sqlite::{LogRow, PointTransfer},
+        structs::{Faan, Log, LogId, Member, TournamentData},
+    },
     AppState,
 };
 
@@ -40,7 +43,7 @@ pub async fn get_log_page(
     HttpResponse::Ok().body(html.into_string())
 }
 
-// a.k.a POST log, but for actual point transfer this endpoint (/members/transfer) must be used
+// similar to POST log, but for actual point transfer this endpoint (/members/transfer) must be used
 pub async fn transfer_points(
     session: Session,
     data: web::Data<AppState>,
@@ -50,39 +53,76 @@ pub async fn transfer_points(
         // todo: should include WW-Authentication header...
         return HttpResponse::Unauthorized().finish();
     }
-    let mut mj = data.mahjong_data.lock().unwrap();
-    if mj.data.log.iter().any(|l| l.id == body.id) {
-        return HttpResponse::BadRequest().body("id already exists");
+
+    if body.disabled {
+        return HttpResponse::BadRequest().body("Points cannot be transferred for a disabled log - you should simply POST the log instead.");
     }
 
-    // calc points, defaulting to body.points (legacy) which frontend calculates
-    let points = match Faan::get_base_points(body.faan, body.win_kind.clone()) {
-        Some(calc_pts) => calc_pts,
-        None => body.points,
+    // calc points, defaulting to frontend-calculated body.points (legacy)
+    let opt_points = if let Some(faan) = body.faan.clone() {
+        faan.get_points(body.win_kind.clone())
+    } else {
+        Some(body.points)
     };
-    // take the points from...
-    let mut update_members: Vec<Member> = vec![];
-    for id in body.from.iter() {
-        for member in mj.data.members.iter_mut() {
-            if member.id == *id {
-                member.tournament.session_points -= points;
-                update_members.push(member.clone());
-            }
+    let Some(points) = opt_points else {
+        return HttpResponse::BadRequest().body("Wrong faan");
+    };
+
+    let log = body.clone();
+    if let Err(e) = data
+        .mahjong_data
+        .new_log(LogRow {
+            id: log.id,
+            points,
+            faan: log.faan,
+            win_kind: log.win_kind,
+            datetime: log.datetime,
+            round_wind: log.round_wind,
+            seat_wind: log.seat_wind,
+            disabled: log.disabled,
+        })
+        .await
+    {
+        println!("{e}");
+        return HttpResponse::InternalServerError().body("Failure in new log.");
+    }
+
+    for l in body.from.clone() {
+        if let Err(e) = data
+            .mahjong_data
+            .add_member_session_points(l, -points)
+            .await
+        {
+            println!("{e}");
+            return HttpResponse::BadGateway().body("Err. Some data may have been changed.");
+        }
+        if let Err(e) = data
+            .mahjong_data
+            .add_member_session_points(body.to, points)
+            .await
+        {
+            println!("{e}");
+            return HttpResponse::BadRequest().body("Err. Some data may have been changed.");
+        };
+        if let Err(e) = data.mahjong_data.new_point_transfer(PointTransfer {
+            log_id: body.id,
+            points,
+            to_member: body.to,
+            from_member: l,
+        }).await {
+            println!("{e}");
+            return HttpResponse::InternalServerError().finish();
+        };
+    }
+    match data.mahjong_data.get_members([body.from.clone(), [body.to].to_vec()].concat()).await {
+        Ok(r) => HttpResponse::Ok().json(r),
+        Err(e) => {
+            println!("{e}");
+            HttpResponse::InternalServerError().finish()
         }
     }
-    // and give points*n to...
-    let winner_points = ((points as isize) * (body.from.len() as isize)) as i32;
-    if let Some(mem) = mj.data.members.iter_mut().find(|mem| mem.id == body.to) {
-        mem.tournament.session_points += winner_points;
-        update_members.push(mem.clone());
-    }
-    // log the PointTransfer request
-    mj.data.log.push(body.to_owned());
-    mj.save();
-    // send back the affected members as confirmation
-    HttpResponse::Ok().json(update_members)
 }
-
+/*
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PutLogRequest {
     id: LogId,
@@ -152,3 +192,4 @@ fn undo_log(data: web::Data<AppState>, log_id: LogId) -> HttpResponse {
     mj.save();
     HttpResponse::Ok().json(changes)
 }
+*/

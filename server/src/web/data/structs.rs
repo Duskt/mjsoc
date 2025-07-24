@@ -1,10 +1,6 @@
-
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{
-    prelude::{FromRow, Type},
-    Decode,
-};
+use sqlx::prelude::FromRow;
 
 // a single member's data associated with a tournament
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,7 +34,7 @@ pub struct TableData {
     pub north: MemberId,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(rename_all = "lowercase", type_name = "wind")]
 #[serde(rename_all = "lowercase")]
 pub enum Wind {
@@ -48,7 +44,7 @@ pub enum Wind {
     North,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(rename_all = "lowercase", type_name = "win_kind")]
 #[serde(rename_all = "lowercase")]
 pub enum WinKind {
@@ -59,13 +55,13 @@ pub enum WinKind {
 
 pub type LogId = u32;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Decode)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 pub struct Log {
     pub id: LogId,
     pub to: MemberId,
     pub from: Vec<MemberId>,
     pub points: i32,
-    pub faan: Option<i8>,
+    pub faan: Option<Faan>,
     pub win_kind: Option<WinKind>,
     pub datetime: Option<DateTime<Utc>>,
     pub round_wind: Option<Wind>,
@@ -76,6 +72,8 @@ pub struct Log {
     pub disabled: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(transparent)]
 pub struct Faan(i8);
 
 impl Faan {
@@ -94,7 +92,11 @@ impl Faan {
         }
     }
 
-    pub fn get_loss_points(&self, win_kind: Option<WinKind>) -> Option<i32> {
+    pub fn get_points(&self, win_kind: Option<WinKind>) -> Option<i32> {
+        // the number of points transferred from one loser to one winner
+        // dachut: double the base points from loser to winner
+        // baozimo: the same ^, but triple
+        // zimo: for each loser, base points from loser to winner
         let raw_points = Faan::get_base_points(self)?;
         match win_kind {
             Some(WinKind::Zimo) => Some(raw_points),
@@ -120,7 +122,7 @@ impl MahjongData {
     pub fn get_table_index(&self, table_no: TableNo) -> Result<usize, TableNotFoundError> {
         match self.tables.iter().position(|td| td.table_no == table_no) {
             Some(td) => Ok(td),
-            None => Err(TableNotFoundError)
+            None => Err(TableNotFoundError),
         }
     }
     pub fn default() -> Self {

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use crate::data::{
     mutator::{get_new_index, MahjongDataError, MahjongDataHandler, MahjongDataMutator},
-    structs::{Log, MahjongData, Member, TableData, TableNo, TournamentData},
+    structs::{Faan, Log, MahjongData, Member, TableData, TableNo, TournamentData},
 };
 
 use chrono::{DateTime, Utc};
@@ -27,7 +27,7 @@ pub struct MemberRow {
 pub struct LogRow {
     pub id: LogId,
     pub points: i32,
-    pub faan: Option<i8>,
+    pub faan: Option<Faan>,
     pub win_kind: Option<WinKind>,
     pub datetime: Option<DateTime<Utc>>,
     pub round_wind: Option<Wind>,
@@ -38,10 +38,10 @@ pub struct LogRow {
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct PointTransfer {
-    log_id: LogId,
-    points: i32,
-    to_member: MemberId,
-    from_member: MemberId,
+    pub log_id: LogId,
+    pub points: i32,
+    pub to_member: MemberId,
+    pub from_member: MemberId,
 }
 
 pub struct MahjongDataSqlite3 {
@@ -144,6 +144,7 @@ impl MahjongDataSqlite3 {
     }
 
     pub async fn remake_log(conn: &mut SqliteConnection, lr: LogRow) -> Log {
+        // Given a LogRow, reconstruct the Log which it represents
         let point_transfers =
             sqlx::query_as::<_, PointTransfer>("SELECT * FROM point_transfers WHERE log_id = ?")
                 .bind(lr.id)
@@ -291,6 +292,17 @@ impl MahjongDataSqlite3 {
         })
     }
 
+    pub async fn get_members(&self, member_ids: Vec<MemberId>) -> Result<Vec<Member>, sqlx::Error> {
+        let mut result: Vec<Member> = Vec::new();
+        for mid in member_ids {
+            match self.get_member(mid).await {
+                Ok(m) => result.push(m),
+                Err(e) => return Err(e),
+            }
+        };
+        Ok(result)
+    }
+
     pub async fn new_member(&self, name: String) -> Result<Member, sqlx::Error> {
         let mut conn = self.connect().await;
         let member_ids: Vec<(MemberId,)> = sqlx::query_as("SELECT member_id FROM members;")
@@ -335,10 +347,47 @@ impl MahjongDataSqlite3 {
         Ok(())
     }
 
+    pub async fn add_member_session_points(&self, member_id: MemberId, point_increase: i32) -> Result<(), sqlx::Error> {
+        let mut conn = self.connect().await;
+        let member = self.get_member(member_id).await?;
+        sqlx::query("UPDATE members SET session_points = ? WHERE member_id = ?")
+            .bind(member.tournament.session_points + point_increase)
+            .bind(member_id)
+            .execute(&mut conn)
+            .await?;
+        Ok(())
+    }
+
     pub async fn del_member(&self, member_id: MemberId) -> Result<(), sqlx::Error> {
         let mut conn = self.connect().await;
         sqlx::query("DELETE FROM members WHERE member_id = ?")
             .bind(member_id)
+            .execute(&mut conn)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn new_log(&self, lr: LogRow) -> Result<(), sqlx::Error> {
+        let mut conn = self.connect().await;
+        sqlx::query("INSERT INTO logs (id, win_kind, points, faan, datetime, round_wind) VALUES (?, ?, ?, ?, ?, ?)")
+            .bind(lr.id)
+            .bind(lr.win_kind)
+            .bind(lr.points)
+            .bind(lr.faan)
+            .bind(lr.datetime)
+            .bind(lr.round_wind)
+            .execute(&mut conn)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn new_point_transfer(&self, pt: PointTransfer) -> Result<(), sqlx::Error> {
+        let mut conn = self.connect().await;
+        sqlx::query("INSERT INTO point_transfers (points, log_id, to_member, from_member) VALUES (?, ?, ?, ?)")
+            .bind(pt.points)
+            .bind(pt.log_id)
+            .bind(pt.to_member)
+            .bind(pt.from_member)
             .execute(&mut conn)
             .await?;
         Ok(())
