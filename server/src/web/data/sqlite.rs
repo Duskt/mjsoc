@@ -104,13 +104,14 @@ impl MahjongDataSqlite3 {
         .execute(&mut conn)
         .await
         .unwrap();
-        // point transfers are linked to a certain log, acting like an array
+        // point transfers are linked to a certain log, acting like an array. to_ and from_ can be
+        // NULL, indicating a since-deleted member
         sqlx::query(
             "CREATE TABLE point_transfers(
                 points NUMERIC NOT NULL,
                 log_id INT NOT NULL,
-                to_member INT NOT NULL,
-                from_member INT NOT NULL,
+                to_member INT,
+                from_member INT,
                 FOREIGN KEY(log_id) REFERENCES logs(id),
                 FOREIGN KEY(to_member) REFERENCES members(member_id),
                 FOREIGN KEY(from_member) REFERENCES MEMBERS(member_id)
@@ -299,7 +300,7 @@ impl MahjongDataSqlite3 {
                 Ok(m) => result.push(m),
                 Err(e) => return Err(e),
             }
-        };
+        }
         Ok(result)
     }
 
@@ -347,7 +348,11 @@ impl MahjongDataSqlite3 {
         Ok(())
     }
 
-    pub async fn add_member_session_points(&self, member_id: MemberId, point_increase: i32) -> Result<(), sqlx::Error> {
+    pub async fn add_member_session_points(
+        &self,
+        member_id: MemberId,
+        point_increase: i32,
+    ) -> Result<(), sqlx::Error> {
         let mut conn = self.connect().await;
         let member = self.get_member(member_id).await?;
         sqlx::query("UPDATE members SET session_points = ? WHERE member_id = ?")
@@ -360,6 +365,32 @@ impl MahjongDataSqlite3 {
 
     pub async fn del_member(&self, member_id: MemberId) -> Result<(), sqlx::Error> {
         let mut conn = self.connect().await;
+        // remove the member from tables...
+        sqlx::query("UPDATE mahjong_tables SET east = NULL WHERE east = ?")
+            .bind(member_id)
+            .execute(&mut conn)
+            .await?;
+        sqlx::query("UPDATE mahjong_tables SET south = NULL WHERE south = ?")
+            .bind(member_id)
+            .execute(&mut conn)
+            .await?;
+        sqlx::query("UPDATE mahjong_tables SET west = NULL WHERE west = ?")
+            .bind(member_id)
+            .execute(&mut conn)
+            .await?;
+        sqlx::query("UPDATE mahjong_tables SET north = NULL WHERE north = ?")
+            .bind(member_id)
+            .execute(&mut conn)
+            .await?;
+        // remove the member from point transfers...
+        sqlx::query("UPDATE point_transfers SET to_member = NULL WHERE to_member = ?")
+            .bind(member_id)
+            .execute(&mut conn)
+            .await?;
+        sqlx::query("UPDATE point_transfers SET from_member = NULL WHERE from_member = ?")
+            .bind(member_id)
+            .execute(&mut conn)
+            .await?;
         sqlx::query("DELETE FROM members WHERE member_id = ?")
             .bind(member_id)
             .execute(&mut conn)
