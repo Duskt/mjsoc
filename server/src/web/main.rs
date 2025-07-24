@@ -126,7 +126,7 @@ async fn get_initial_state() -> AppState {
     let hmac_key = get_file_bytes(&hmac_key_path);
 
     let mahjong_data_path = env::expect_env("MAHJONG_DATA_PATH");
-    let mahjong_data_mutator = MahjongDataSqlite3::from_str(&mahjong_data_path);
+    let mahjong_data_mutator = MahjongDataSqlite3::from_str(&mahjong_data_path).await;
 
     AppState {
         authenticated_keys: RwLock::new(CircularBuffer::new()),

@@ -1,8 +1,10 @@
-use sqlx::{migrate::MigrateDatabase, Connection, Sqlite, SqliteConnection};
+use sqlx::{
+    migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Sqlite, SqlitePool,
+};
 use std::path::PathBuf;
 
 use crate::data::{
-    mutator::{get_new_index, MahjongDataError, MahjongDataHandler, MahjongDataMutator},
+    mutator::{get_new_index, MahjongDataError, MahjongDataMutator},
     structs::{Faan, Log, MahjongData, Member, TableData, TableNo, TournamentData},
 };
 
@@ -46,6 +48,7 @@ pub struct PointTransfer {
 
 pub struct MahjongDataSqlite3 {
     pub path: PathBuf,
+    pub pool: SqlitePool,
 }
 
 fn canonicalize_parent(path: &str) -> PathBuf {
@@ -62,9 +65,20 @@ fn canonicalize_parent(path: &str) -> PathBuf {
 }
 
 impl MahjongDataSqlite3 {
-    pub fn from_str(path: &str) -> Self {
+    pub async fn get_pool(path: PathBuf) -> SqlitePool {
+        SqlitePoolOptions::new()
+            .max_connections(2)
+            .min_connections(0)
+            .connect(path.to_str().unwrap())
+            .await
+            .unwrap()
+    }
+    pub async fn from_str(path: &str) -> Self {
         let path = canonicalize_parent(path);
-        MahjongDataSqlite3 { path }
+        MahjongDataSqlite3 {
+            path: path.clone(),
+            pool: MahjongDataSqlite3::get_pool(path).await,
+        }
     }
     /* MahjongDataSqlite3 { path } or from_str will refer to an existing database. MahjongDataSqlite3::new(path)
     or new_from_str will set up a new database, and error if it already exists.*/
@@ -72,7 +86,6 @@ impl MahjongDataSqlite3 {
         Sqlite::create_database(&format!("sqlite:{}", self.path.to_str().unwrap()))
             .await
             .expect("err");
-        let mut conn = self.connect().await;
         // members, who exist independently of a particular session
         sqlx::query(
             "CREATE TABLE members(
@@ -84,7 +97,7 @@ impl MahjongDataSqlite3 {
                 registered INTEGER NOT NULL DEFAULT 0
             );",
         )
-        .execute(&mut conn)
+        .execute(&self.pool)
         .await
         .unwrap();
         // tables, dependent on member ids and used in a particular session
@@ -101,7 +114,7 @@ impl MahjongDataSqlite3 {
                 FOREIGN KEY(north) REFERENCES members(member_id)
             );",
         )
-        .execute(&mut conn)
+        .execute(&self.pool)
         .await
         .unwrap();
         // point transfers are linked to a certain log, acting like an array. to_ and from_ can be
@@ -118,7 +131,7 @@ impl MahjongDataSqlite3 {
                 FOREIGN KEY(from_member) REFERENCES MEMBERS(member_id)
             );",
         )
-        .execute(&mut conn)
+        .execute(&self.pool)
         .await
         .unwrap();
         // logs, to which point transfers are attached
@@ -134,23 +147,17 @@ impl MahjongDataSqlite3 {
                 disabled INTEGER NOT NULL DEFAULT 0
             );",
         )
-        .execute(&mut conn)
+        .execute(&self.pool)
         .await
         .unwrap();
     }
 
-    async fn connect(&self) -> SqliteConnection {
-        sqlx::SqliteConnection::connect(self.path.to_str().unwrap())
-            .await
-            .unwrap_or_else(|_| panic!("Couldn't connect to database at {}", self.path.display()))
-    }
-
-    pub async fn remake_log(conn: &mut SqliteConnection, lr: LogRow) -> Log {
+    pub async fn remake_log(&self, lr: LogRow) -> Log {
         // Given a LogRow, reconstruct the Log which it represents
         let point_transfers =
             sqlx::query_as::<_, PointTransfer>("SELECT * FROM point_transfers WHERE log_id = ?")
                 .bind(lr.id)
-                .fetch_all(conn)
+                .fetch_all(&self.pool)
                 .await
                 .unwrap();
         let to_member = point_transfers.first().unwrap().to_member;
@@ -188,13 +195,12 @@ impl MahjongDataSqlite3 {
             self.setup().await;
         }
         // TODO: database_exists doesn't check if the file is a database, just if it exists
-        let mut conn = self.connect().await;
         let tables = sqlx::query_as::<_, TableData>("SELECT * FROM mahjong_tables;")
-            .fetch_all(&mut conn)
+            .fetch_all(&self.pool)
             .await
             .unwrap();
         let members = sqlx::query_as::<_, MemberRow>("SELECT * FROM members;")
-            .fetch_all(&mut conn)
+            .fetch_all(&self.pool)
             .await
             .unwrap()
             .into_iter()
@@ -210,14 +216,14 @@ impl MahjongDataSqlite3 {
             })
             .collect();
         let logrows = sqlx::query_as::<_, LogRow>("SELECT * FROM logs;")
-            .fetch_all(&mut conn)
+            .fetch_all(&self.pool)
             .await
             .unwrap();
         // this might be possible with SQL joins
         // todo: learn how to do this functionally with map and future::join_all
         let mut log: Vec<Log> = Vec::new();
         for lr in logrows {
-            log.push(MahjongDataSqlite3::remake_log(&mut conn, lr).await)
+            log.push(self.remake_log(lr).await)
         }
         MahjongData {
             tables,
@@ -241,10 +247,9 @@ impl MahjongDataSqlite3 {
     pub async fn new_table(&self) -> Result<TableData, sqlx::Error> {
         // TODO: ASAP replace w/ much more efficient sqlite version
         let Ok(table) = self.load().await.new_table().await;
-        let mut conn = self.connect().await;
         sqlx::query("INSERT INTO mahjong_tables (table_no) VALUES (?)")
             .bind(table.table_no)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         Ok(table)
     }
@@ -254,7 +259,6 @@ impl MahjongDataSqlite3 {
         table_no: TableNo,
         new_table: TableData,
     ) -> Result<(), sqlx::Error> {
-        let mut conn = self.connect().await;
         sqlx::query("UPDATE mahjong_tables SET table_no = ?, east = ?, south = ?, west = ?, north = ? WHERE table_no = ?")
             .bind(new_table.table_no)
             .bind(memberify(new_table.east))
@@ -262,16 +266,15 @@ impl MahjongDataSqlite3 {
             .bind(memberify(new_table.west))
             .bind(memberify(new_table.north))
             .bind(table_no)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         Ok(())
     }
 
     pub async fn del_table(&self, table_no: TableNo) -> Result<(), sqlx::Error> {
-        let mut conn = self.connect().await;
         sqlx::query("DELETE FROM mahjong_tables WHERE table_no = ?")
             .bind(table_no)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         Ok(())
     }
@@ -280,10 +283,9 @@ impl MahjongDataSqlite3 {
 // MEMBERS
 impl MahjongDataSqlite3 {
     pub async fn get_member(&self, member_id: MemberId) -> Result<Member, sqlx::Error> {
-        let mut conn = self.connect().await;
         let mr: MemberRow = sqlx::query_as("SELECT * FROM members WHERE member_id = ?")
             .bind(member_id)
-            .fetch_one(&mut conn)
+            .fetch_one(&self.pool)
             .await?;
         Ok(Member {
             id: mr.member_id,
@@ -309,15 +311,14 @@ impl MahjongDataSqlite3 {
     }
 
     pub async fn new_member(&self, name: String) -> Result<Member, sqlx::Error> {
-        let mut conn = self.connect().await;
         let member_ids: Vec<(MemberId,)> = sqlx::query_as("SELECT member_id FROM members;")
-            .fetch_all(&mut conn)
+            .fetch_all(&self.pool)
             .await?;
         let new_id = get_new_index(member_ids.iter().map(|(td,)| *td).collect());
         sqlx::query("INSERT INTO members (member_id, name) VALUES (?, ?)")
             .bind(new_id)
             .bind(name.clone())
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         // todo: use default impl for Member
         Ok(Member {
@@ -338,7 +339,6 @@ impl MahjongDataSqlite3 {
         member_id: MemberId,
         new_member: Member,
     ) -> Result<(), sqlx::Error> {
-        let mut conn = self.connect().await;
         sqlx::query("UPDATE members SET member_id = ?, name = ?, council = ?, total_points = ?, session_points = ?, registered = ? WHERE member_id = ?")
             .bind(new_member.id)
             .bind(new_member.name)
@@ -347,7 +347,7 @@ impl MahjongDataSqlite3 {
             .bind(new_member.tournament.session_points)
             .bind(new_member.tournament.registered)
             .bind(member_id)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         Ok(())
     }
@@ -357,47 +357,45 @@ impl MahjongDataSqlite3 {
         member_id: MemberId,
         point_increase: i32,
     ) -> Result<(), sqlx::Error> {
-        let mut conn = self.connect().await;
         let member = self.get_member(member_id).await?;
         sqlx::query("UPDATE members SET session_points = ? WHERE member_id = ?")
             .bind(member.tournament.session_points + point_increase)
             .bind(member_id)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         Ok(())
     }
 
     pub async fn del_member(&self, member_id: MemberId) -> Result<(), sqlx::Error> {
-        let mut conn = self.connect().await;
         // remove the member from tables...
         sqlx::query("UPDATE mahjong_tables SET east = NULL WHERE east = ?")
             .bind(member_id)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         sqlx::query("UPDATE mahjong_tables SET south = NULL WHERE south = ?")
             .bind(member_id)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         sqlx::query("UPDATE mahjong_tables SET west = NULL WHERE west = ?")
             .bind(member_id)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         sqlx::query("UPDATE mahjong_tables SET north = NULL WHERE north = ?")
             .bind(member_id)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         // remove the member from point transfers...
         sqlx::query("UPDATE point_transfers SET to_member = NULL WHERE to_member = ?")
             .bind(member_id)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         sqlx::query("UPDATE point_transfers SET from_member = NULL WHERE from_member = ?")
             .bind(member_id)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         sqlx::query("DELETE FROM members WHERE member_id = ?")
             .bind(member_id)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         Ok(())
     }
@@ -406,17 +404,15 @@ impl MahjongDataSqlite3 {
         &self,
         log_id: LogId,
     ) -> Result<Vec<PointTransfer>, sqlx::Error> {
-        let mut conn = self.connect().await;
         let transfers: Vec<PointTransfer> =
             sqlx::query_as("SELECT * FROM point_transfers WHERE log_id = ?")
                 .bind(log_id)
-                .fetch_all(&mut conn)
+                .fetch_all(&self.pool)
                 .await?;
         Ok(transfers)
     }
 
     pub async fn new_log(&self, lr: LogRow) -> Result<(), sqlx::Error> {
-        let mut conn = self.connect().await;
         sqlx::query("INSERT INTO logs (id, win_kind, points, faan, datetime, round_wind) VALUES (?, ?, ?, ?, ?, ?)")
             .bind(lr.id)
             .bind(lr.win_kind)
@@ -424,38 +420,41 @@ impl MahjongDataSqlite3 {
             .bind(lr.faan)
             .bind(lr.datetime)
             .bind(lr.round_wind)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         Ok(())
     }
 
     pub async fn new_point_transfer(&self, pt: PointTransfer) -> Result<(), sqlx::Error> {
-        let mut conn = self.connect().await;
         sqlx::query("INSERT INTO point_transfers (points, log_id, to_member, from_member) VALUES (?, ?, ?, ?)")
             .bind(pt.points)
             .bind(pt.log_id)
             .bind(pt.to_member)
             .bind(pt.from_member)
-            .execute(&mut conn)
+            .execute(&self.pool)
             .await?;
         Ok(())
     }
 
     pub async fn disable_log(&self, log_id: LogId) -> Result<(), sqlx::Error> {
-        let mut conn = self.connect().await;
-        sqlx::query("UPDATE logs SET disabled = true WHERE id = ?;").bind(log_id).execute(&mut conn).await?;
+        sqlx::query("UPDATE logs SET disabled = true WHERE id = ?;")
+            .bind(log_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
     pub async fn revert_one_matching_transfer(&self, pt: PointTransfer) -> Result<(), sqlx::Error> {
-        let mut conn = self.connect().await;
         let (pt_id,): (u32,) = sqlx::query_as("SELECT (id) FROM point_transfers WHERE points = ? AND to_member = ? AND from_member = ?;")
             .bind(pt.points)
             .bind(pt.to_member)
             .bind(pt.from_member)
-            .fetch_one(&mut conn)
+            .fetch_one(&self.pool)
             .await?;
-        sqlx::query("DELETE FROM point_transfers WHERE id = ?").bind(pt_id).execute(&mut conn).await?;
+        sqlx::query("DELETE FROM point_transfers WHERE id = ?")
+            .bind(pt_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 }
