@@ -6,7 +6,7 @@ use urlencoding::encode;
 
 use crate::{
     auth::is_authenticated,
-    data::structs::{Member, MemberId},
+    data::{sqlite::MembersMutator, structs::{Member, MemberId}},
     AppState,
 };
 

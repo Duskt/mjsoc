@@ -7,7 +7,7 @@ use serde::Deserialize;
 use urlencoding::encode;
 
 use crate::{
-    auth::is_authenticated, components::page::page, data::structs::TableData,
+    auth::is_authenticated, components::page::page, data::{sqlite::TablesMutator, structs::TableData},
     util::get_redirect_response, AppState,
 };
 
