@@ -51,7 +51,7 @@ pub async fn create_table(session: Session, data: web::Data<AppState>) -> impl R
     }
     match data.mahjong_data.new_table().await {
         Ok(td) => HttpResponse::Created().json(td),
-        Err(_) => HttpResponse::InternalServerError().body("Unknown database error occurred."),
+        Err(e) => e.handle()
     }
 }
 

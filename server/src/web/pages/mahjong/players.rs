@@ -32,7 +32,7 @@ pub async fn update_member(
     }
     match data.mahjong_data.mut_member(body.id, body.new_member.clone()).await {
         Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().body("TODO")
+        Err(e) => e.handle()
     }
 }
 
@@ -58,7 +58,7 @@ pub async fn create_member(
     match data.mahjong_data.new_member(body.name.clone()).await {
         // TODO:
         Ok(m) => HttpResponse::Created().json(m),
-        Err(_) => HttpResponse::InternalServerError().body("TODO")
+        Err(e) => e.handle()
     }
 }
 

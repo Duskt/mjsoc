@@ -67,8 +67,9 @@ pub async fn manual_register_attendance(
         // should do headers
         return HttpResponse::Unauthorized().finish();
     }
-    let Ok(mut member) = data.mahjong_data.get_member(body.member_id).await else {
-        return HttpResponse::BadRequest().body(format!("Couldn't find member with ID {}", body.member_id))
+    let mut member = match data.mahjong_data.get_member(body.member_id).await {
+        Ok(m) => m,
+        Err(e) => return e.handle()
     };
     member.tournament.registered = !(member.tournament.registered);
     let is_now_registered = member.tournament.registered;

@@ -1,5 +1,5 @@
 use sqlx::{
-    migrate::MigrateDatabase, query::QueryAs, sqlite::SqlitePoolOptions, Connection, Sqlite,
+    migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Connection, Sqlite,
     SqlitePool,
 };
 use std::path::PathBuf;
@@ -257,26 +257,34 @@ impl MahjongDataSqlite3 {
     }
 }
 
+pub enum PrimaryEntryKind {
+    Member(MemberId),
+    Table(TableNo)
+}
+
 impl MahjongDataSqlite3 {
-    // hm, this seems a little verbose... and incomprehensible...
-    pub async fn get_single_match<'q, O>(
+    pub async fn get_entry<O: Send + Unpin + for<'r> FromRow<'r, <sqlx::Sqlite as sqlx::Database>::Row>>(
         &self,
-        query: QueryAs<'q, Sqlite, O, sqlx::sqlite::SqliteArguments<'q>>,
-    ) -> Result<O, MahjongDataError>
-    where
-        O: Send + Unpin + for<'r> FromRow<'r, <sqlx::Sqlite as sqlx::Database>::Row>,
-    {
-        let result = query.fetch_all(&self.pool).await;
+        entry: PrimaryEntryKind
+    ) -> Result<O, MahjongDataError> {
+        let (sqlite_table, entry_id_name, entry_id) = match entry {
+            PrimaryEntryKind::Member(mid) => ("members", "member_id", mid),
+            PrimaryEntryKind::Table(tno) => ("mahjong_tables", "table_no", tno)
+        };
+        // only formatting statically known strings - user values are bound!
+        let statement = format!("SELECT * FROM {sqlite_table} WHERE {entry_id_name} = ?");
+        let query = sqlx::query_as(&statement).bind(entry_id);
+        let result= query.fetch_all(&self.pool).await;
         let mut matches = match result {
             Err(e) => return Err(MahjongDataError::Unknown(e)),
             Ok(r) => r,
         };
         if matches.len() > 1 {
-            return Err(MahjongDataError::DuplicatesFound);
+            return Err(MahjongDataError::DuplicatesFound(entry));
         }
         match matches.pop() {
             Some(r) => Ok(r),
-            None => Err(MahjongDataError::ReferenceNotFound),
+            None => Err(MahjongDataError::ReferenceNotFound(entry)),
         }
     }
 }
@@ -490,11 +498,7 @@ impl MembersMutator for MahjongDataSqlite3 {
 // MEMBERS
 impl MahjongDataSqlite3 {
     pub async fn get_member(&self, member_id: MemberId) -> Result<Member, MahjongDataError> {
-        let mr: MemberRow = self
-            .get_single_match(
-                sqlx::query_as("SELECT * FROM members WHERE member_id = ?").bind(member_id),
-            )
-            .await?;
+        let mr: MemberRow = self.get_entry(PrimaryEntryKind::Member(member_id)).await?;
         Ok(mr.into())
     }
 
