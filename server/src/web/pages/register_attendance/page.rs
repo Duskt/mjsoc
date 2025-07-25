@@ -2,7 +2,7 @@ use crate::{
     auth::is_authenticated, data::{sqlite::MembersMutator, structs::MemberId}, errors::{
         either_error::EitherError, insert_member_error::InsertMemberErr,
         signature_error::SignatureErr,
-    }, google::sheets::insert_new_member, pages::register_attendance::data::flip_names, util::get_redirect_response, AppState
+    }, util::get_redirect_response, AppState
 };
 
 use actix_session::Session;
@@ -15,7 +15,6 @@ use super::data::QrAttendanceQuery;
 
 // This is the URL that a QR code links to, with the appropriate query.
 // When sending a GET, it uses this path.
-/*
 pub async fn register_qr_attendance(
     info: web::Query<QrAttendanceQuery>,
     data: web::Data<AppState>,
@@ -37,20 +36,8 @@ pub async fn register_qr_attendance(
         );
         return Err(EitherError::from_left(SignatureErr));
     }
-
-    println!("Recording attendance");
-
-    // Flip before giving it to the sheets api
-    let flipped_name = flip_names(&info.name);
-    let session_week_number = data.mahjong_data.lock().unwrap().data.week.increment();
-
-    insert_new_member(&flipped_name, session_week_number)
-        .await
-        .map_err(EitherError::from_right)?;
-
-    Ok(HttpResponse::Created().body(format!("{} has been added to the roster.", &info.name)))
+    Ok(HttpResponse::NotImplemented().body("To implement when QRs are used to access guest page."))
 }
-*/
 
 #[derive(Deserialize)]
 pub struct RegisterMemberPostRequest {
