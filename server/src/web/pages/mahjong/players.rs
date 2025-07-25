@@ -85,6 +85,6 @@ pub async fn delete_member(
 
     match data.mahjong_data.del_member(body.id).await {
         Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().body("TODO")
+        Err(e) => e.handle()
     }
 }

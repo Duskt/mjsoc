@@ -7,8 +7,11 @@ use serde::Deserialize;
 use urlencoding::encode;
 
 use crate::{
-    auth::is_authenticated, components::page::page, data::{sqlite::TablesMutator, structs::TableData},
-    util::get_redirect_response, AppState,
+    auth::is_authenticated,
+    components::page::page,
+    data::{sqlite::TablesMutator, structs::TableData},
+    util::get_redirect_response,
+    AppState,
 };
 
 // display tables webpage
@@ -75,10 +78,7 @@ pub async fn delete_table(
     // todo: validate table_no exists?
     match data.mahjong_data.del_table(body.table_no).await {
         Ok(_) => HttpResponse::Ok().body("Deleted table."),
-        Err(e) => {
-            println!("{e}");
-            HttpResponse::InternalServerError().body("Unknown database error occurred.")
-        }
+        Err(e) => e.handle()
     }
 }
 
@@ -97,13 +97,8 @@ pub async fn update_table(
         return get_redirect_response("/login?redirect=tables");
     }
     for EditTable { table_no, table } in body.iter() {
-        match data.mahjong_data.mut_table(*table_no, table.clone()).await {
-            Ok(_) => continue,
-            Err(e) => {
-                println!("{e}");
-                return HttpResponse::InternalServerError()
-                    .body("Unknown database error occurred. Some updates may have been made.");
-            }
+        if let Err(e) = data.mahjong_data.mut_table(*table_no, table.clone()).await {
+            return e.handle();
         };
     }
     HttpResponse::Ok().body("Updated table(s) as desired.")

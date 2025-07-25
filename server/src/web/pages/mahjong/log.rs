@@ -12,7 +12,7 @@ use crate::{
     components::page::page,
     data::{
         sqlite::{LogRow, PointTransfer},
-        structs::{Faan, Log, LogId, Member, TournamentData},
+        structs::{Log, LogId}
     },
     AppState,
 };
@@ -83,8 +83,7 @@ pub async fn transfer_points(
         })
         .await
     {
-        println!("{e}");
-        return HttpResponse::InternalServerError().body("Failure in new log.");
+        return e.handle();
     }
 
     for l in body.from.clone() {
@@ -93,16 +92,14 @@ pub async fn transfer_points(
             .add_member_session_points(l, -points)
             .await
         {
-            println!("{e}");
-            return HttpResponse::BadGateway().body("Err. Some data may have been changed.");
+            return e.handle();
         }
         if let Err(e) = data
             .mahjong_data
             .add_member_session_points(body.to, points)
             .await
         {
-            println!("{e}");
-            return HttpResponse::BadRequest().body("Err. Some data may have been changed.");
+            return e.handle();
         };
         if let Err(e) = data
             .mahjong_data
@@ -114,8 +111,7 @@ pub async fn transfer_points(
             })
             .await
         {
-            println!("{e}");
-            return HttpResponse::InternalServerError().finish();
+            return e.handle();
         };
     }
     match data
@@ -124,10 +120,9 @@ pub async fn transfer_points(
         .await
     {
         Ok(r) => HttpResponse::Ok().json(r),
-        Err(e) => {
-            println!("{e}");
-            HttpResponse::InternalServerError().finish()
-        }
+        Err(e) => 
+            e.handle()
+        
     }
 }
 
@@ -145,11 +140,12 @@ pub async fn put_log(
     if !is_authenticated(&session, &data.authenticated_keys) {
         return HttpResponse::Unauthorized().finish();
     };
-    if let Some(_) = &body.log {
+    if body.log.is_some() {
         return HttpResponse::NotImplemented().body("Omit log (provide only id) for undo log.");
     };
-    let Ok(transfers) = data.mahjong_data.get_point_transfers(body.id).await else {
-        return HttpResponse::InternalServerError().finish();
+    let transfers = match data.mahjong_data.get_point_transfers(body.id).await {
+        Ok(r) => r,
+        Err(e) => return e.handle()
     };
     for pt in transfers {
         // TODO critical must fix before merge this awful error handling
@@ -158,20 +154,17 @@ pub async fn put_log(
             .add_member_session_points(pt.from_member, pt.points)
             .await
         {
-            println!("{e}");
-            return HttpResponse::InternalServerError().finish();
+            return e.handle()
         }
         if let Err(e) = data
             .mahjong_data
             .add_member_session_points(pt.to_member, -pt.points)
             .await
         {
-            println!("{e}");
-            return HttpResponse::InternalServerError().finish();
+            return e.handle()
         }
         if let Err(e) = data.mahjong_data.disable_log(body.id).await {
-            println!("{e}");
-            return HttpResponse::InternalServerError().finish();
+            return e.handle()
         }
     }
     HttpResponse::Ok().body("Disabled log successfully.")

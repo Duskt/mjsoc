@@ -43,6 +43,19 @@ pub enum Wind {
     West,
     North,
 }
+impl Wind {
+    pub fn into_str(self) -> &'static str {
+        match self {
+            Self::East => "east",
+            Self::South => "south",
+            Self::West => "west",
+            Self::North => "north"
+        }
+    }
+    pub fn all() -> Vec<Self> {
+        vec![Wind::East, Wind::South, Wind::West, Wind::North]
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(rename_all = "lowercase", type_name = "win_kind")]
@@ -51,6 +64,16 @@ pub enum WinKind {
     Zimo,
     Dachut,
     Baozimo,
+}
+
+impl WinKind {
+    pub fn into_str(self) -> &'static str {
+        match self {
+            Self::Zimo => "zimo",
+            Self::Baozimo => "baozimo",
+            Self::Dachut => "dachut"
+        }
+    }
 }
 
 pub type LogId = u32;
