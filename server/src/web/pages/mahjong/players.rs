@@ -6,7 +6,7 @@ use urlencoding::encode;
 
 use crate::{
     auth::is_authenticated,
-    data::{sqlite::MembersMutator, structs::{Member, MemberId}},
+    data::{sqlite::{MemberMutation, MembersMutator}, structs::{Member, MemberId}},
     AppState,
 };
 
@@ -30,7 +30,7 @@ pub async fn update_member(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    match data.mahjong_data.mut_member(body.id, body.new_member.clone()).await {
+    match data.mahjong_data.mut_member(body.id, MemberMutation::All(body.new_member.clone())).await {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(e) => e.handle()
     }

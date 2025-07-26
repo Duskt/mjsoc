@@ -2,6 +2,23 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 
+#[derive(Debug)]
+pub enum EntryId {
+    Member(MemberId),
+    Table(TableNo),
+    Log(LogId)
+}
+
+impl EntryId {
+    pub fn get_table_key_value(&self) -> (&'static str, &'static str, u32) {
+        match self {
+            EntryId::Member(mid) => ("members", "member_id", *mid),
+            EntryId::Table(tno) => ("mahjong_tables", "table_no", *tno),
+            EntryId::Log(lid) => ("logs", "id", *lid)
+        }
+    }
+}
+
 // a single member's data associated with a tournament
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TournamentData {

@@ -11,7 +11,7 @@ use crate::{
     auth::is_authenticated,
     components::page::page,
     data::{
-        sqlite::{LogRow, PointTransfer},
+        sqlite::{LogMutation, LogMutator, MemberMutation, MembersMutator},
         structs::{Log, LogId}
     },
     AppState,
@@ -71,16 +71,7 @@ pub async fn transfer_points(
     let log = body.clone();
     if let Err(e) = data
         .mahjong_data
-        .new_log(LogRow {
-            id: log.id,
-            points,
-            faan: log.faan,
-            win_kind: log.win_kind,
-            datetime: log.datetime,
-            round_wind: log.round_wind,
-            seat_wind: log.seat_wind,
-            disabled: log.disabled,
-        })
+        .record_log(log)
         .await
     {
         return e.handle();
@@ -89,26 +80,14 @@ pub async fn transfer_points(
     for l in body.from.clone() {
         if let Err(e) = data
             .mahjong_data
-            .add_member_session_points(l, -points)
+            .mut_member(l, MemberMutation::AddPoints(-points))
             .await
         {
             return e.handle();
         }
         if let Err(e) = data
             .mahjong_data
-            .add_member_session_points(body.to, points)
-            .await
-        {
-            return e.handle();
-        };
-        if let Err(e) = data
-            .mahjong_data
-            .new_point_transfer(PointTransfer {
-                log_id: body.id,
-                points,
-                to_member: body.to,
-                from_member: l,
-            })
+            .mut_member(body.to, MemberMutation::AddPoints(points))
             .await
         {
             return e.handle();
@@ -116,7 +95,7 @@ pub async fn transfer_points(
     }
     match data
         .mahjong_data
-        .get_members([body.from.clone(), [body.to].to_vec()].concat())
+        .get_members(Some([body.from.clone(), [body.to].to_vec()].concat()))
         .await
     {
         Ok(r) => HttpResponse::Ok().json(r),
@@ -143,29 +122,29 @@ pub async fn put_log(
     if body.log.is_some() {
         return HttpResponse::NotImplemented().body("Omit log (provide only id) for undo log.");
     };
-    let transfers = match data.mahjong_data.get_point_transfers(body.id).await {
+    let log = match data.mahjong_data.get_log(body.id).await {
         Ok(r) => r,
         Err(e) => return e.handle()
     };
-    for pt in transfers {
-        // TODO critical must fix before merge this awful error handling
+    if let Err(e) = data
+        .mahjong_data
+        .mut_member(log.to, MemberMutation::AddPoints(-log.points))
+        .await
+    {
+        return e.handle()
+    }
+    for mid in log.from {
         if let Err(e) = data
             .mahjong_data
-            .add_member_session_points(pt.from_member, pt.points)
+            .mut_member(mid, MemberMutation::AddPoints(log.points))
             .await
         {
             return e.handle()
         }
-        if let Err(e) = data
-            .mahjong_data
-            .add_member_session_points(pt.to_member, -pt.points)
-            .await
-        {
-            return e.handle()
-        }
-        if let Err(e) = data.mahjong_data.disable_log(body.id).await {
-            return e.handle()
-        }
+    }
+    // todo: toggle for allowing redo and use returned value
+    if let Err(e) = data.mahjong_data.mut_log(LogMutation::ToggleDisabled { log_id: body.id, new_value: Some(true) }).await {
+        return e.handle()
     }
     HttpResponse::Ok().body("Disabled log successfully.")
 }

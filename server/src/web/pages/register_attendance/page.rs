@@ -1,5 +1,5 @@
 use crate::{
-    auth::is_authenticated, data::{sqlite::MembersMutator, structs::MemberId}, errors::{
+    auth::is_authenticated, data::{sqlite::{MemberMutation, MembersMutator}, structs::MemberId}, errors::{
         either_error::EitherError, insert_member_error::InsertMemberErr,
         signature_error::SignatureErr,
     }, util::get_redirect_response, AppState
@@ -54,15 +54,8 @@ pub async fn manual_register_attendance(
         // should do headers
         return HttpResponse::Unauthorized().finish();
     }
-    let mut member = match data.mahjong_data.get_member(body.member_id).await {
-        Ok(m) => m,
-        Err(e) => return e.handle()
-    };
-    member.tournament.registered = !(member.tournament.registered);
-    let is_now_registered = member.tournament.registered;
-    match data.mahjong_data.mut_member(body.member_id, member).await {
-        // todo: responses
-        Ok(_) => HttpResponse::Ok().json(is_now_registered),
-        Err(_) => HttpResponse::InternalServerError().body("todo")
+    match data.mahjong_data.mut_member(body.member_id, MemberMutation::Register(None)).await {
+        Ok(r) => HttpResponse::Ok().json(r.unwrap()),
+        Err(e) => e.handle()
     }
 }
