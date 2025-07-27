@@ -1,5 +1,5 @@
 use crate::{
-    auth::is_authenticated, data::{sqlite::{MemberMutation, MembersMutator}, structs::MemberId}, errors::{
+    auth::is_authenticated, data::{sqlite::members::{MemberMutation, MembersMutator}, structs::MemberId}, errors::{
         either_error::EitherError, insert_member_error::InsertMemberErr,
         signature_error::SignatureErr,
     }, util::get_redirect_response, AppState

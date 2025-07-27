@@ -11,7 +11,7 @@ use crate::{
     auth::is_authenticated,
     components::page::page,
     data::{
-        sqlite::{LogMutation, LogMutator, MemberMutation, MembersMutator},
+        sqlite::{logs::LogMutation, logs::LogMutator, members::MemberMutation, members::MembersMutator},
         structs::{Log, LogId, MemberId}
     },
     AppState,

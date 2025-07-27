@@ -9,7 +9,7 @@ use urlencoding::encode;
 use crate::{
     auth::is_authenticated,
     components::page::page,
-    data::{sqlite::TablesMutator, structs::TableData},
+    data::{sqlite::{tables::TableMutation, tables::TablesMutator}, structs::TableData},
     util::get_redirect_response,
     AppState,
 };
@@ -97,7 +97,7 @@ pub async fn update_table(
         return get_redirect_response("/login?redirect=tables");
     }
     for EditTable { table_no, table } in body.iter() {
-        if let Err(e) = data.mahjong_data.mut_table(*table_no, table.clone()).await {
+        if let Err(e) = data.mahjong_data.mut_table(TableMutation::Replace { table_no: *table_no, new_table: table.clone() }).await {
             return e.handle();
         };
     }
