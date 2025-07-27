@@ -242,7 +242,6 @@ impl MahjongDataSqlite3 {
 pub mod tables {
     use crate::data::{
         errors::MahjongDataError,
-        mutator::MahjongDataMutator,
         structs::{EntryId, MemberId, TableData, TableNo},
     };
 
@@ -279,6 +278,18 @@ pub mod tables {
 
     // helper functions for TablesMutator
     impl super::MahjongDataSqlite3 {
+        // Upon deletion, table numbers are shifted to fill the gap. This means new tables
+        // don't have to check for gaps.
+        async fn _get_new_table_no(
+            &self
+        ) -> Result<TableNo, MahjongDataError> {
+            let table_numbers: Vec<TableNo> = match sqlx::query_as("SELECT table_no FROM mahjong_tables;").fetch_all(&self.pool).await {
+                Ok(r) => r.into_iter().map(|x: (TableNo,)| x.0).collect(),
+                Err(e) => return Err(MahjongDataError::Unknown(e))
+            };
+            Ok(table_numbers.into_iter().max().unwrap_or(0) + 1)
+        }
+
         async fn _mut_entire_table(
             &self,
             table_no: TableNo,
@@ -352,16 +363,21 @@ pub mod tables {
         }
 
         async fn new_table(&self) -> Result<TableData, MahjongDataError> {
-            // TODO: ASAP replace w/ much more efficient sqlite version
-            let Ok(table) = self.load().await.new_table().await;
+            let table_no = self._get_new_table_no().await?;
             if let Err(e) = sqlx::query("INSERT INTO mahjong_tables (table_no) VALUES (?)")
-                .bind(table.table_no)
+                .bind(table_no)
                 .execute(&self.pool)
                 .await
             {
                 return Err(MahjongDataError::Unknown(e));
             }
-            Ok(table)
+            Ok(TableData {
+                table_no,
+                east: 0,
+                south: 0,
+                west: 0,
+                north: 0
+            })
         }
 
         async fn mut_table(&self, mutation: TableMutation) -> Result<(), MahjongDataError> {
@@ -649,7 +665,6 @@ pub mod logs {
 pub mod members {
     use crate::data::{
         errors::MahjongDataError,
-        mutator::get_new_index,
         sqlite::{
             logs::{LogMutation, LogMutator},
             tables::{TableMutation, TablesMutator},
@@ -681,6 +696,22 @@ pub mod members {
 
     // helpers for MembersMutator
     impl super::MahjongDataSqlite3 {
+        async fn _get_new_member_id(
+            &self
+        ) -> Result<MemberId, MahjongDataError> {
+            let table_numbers: Vec<MemberId> = match sqlx::query_as("SELECT member_id FROM members;").fetch_all(&self.pool).await {
+                Ok(r) => r.into_iter().map(|x: (MemberId,)| x.0).collect(),
+                Err(e) => return Err(MahjongDataError::Unknown(e))
+            };
+            let new_index = table_numbers.iter().max().unwrap_or(&0) + 1;
+            for i in 1..new_index {
+                if !table_numbers.contains(&i) {
+                    return Ok(i)
+                }
+            }
+            Ok(new_index)
+        }
+
         async fn _mut_entire_member(
             &self,
             member_id: MemberId,
@@ -830,14 +861,7 @@ pub mod members {
         }
 
         async fn new_member(&self, name: String) -> Result<Member, MahjongDataError> {
-            let member_ids = match sqlx::query_as("SELECT member_id FROM members;")
-                .fetch_all(&self.pool)
-                .await
-            {
-                Ok(v) => v,
-                Err(e) => return Err(MahjongDataError::Unknown(e)),
-            };
-            let new_id = get_new_index(member_ids.iter().map(|(td,)| *td).collect());
+            let new_id = self._get_new_member_id().await?;
             if let Err(e) = sqlx::query("INSERT INTO members (member_id, name) VALUES (?, ?)")
                 .bind(new_id)
                 .bind(name.clone())
