@@ -12,7 +12,7 @@ use crate::{
     components::page::page,
     data::{
         sqlite::{LogMutation, LogMutator, MemberMutation, MembersMutator},
-        structs::{Log, LogId}
+        structs::{Log, LogId, MemberId}
     },
     AppState,
 };
@@ -126,27 +126,35 @@ pub async fn put_log(
         Ok(r) => r,
         Err(e) => return e.handle()
     };
-    if let Err(e) = data
-        .mahjong_data
-        .mut_member(log.to, MemberMutation::AddPoints(-log.points))
-        .await
-    {
-        return e.handle()
-    }
+    let mut affected_members: Vec<MemberId> = Vec::new();
+    // if log was enabled (i.e. undoing it), pay back the points; otherwise redo
+    let payback = if !log.disabled { log.points } else { -log.points };
     for mid in log.from {
         if let Err(e) = data
             .mahjong_data
-            .mut_member(mid, MemberMutation::AddPoints(log.points))
+            .mut_member(mid, MemberMutation::AddPoints(payback))
             .await
         {
             return e.handle()
         }
+        affected_members.push(mid);
     }
-    // todo: toggle for allowing redo and use returned value
-    if let Err(e) = data.mahjong_data.mut_log(LogMutation::ToggleDisabled { log_id: body.id, new_value: Some(true) }).await {
+    if let Err(e) = data
+        .mahjong_data
+        .mut_member(log.to, MemberMutation::AddPoints(-payback))
+        .await
+    {
         return e.handle()
     }
-    HttpResponse::Ok().body("Disabled log successfully.")
+    affected_members.push(log.to);
+    if let Err(e) = data.mahjong_data.mut_log(LogMutation::ToggleDisabled { log_id: body.id, new_value: Some(!log.disabled) }).await {
+        return e.handle()
+    }
+    let affected_members = match data.mahjong_data.get_members(Some(affected_members)).await {
+        Ok(r) => r,
+        Err(e) => return e.handle(),
+    };
+    HttpResponse::Ok().json(affected_members)
 }
 
 /* put_log handles either:
