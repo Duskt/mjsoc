@@ -443,7 +443,7 @@ pub mod logs {
             &self,
             log_id: LogId,
         ) -> Result<Vec<super::PointTransfer>, MahjongDataError> {
-            match sqlx::query_as("SELECT * FROM point_transfers WHERE id = ?;")
+            match sqlx::query_as("SELECT * FROM point_transfers WHERE log_id = ?;")
                 .bind(log_id)
                 .fetch_all(&self.pool)
                 .await
