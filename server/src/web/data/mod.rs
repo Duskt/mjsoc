@@ -5,8 +5,7 @@
 use crate::data::sqlite::MahjongDataSqlite3;
 
 pub mod structs;
-pub mod mutator;
 pub mod sqlite;
-pub mod json;
+// pub mod json;
 pub mod errors;
 pub type MahjongDB = MahjongDataSqlite3; // Mutex<MahjongDataJson>;
