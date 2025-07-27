@@ -3,6 +3,13 @@ use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 
 #[derive(Debug)]
+pub enum EntryKind {
+    Member,
+    Table,
+    Log
+}
+
+#[derive(Debug)]
 pub enum EntryId {
     Member(MemberId),
     Table(TableNo),
@@ -10,6 +17,14 @@ pub enum EntryId {
 }
 
 impl EntryId {
+    pub fn kind(&self) -> EntryKind {
+        match self {
+            EntryId::Member(_) => EntryKind::Member,
+            EntryId::Log(_) => EntryKind::Log,
+            EntryId::Table(_) => EntryKind::Table
+        }
+    }
+    // todo: refactor, this is sqlite3 specific
     pub fn get_table_key_value(&self) -> (&'static str, &'static str, u32) {
         match self {
             EntryId::Member(mid) => ("members", "member_id", *mid),
