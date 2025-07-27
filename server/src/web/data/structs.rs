@@ -112,11 +112,32 @@ pub struct Log {
     pub disabled: bool,
 }
 
+impl Log {
+    pub fn get_points(&self) -> Option<i32> {
+        // the number of points transferred from ONE loser to the winner
+        // dachut: double the base points from loser to winner
+        // baozimo: the same ^, but triple
+        // zimo: for each loser, base points from loser to winner
+        let points = match &self.faan {
+            Some(faan) => faan.get_base_points(),
+            None => Some(self.points)
+        }?;
+        match self.win_kind {
+            Some(WinKind::Zimo) => Some(points),
+            Some(WinKind::Dachut) => Some(points * 2),
+            Some(WinKind::Baozimo) => Some(points * 3),
+            None => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(transparent)]
 pub struct Faan(i8);
 
 impl Faan {
+    // the base point amount is the amount a player loses from another's self-draw (zimo)
+    // deal-in (dachut) is double this
     pub fn get_base_points(&self) -> Option<i32> {
         match self.0 {
             3 => Some(8),
@@ -127,22 +148,8 @@ impl Faan {
             8 => Some(64),
             9 => Some(96),
             10 => Some(128),
-            -10 => Some(-128),
+            -10 => Some(-128), // penalty
             _ => None,
-        }
-    }
-
-    pub fn get_points(&self, win_kind: Option<WinKind>) -> Option<i32> {
-        // the number of points transferred from one loser to one winner
-        // dachut: double the base points from loser to winner
-        // baozimo: the same ^, but triple
-        // zimo: for each loser, base points from loser to winner
-        let raw_points = Faan::get_base_points(self)?;
-        match win_kind {
-            Some(WinKind::Zimo) => Some(raw_points),
-            Some(WinKind::Dachut) => Some(raw_points * 2),
-            Some(WinKind::Baozimo) => Some(raw_points * 3),
-            None => None,
         }
     }
 }

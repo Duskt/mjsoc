@@ -58,14 +58,8 @@ pub async fn transfer_points(
         return HttpResponse::BadRequest().body("Points cannot be transferred for a disabled log - you should simply POST the log instead.");
     }
 
-    // calc points, defaulting to frontend-calculated body.points (legacy)
-    let opt_points = if let Some(faan) = body.faan.clone() {
-        faan.get_points(body.win_kind.clone())
-    } else {
-        Some(body.points)
-    };
-    let Some(points) = opt_points else {
-        return HttpResponse::BadRequest().body("Wrong faan");
+    let Some(points) = body.get_points() else {
+        return HttpResponse::BadRequest().body("Error calculating faan from provided log");
     };
 
     let log = body.clone();
