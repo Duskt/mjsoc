@@ -2,7 +2,7 @@ use sqlx::{
     migrate::MigrateDatabase, sqlite::SqlitePoolOptions, Connection, Sqlite,
     SqlitePool,
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::data::{
     errors::MahjongDataError,
@@ -89,11 +89,6 @@ pub struct PointTransfer {
     pub from_member: MemberId,
 }
 
-pub enum PointTransferTarget {
-    To(MemberId),
-    From(MemberId),
-}
-
 pub struct MahjongDataSqlite3 {
     pub pool: SqlitePool,
 }
@@ -111,7 +106,7 @@ impl MahjongDataSqlite3 {
         }
     }
 
-    pub async fn get_pool(path: &PathBuf) -> SqlitePool {
+    pub async fn get_pool(path: &Path) -> SqlitePool {
         if !(MahjongDataSqlite3::exists(path).await) {
             println!("Creating new sqlite database...");
             MahjongDataSqlite3::setup(path).await;
@@ -124,7 +119,7 @@ impl MahjongDataSqlite3 {
             .unwrap()
     }
 
-    pub async fn exists(path: &PathBuf) -> bool {
+    pub async fn exists(path: &Path) -> bool {
         if !(Sqlite::database_exists(path.to_str().unwrap())
             .await
             .unwrap_or_else(|_| panic!("Parent path of {} does not exist.", path.display())))
@@ -141,7 +136,7 @@ impl MahjongDataSqlite3 {
         file_name_str.ends_with(".db")
     }
 
-    pub async fn setup(path: &PathBuf) {
+    pub async fn setup(path: &Path) {
         Sqlite::create_database(&format!("sqlite:{}", path.to_str().unwrap()))
             .await
             .expect("err");
