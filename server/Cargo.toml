@@ -1,7 +1,12 @@
 [package]
 name = "mjsoc-attendance"
 version = "0.1.0"
+authors = ["github.com/duskt", "github.com/jacob-horton"]
+description = "A webserver for hosting scored Mahjong games."
+readme = "../README.md"
+repository = "github.com/Duskt/mjsoc"
 edition = "2021"
+default-run = "web"
 
 [lib]
 name = "lib"
