@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "rootDir": "src",
-        "outDir": "../public/",
+        "outDir": "dist",
         "module": "ESNext",
         "moduleResolution": "Bundler",
         "noEmit": true,

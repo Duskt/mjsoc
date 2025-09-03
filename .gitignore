@@ -1,11 +1,9 @@
-/server/target/
-/public/assets/*
-node_modules/
-/data
-/.sqlx
+/server/target
+node_modules
+*/data
+.sqlx
 
-/.env
-/public/index.js
+.env
 
 # hosting configuration
 fly.toml

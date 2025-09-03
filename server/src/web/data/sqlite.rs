@@ -96,7 +96,7 @@ impl MahjongDataSqlite3 {
         // resolve the path
         let path: PathBuf = path.into();
         let dest = path.file_name().expect("Path must refer to a file.");
-        let parent = path.parent().unwrap().canonicalize().unwrap();
+        let parent = path.parent().unwrap().canonicalize().unwrap_or_else(|_| panic!("Couldn't find {}", path.display()));
         let resolved_path = parent.join(dest);
         MahjongDataSqlite3 {
             pool: MahjongDataSqlite3::get_pool(&resolved_path).await,

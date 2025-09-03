@@ -14,9 +14,9 @@ pub fn get_base_url(req: &HttpRequest) -> String {
 }
 
 pub fn get_redirect_response(url: &str) -> HttpResponse {
-    return HttpResponse::Found()
+    HttpResponse::Found()
         .append_header((LOCATION, url))
-        .finish();
+        .finish()
 }
 
 pub fn get_file_bytes(path: &str) -> Vec<u8> {

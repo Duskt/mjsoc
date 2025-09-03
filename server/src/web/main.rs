@@ -55,7 +55,7 @@ pub struct AppState {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenvy::dotenv_override().expect(".env file not found.");
+    dotenvy::dotenv_override().expect("``.env`` file not found: please copy the ``.env.example`` file and rename it to ``.env``, changing the contents according to the comments in the example.\n");
 
     let key = cookie::Key::generate();
     let state = web::Data::new(get_initial_state().await);
