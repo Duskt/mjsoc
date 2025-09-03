@@ -5,20 +5,15 @@ in
 
 pkgs.mkShellNoCC {
   packages = with pkgs; [
-    # server
-    rustup
-    cargo
-    rustc
-    # necessary to build rust source code
-    pkg-config
-    openssl
+    # server (rust)
+    pkg-config # req. for rust
+    openssl # req. for rust
+    rustup # incl. cargo, rustc
 
-    # client
-    esbuild
-    typescript
-    nodejs_24
+    # client (node)
+    nodejs_24 # other deps installed locally via npm
 
-    # setup utils
+    # setup utils (creating password hash for .env)
     libargon2
   ];
 }

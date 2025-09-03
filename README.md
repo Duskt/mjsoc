@@ -1,38 +1,40 @@
-A simple backend with a hashed password and cookie sessions connected to a Google Sheets API.
+A webserver for hosting scored Mahjong games. Used for a society Mahjong tournament (seating players, recording scores, etc.).
+- interactive client frontend (``client``)
+- sqlite3 persistent storage
+- hashed password with cookie sessions
+- (not currently used) QR code generation for login
+- (not currently used) connected to Google Sheets API
 
 # Setup
 
-You may have to install libssl-dev and pkg-config (Ubuntu)
+Windows isn't supported for this project: your best options are probably
+- Docker: see ``Dockerfile`` (if you're familiar with Docker)
+- WSL (Builtin VM on Windows): build project in WSL as below. 
 
-```bash
-sudo apt install libssl-dev
-sudo apt install pkg-config
-```
+## Linux
 
-1. Generate a hash for the admin password:
+``./run.sh``
+This script will check dependencies are installed, prompt you to configure the server, and then build the client and run the server.
 
-```bash
-echo -n "<password>" | argon2 saltItWithSalt -l 32 -e
-```
+### Dependencies (node, rust)
 
-2. Create hmac file with any random characters in (e.g. `hmac.bin`)
-3. Create `data/mahjong.json` file:
-   FORMAT TBD
-4. (Opt.) add logo file in `public/assets/logo.jpg`
-5. Configure the `.env` file
-6. `./run.sh`
+If you use Nix package manager, you can simply run ``nix-shell`` to install dependencies in an isolated development environment, and then just run ``./run.sh``.
+Otherwise, you will need to install dependencies manually for build.
+
+Building this project requires NodeJS and the Rust toolchain (can be installed via `rustup`).
+On systems where these are not pre-installed, you will need to install the following to use Rust:
+- libssl
+- pkg-config
 
 # Architecture
 
-## ./src (Server)
+This monorepository contains both the ``server`` and ``client`` projects, which are mostly separated.
 
-Contains the Rust server and command line interface.
+## Server 
 
--   cli: Command line interface for QR code generation.
--   lib
--   web
+Written in Rust using actix and a sqlite3 database (see ``server/Cargo.toml``).
+The server also contains the CLI for QR code generation (not currently used).
 
 ## client/src (Client)
 
--   components
--   pages
+The client is written in TypeScript (without any framework) which is transpiled and bundled into one file using ``esbuild``.

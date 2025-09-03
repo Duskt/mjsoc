@@ -87,8 +87,8 @@ setup_env () {
 	done < .env.example;
 }
 
-# compile-time dependencies (although cargo is a runtime depenency, and npm is needed to check runtime dependencies exist?)
-check_deps "npm" "cargo" "esbuild";
+# compile-time dependencies
+check_deps "npm" "cargo";
 
 # check for and setup .env
 if [ ! -f server/.env ]; then
