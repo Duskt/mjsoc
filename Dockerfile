@@ -15,6 +15,9 @@ FROM debian:bullseye-slim
 
 RUN apt-get update && apt-get install -y libc-bin ca-certificates && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /app/target/release/web .
+WORKDIR /app
+COPY --from=build /app/target/release/web . 
+COPY ./server/public public
+COPY ./server/data/hmac.bin data/hmac.bin
 
-CMD ["./server/web"]
+CMD ["./web"]
