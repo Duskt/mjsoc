@@ -2,12 +2,12 @@ use crate::{
     auth::is_authenticated, data::{sqlite::members::{MemberMutation, MembersMutator}, structs::MemberId}, errors::{
         either_error::EitherError, insert_member_error::InsertMemberErr,
         signature_error::SignatureErr,
-    }, util::get_redirect_response, AppState
+    }, AppState
 };
 
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
-use lib::signature::verify_signature;
+use lib::{signature::verify_signature, util::get_redirect_response};
 use serde::Deserialize;
 use urlencoding::encode;
 

@@ -1,5 +1,3 @@
-use lib::env;
-
 use maud::{html, PreEscaped, DOCTYPE};
 
 pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
@@ -14,7 +12,7 @@ pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
             }
             body {
                 nav {
-                    a href="/" { img src=(env::expect_env("LOGO_ROUTE")) class="home-icon" {} }
+                    a href="/" { img src="/public/logo" class="home-icon" {} }
                     a href="/tables" class="nav-link" { "Tables" }
                     a href="/log" class="nav-link" { "Log" }
                     button class="settings-button dropdown-button" style="display: none" { "" }

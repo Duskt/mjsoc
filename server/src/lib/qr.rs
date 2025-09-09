@@ -1,4 +1,4 @@
-use crate::{parsed_env, signature::generate_signature};
+use crate::signature::generate_signature;
 
 #[derive(Debug, Clone)]
 pub enum NameErr {
@@ -20,7 +20,7 @@ pub fn get_qr_url(name: &str, base_url: &str, key: &[u8]) -> Result<String, Name
         return Err(NameErr::NameEmpty);
     }
 
-    let max_name_len = parsed_env!("MAX_NAME_LEN", usize);
+    let max_name_len: usize = std::env::var("MAX_NAME_LEN").unwrap().parse().unwrap();
     if name.len() > max_name_len {
         return Err(NameErr::NameTooLong);
     }
@@ -39,7 +39,7 @@ pub fn get_qr_url(name: &str, base_url: &str, key: &[u8]) -> Result<String, Name
 
 pub fn get_qr_data(name: &str, base_url: &str, hmac_key: &[u8]) -> Result<QrData, NameErr> {
     let url = get_qr_url(name, base_url, hmac_key)?;
-    let qr_size = parsed_env!("QR_SIZE", usize);
+    let qr_size: usize = std::env::var("QR_SIZE").unwrap().parse().unwrap();
 
     // Generate the QR code as svg
     let qr_svg =

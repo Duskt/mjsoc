@@ -1,5 +1,3 @@
-use lib::env;
-
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use lib::util::get_redirect_response;
@@ -31,8 +29,7 @@ pub async fn get_log_page(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    let public_path = env::expect_env("PUBLIC_PATH");
-    let script_path = format!("{}/index.js", public_path);
+    let script_path = format!("{}/index.js", &data.config.public_path);
     // webpage
     let html = page(html! {
         script src=(script_path) {}

@@ -1,18 +1,12 @@
 use crate::{
-    auth::is_authenticated,
-    components::{page::page, qr::qr_display},
-    errors::name_error::NameErr,
-    pages::qr::data::{DownloadQuery, GenerateQuery},
-    parsed_env,
-    util::{get_base_url, get_redirect_response},
-    AppState,
+    auth::is_authenticated, compile_env, components::{page::page, qr::qr_display}, errors::name_error::NameErr, pages::qr::data::{DownloadQuery, GenerateQuery}, AppState
 };
 use actix_session::Session;
 use actix_web::{
     http::header::{ContentDisposition, DispositionParam, DispositionType},
     web, HttpRequest, HttpResponse,
 };
-use lib::qr::{get_qr_data, get_qr_url};
+use lib::{qr::{get_qr_data, get_qr_url}, util::{get_base_url, get_redirect_response}};
 use qrcode_generator::QrCodeEcc;
 use urlencoding::encode;
 
@@ -57,7 +51,7 @@ pub async fn download_qr(
     println!("Downloading QR for {}", url);
 
     // Generate the QR PNG blob
-    let qr_size = parsed_env!("QR_SIZE", usize);
+    let qr_size = compile_env!("QR_SIZE", usize);
     let binary = qrcode_generator::to_png_to_vec(url, QrCodeEcc::Medium, qr_size).unwrap();
 
     // Tell the browser to download the file with a specific filename

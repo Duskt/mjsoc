@@ -1,16 +1,12 @@
-use lib::env;
-
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use maud::html;
 use serde::Deserialize;
-use urlencoding::encode;
 
 use crate::{
-    auth::is_authenticated,
+    auth::authenticate,
     components::page::page,
-    data::{sqlite::{tables::TableMutation, tables::TablesMutator}, structs::TableData},
-    util::get_redirect_response,
+    data::{sqlite::tables::{TableMutation, TablesMutator}, structs::TableData},
     AppState,
 };
 
@@ -20,16 +16,11 @@ pub async fn get_tables(
     data: web::Data<AppState>,
     req: HttpRequest,
 ) -> impl Responder {
+    if let Some(login_redir) = authenticate(&session, &data.authenticated_keys, req) {
+        return login_redir;
+    };
     // clone and serialize the data to send to the client js code
-    if !is_authenticated(&session, &data.authenticated_keys) {
-        // Login and redirect back here
-        return get_redirect_response(&format!(
-            "/login?redirect={}",
-            encode(&req.uri().path_and_query().unwrap().to_string()),
-        ));
-    }
-    let public_path = env::expect_env("PUBLIC_PATH");
-    let script_path = format!("{}/index.js", public_path);
+    let script_path = format!("{}/index.js", &data.config.public_path);
     // webpage
     let html = page(html! {
         script src=(script_path) {}
@@ -45,10 +36,10 @@ pub async fn get_tables(
     HttpResponse::Ok().body(html.into_string())
 }
 
-pub async fn create_table(session: Session, data: web::Data<AppState>) -> impl Responder {
-    if !is_authenticated(&session, &data.authenticated_keys) {
-        return get_redirect_response("/login?redirect=tables");
-    }
+pub async fn create_table(session: Session, data: web::Data<AppState>, req: HttpRequest) -> impl Responder {
+    if let Some(login_redir) = authenticate(&session, &data.authenticated_keys, req) {
+        return login_redir;
+    };
     match data.mahjong_data.new_table().await {
         Ok(td) => HttpResponse::Created().json(td),
         Err(e) => e.handle()
@@ -66,15 +57,9 @@ pub async fn delete_table(
     body: web::Json<TableDeleteRequest>,
     req: HttpRequest,
 ) -> impl Responder {
-    if !is_authenticated(&session, &data.authenticated_keys) {
-        // Login and redirect back here
-        // (GET to this address is routed to /table)
-        println!("{}, {}", &req.uri(), &req.uri().path_and_query().unwrap());
-        return get_redirect_response(&format!(
-            "/login?redirect={}",
-            encode(&req.uri().path_and_query().unwrap().to_string()),
-        ));
-    }
+    if let Some(login_redir) = authenticate(&session, &data.authenticated_keys, req) {
+        return login_redir;
+    };
     // todo: validate table_no exists?
     match data.mahjong_data.del_table(body.table_no).await {
         Ok(_) => HttpResponse::Ok().body("Deleted table."),
@@ -92,10 +77,11 @@ pub async fn update_table(
     session: Session,
     data: web::Data<AppState>,
     body: web::Json<Vec<EditTable>>,
+    req: HttpRequest
 ) -> impl Responder {
-    if !is_authenticated(&session, &data.authenticated_keys) {
-        return get_redirect_response("/login?redirect=tables");
-    }
+    if let Some(login_redir) = authenticate(&session, &data.authenticated_keys, req) {
+        return login_redir;
+    };
     for EditTable { table_no, table } in body.iter() {
         if let Err(e) = data.mahjong_data.mut_table(TableMutation::Replace { table_no: *table_no, new_table: table.clone() }).await {
             return e.handle();

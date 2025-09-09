@@ -1,0 +1,24 @@
+FROM nixos/nix AS dev
+
+# copy over everything (excl. ``.dockerignore``)
+WORKDIR /app
+COPY . .
+
+SHELL ["/root/.nix-profile/bin/nix-shell", "--command"]
+RUN <<EOF
+
+# setup
+head -c 1000 /dev/null > hmac.bin;
+echo 'HMAC_KEY_PATH="hmac.bin"' > .env;
+
+# install rust?
+rustup default stable;
+
+# precompile
+# todo: i dont know why rustup needs to install cargo itself, prob i need to specify the pre-installed version somehow
+cd server;
+cargo build --bin web;
+
+EOF
+
+CMD ["/root/.nix-profile/bin/nix-shell", "--run", "./run.sh"]

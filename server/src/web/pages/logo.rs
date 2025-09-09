@@ -1,17 +1,8 @@
-use std::env;
-use lib::env::expect_env;
 use actix_files::NamedFile;
+use actix_web::web;
 
-pub async fn logo() -> Result<NamedFile, std::io::Error> {
-    let logo_path_env = env::var("LOGO_PATH");
-    let public_path = expect_env("PUBLIC_PATH");
-    let logo_path = match logo_path_env {
-        Ok(path) => path,
-        Err(_) => {
-            // the internal file (note the file extension, because this a real path)
-            println!("No env LOGO_PATH found, using default '<public>/assets/logo.jpg'");
-            format!("{}/assets/logo.jpg", public_path)
-        }
-    };
-    NamedFile::open(logo_path)
+use crate::config::AppState;
+
+pub async fn logo(data: web::Data<AppState>) -> Result<NamedFile, std::io::Error> {
+    NamedFile::open(&data.config.logo_path)
 }

@@ -1,11 +1,12 @@
 use actix_session::Session;
 use actix_web::{web, HttpResponse, Responder};
+use lib::util::get_redirect_response;
 use maud::html;
 use urlencoding::encode;
 
 use crate::{
     auth::is_authenticated, components::page::page, pages::auth::RedirectURL,
-    util::get_redirect_response, AppState,
+    AppState,
 };
 
 pub async fn login(

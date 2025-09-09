@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 use clap::{Args, Parser};
-use lib::{qr::get_qr_data, util::get_file_bytes, env};
+use lib::{qr::get_qr_data, util::get_file_bytes};
 use zip::{write::FileOptions, ZipWriter};
 
 /// CLI for Mahjong Soc Attendance
@@ -60,8 +60,8 @@ fn bulk_qr(args: BulkQrArgs) {
         );
     }
 
-    let hmac_key_path = env::expect_env("HMAC_KEY_PATH");
-    let hmac_key = get_file_bytes(&hmac_key_path);
+    let hmac_key_path = "data/hmac.bin"; // env::expect_env("HMAC_KEY_PATH");
+    let hmac_key = get_file_bytes(hmac_key_path);
 
     let path = Path::new(&args.output_file);
     let file = File::create(path).unwrap();
