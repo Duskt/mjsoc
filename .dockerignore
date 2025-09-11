@@ -1,9 +1,9 @@
 server/target
-client/dist
+client/dist/index.js
 node_modules
 */data
 .sqlx
-
+hmac.*
 .env
 
 # hosting configuration
