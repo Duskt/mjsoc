@@ -1,4 +1,5 @@
-/server/target
+server/target
+client/dist
 node_modules
 */data
 .sqlx

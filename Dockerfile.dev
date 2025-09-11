@@ -5,6 +5,8 @@ FROM nixos/nix AS dev
 # copy over everything (excl. ``.dockerignore``)
 WORKDIR /app
 COPY . .
+# if copying files from windows: remove carriage returns from shell scripts
+RUN cat ./run.sh | tr -d '\r' > ./run.sh
 
 # check that everything is where we expect it to be
 RUN ls | grep server;
@@ -19,7 +21,8 @@ RUN echo 'HMAC_KEY_PATH="hmac.bin"' > .env;
 RUN rustup default stable;
 
 # precompile dependencies
-RUN cd server && cargo build --bin web;
+RUN cd /app/client && npm install;
+RUN cd /app/server && cargo build --bin web;
 
 VOLUME /app/server/data
 VOLUME /app/server/src
