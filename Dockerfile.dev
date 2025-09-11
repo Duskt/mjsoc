@@ -1,24 +1,27 @@
+# syntax=docker/dockerfile:1
+# check=error=true
 FROM nixos/nix AS dev
 
 # copy over everything (excl. ``.dockerignore``)
 WORKDIR /app
 COPY . .
 
+# check that everything is where we expect it to be
+RUN ls | grep server;
+RUN ls | grep client;
+
 SHELL ["/root/.nix-profile/bin/nix-shell", "--command"]
-RUN <<EOF
 
+# a heredoc would look nicer, but debugging it is harder.
 # setup
-head -c 1000 /dev/null > hmac.bin;
-echo 'HMAC_KEY_PATH="hmac.bin"' > .env;
+RUN head -c 1000 /dev/null > hmac.bin;
+RUN echo 'HMAC_KEY_PATH="hmac.bin"' > .env;
+RUN rustup default stable;
 
-# install rust?
-rustup default stable;
+# precompile dependencies
+RUN cd server && cargo build --bin web;
 
-# precompile
-# todo: i dont know why rustup needs to install cargo itself, prob i need to specify the pre-installed version somehow
-cd server;
-cargo build --bin web;
-
-EOF
-
+VOLUME /app/server/data
+VOLUME /app/server/src
+VOLUME /app/client/src
 CMD ["/root/.nix-profile/bin/nix-shell", "--run", "./run.sh"]
