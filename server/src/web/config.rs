@@ -54,7 +54,7 @@ impl Default for Config {
             Ok(p) => p.parse().expect("Couldn't use port {p}"),
             Err(_) => 5654,
         };
-        let public_path = std::env::var("PUBLIC_PATH").unwrap_or("/public".to_string());
+        let public_path = std::env::var("PUBLIC_PATH").unwrap_or("public".to_string());
         let logo_path = std::env::var("LOGO_PATH").unwrap_or_else(|_| {
             println!("No logo found: specify environment variable LOGO_PATH.");
             String::new()

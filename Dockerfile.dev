@@ -11,6 +11,8 @@ RUN tr -d '\r' < ./run.sh 1<> ./run.sh
 # check that everything is where we expect it to be
 RUN ls | grep server;
 RUN ls | grep client;
+# test connection to nix-cache
+RUN curl https://cache.nixos.org/nix-cache-info; 
 
 SHELL ["/root/.nix-profile/bin/nix-shell", "--command"]
 
