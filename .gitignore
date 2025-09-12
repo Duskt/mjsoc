@@ -11,3 +11,5 @@ secrets*
 fly.toml
 service.yaml
 .gcloudignore
+
+.idea
