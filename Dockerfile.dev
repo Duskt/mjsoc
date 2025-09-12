@@ -5,8 +5,12 @@ FROM nixos/nix AS dev
 # copy over everything (excl. ``.dockerignore``)
 WORKDIR /app
 COPY . .
-# if copying files from windows: remove carriage returns from shell scripts
-RUN tr -d '\r' < ./run.sh 1<> ./run.sh
+# if copying files from windows:
+# 1. remove carriage returns from shell scripts
+RUN tr -d '\r' < ./run.sh 1<> ./run.sh;
+# 2. recreate the server -> client symlink
+RUN if [ -e ./server/public ]; then rm ./server/public; fi;
+RUN ln -sr ./client/dist ./server/public;
 
 # check that everything is where we expect it to be
 RUN ls | grep server;

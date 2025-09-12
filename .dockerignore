@@ -1,4 +1,6 @@
 server/target
+# recreated during image build
+server/public
 client/dist/index.js
 node_modules
 */data
