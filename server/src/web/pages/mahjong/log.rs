@@ -29,10 +29,9 @@ pub async fn get_log_page(
             encode(&req.uri().path_and_query().unwrap().to_string()),
         ));
     }
-    let script_path = format!("{}/index.js", &data.config.public_path);
     // webpage
     let html = page(html! {
-        script src=(script_path) {}
+        script src=("public/index.js") {}
         main {
             table id="log-table" {}
         }

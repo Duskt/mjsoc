@@ -1,7 +1,6 @@
-use std::{path::PathBuf, sync::RwLock};
+use std::{fs, io::{BufReader, Read}, path::{Path, PathBuf}, sync::RwLock};
 
 use circular_buffer::CircularBuffer;
-use lib::util::get_file_bytes;
 use chrono::Duration as chronoDuration;
 
 use crate::{data::{sqlite::MahjongDataSqlite3, MahjongDB}, rate_limit::quota::Quota};
@@ -15,6 +14,40 @@ macro_rules! compile_env {
             stringify!($type)
         ))
     };
+}
+
+/* For debugging errors with mounting volumes or locating files via env variable paths. */
+fn debug_path(path: Option<&Path>, original_path: &Path) {
+    let Some(path) = path else {
+        return println!("Path {:?} could not be resolved even at the root. Likely an operating system compatibility error.", original_path);
+    };
+    if path.to_str() == Some("") {
+        return println!("No nodes in path {:?} could be resolved. Try using an absolute path?", original_path);
+    };
+    let Ok(realpath) = path.canonicalize() else {
+        println!("Debugging path: Couldn't resolve {:?}.", path);
+        return debug_path(path.parent(), original_path);
+    };
+
+    let info = format!("Path {:?} was successfully resolved to {:?}", path, realpath);
+    match realpath.try_exists() {
+        Ok(true) =>  println!("{info} and does exist."),
+        Ok(false) =>  println!("{info} but does not exist (possibly due to broken symlinks?)!"),
+        Err(_) =>  println!("{info} but could not be confirmed to exist most probably due to inadequate authorisation.")
+    };
+}
+
+fn read_file(path: &Path) -> Result<Vec<u8>, ()> {
+    if let Ok(file) = fs::File::open(path) {
+        let mut reader = BufReader::new(file);
+        let mut buffer = Vec::new();
+        reader.read_to_end(&mut buffer).expect("Failed to read file");
+        return Ok(buffer);
+    }
+
+    println!("File at path {:?} could not be opened from CWD {:?}. Debugging...", path, std::env::current_dir().expect("Current working directory could not be obtained."));
+    debug_path(Some(path), path);
+    Err(())
 }
 
 fn find_env(path: Result<PathBuf, std::io::Error>) {
@@ -84,8 +117,8 @@ pub async fn init_state(config: Config) -> AppState {
     };
 
     let hmac_key = match std::env::var("HMAC_KEY_PATH") {
-        Ok(path) => get_file_bytes(&path),
-        Err(_) => panic!("todo use systemtime default")
+        Ok(path) => read_file(Path::new(&path)).expect("See above debug trace. (TODO: return trace in Err)"),
+        Err(_) => panic!("HMAC_KEY_PATH must be specified. todo use systemtime default")
     };
 
     let mahjong_data_path = std::env::var("MAHJONG_DATA_PATH").unwrap_or("data/mjdata.db".to_string());

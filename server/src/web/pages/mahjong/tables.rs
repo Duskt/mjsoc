@@ -20,10 +20,9 @@ pub async fn get_tables(
         return login_redir;
     };
     // clone and serialize the data to send to the client js code
-    let script_path = format!("{}/index.js", &data.config.public_path);
     // webpage
     let html = page(html! {
-        script src=(script_path) {}
+        script src=("public/index.js") {}
         main {
         div id="sidebar" {}
         article id="tables" style="margin-top: 20px" {

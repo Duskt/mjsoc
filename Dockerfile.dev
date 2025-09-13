@@ -5,6 +5,7 @@ FROM nixos/nix AS dev
 # copy over everything (excl. ``.dockerignore``)
 WORKDIR /app
 COPY . .
+
 # if copying files from windows:
 # 1. remove carriage returns from shell scripts
 RUN tr -d '\r' < ./run.sh 1<> ./run.sh;
