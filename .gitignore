@@ -1,6 +1,8 @@
 /server/target
 node_modules
-*/data
+**/data
+public/*.js
+public/assets/*
 hmac.bin
 .sqlx
 
