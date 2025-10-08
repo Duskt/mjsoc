@@ -9,8 +9,10 @@ use crate::{
     auth::is_authenticated,
     components::page::page,
     data::{
-        sqlite::{logs::LogMutation, logs::LogMutator, members::MemberMutation, members::MembersMutator},
-        structs::{Log, LogId, MemberId}
+        sqlite::{
+            logs::LogMutation, logs::LogMutator, members::MemberMutation, members::MembersMutator,
+        },
+        structs::{Log, LogId, MemberId},
     },
     AppState,
 };
@@ -32,7 +34,7 @@ pub async fn get_log_page(
     // webpage
     let html = page(html! {
         script src=("public/index.js") {}
-        main {
+        main style="margin-top: 30px;" {
             table id="log-table" {}
         }
     });
@@ -59,11 +61,7 @@ pub async fn transfer_points(
     };
 
     let log = body.clone();
-    if let Err(e) = data
-        .mahjong_data
-        .record_log(log)
-        .await
-    {
+    if let Err(e) = data.mahjong_data.record_log(log).await {
         return e.handle();
     }
 
@@ -89,9 +87,7 @@ pub async fn transfer_points(
         .await
     {
         Ok(r) => HttpResponse::Ok().json(r),
-        Err(e) => 
-            e.handle()
-        
+        Err(e) => e.handle(),
     }
 }
 
@@ -114,18 +110,22 @@ pub async fn put_log(
     };
     let log = match data.mahjong_data.get_log(body.id).await {
         Ok(r) => r,
-        Err(e) => return e.handle()
+        Err(e) => return e.handle(),
     };
     let mut affected_members: Vec<MemberId> = Vec::new();
     // if log was enabled (i.e. undoing it), pay back the points; otherwise redo
-    let payback = if !log.disabled { log.points } else { -log.points };
+    let payback = if !log.disabled {
+        log.points
+    } else {
+        -log.points
+    };
     for mid in log.from {
         if let Err(e) = data
             .mahjong_data
             .mut_member(mid, MemberMutation::AddPoints(payback))
             .await
         {
-            return e.handle()
+            return e.handle();
         }
         affected_members.push(mid);
     }
@@ -134,11 +134,18 @@ pub async fn put_log(
         .mut_member(log.to, MemberMutation::AddPoints(-payback))
         .await
     {
-        return e.handle()
+        return e.handle();
     }
     affected_members.push(log.to);
-    if let Err(e) = data.mahjong_data.mut_log(LogMutation::ToggleDisabled { log_id: body.id, new_value: Some(!log.disabled) }).await {
-        return e.handle()
+    if let Err(e) = data
+        .mahjong_data
+        .mut_log(LogMutation::ToggleDisabled {
+            log_id: body.id,
+            new_value: Some(!log.disabled),
+        })
+        .await
+    {
+        return e.handle();
     }
     let affected_members = match data.mahjong_data.get_members(Some(affected_members)).await {
         Ok(r) => r,

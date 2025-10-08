@@ -6,7 +6,10 @@ use serde::Deserialize;
 use crate::{
     auth::authenticate,
     components::page::page,
-    data::{sqlite::tables::{TableMutation, TablesMutator}, structs::TableData},
+    data::{
+        sqlite::tables::{TableMutation, TablesMutator},
+        structs::TableData,
+    },
     AppState,
 };
 
@@ -23,25 +26,29 @@ pub async fn get_tables(
     // webpage
     let html = page(html! {
         script src=("public/index.js") {}
-        main {
-        div id="sidebar" {}
-        article id="tables" style="margin-top: 20px" {
-            // table and header-bar are both filled with js on frontend
-            div id="header-bar" { h1 { "Tables" } }
-            table id="table" {}
+        div style="display: flex; flex-direction: row; flex-grow: 1; width: 100%;" {
+            div id="sidebar" {}
+            article id="tables" style="margin-top: 20px" {
+                // table and header-bar are both filled with js on frontend
+                div id="header-bar" { h1 { "Tables" } }
+                table id="table" {}
+            }
         }
-    }
     });
     HttpResponse::Ok().body(html.into_string())
 }
 
-pub async fn create_table(session: Session, data: web::Data<AppState>, req: HttpRequest) -> impl Responder {
+pub async fn create_table(
+    session: Session,
+    data: web::Data<AppState>,
+    req: HttpRequest,
+) -> impl Responder {
     if let Some(login_redir) = authenticate(&session, &data.authenticated_keys, req) {
         return login_redir;
     };
     match data.mahjong_data.new_table().await {
         Ok(td) => HttpResponse::Created().json(td),
-        Err(e) => e.handle()
+        Err(e) => e.handle(),
     }
 }
 
@@ -62,7 +69,7 @@ pub async fn delete_table(
     // todo: validate table_no exists?
     match data.mahjong_data.del_table(body.table_no).await {
         Ok(_) => HttpResponse::Ok().body("Deleted table."),
-        Err(e) => e.handle()
+        Err(e) => e.handle(),
     }
 }
 
@@ -76,13 +83,20 @@ pub async fn update_table(
     session: Session,
     data: web::Data<AppState>,
     body: web::Json<Vec<EditTable>>,
-    req: HttpRequest
+    req: HttpRequest,
 ) -> impl Responder {
     if let Some(login_redir) = authenticate(&session, &data.authenticated_keys, req) {
         return login_redir;
     };
     for EditTable { table_no, table } in body.iter() {
-        if let Err(e) = data.mahjong_data.mut_table(TableMutation::Replace { table_no: *table_no, new_table: table.clone() }).await {
+        if let Err(e) = data
+            .mahjong_data
+            .mut_table(TableMutation::Replace {
+                table_no: *table_no,
+                new_table: table.clone(),
+            })
+            .await
+        {
             return e.handle();
         };
     }

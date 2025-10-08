@@ -4,10 +4,7 @@ use lib::util::get_redirect_response;
 use maud::html;
 use urlencoding::encode;
 
-use crate::{
-    auth::is_authenticated, components::page::page, pages::auth::RedirectURL,
-    AppState,
-};
+use crate::{auth::is_authenticated, components::page::page, pages::auth::RedirectURL, AppState};
 
 pub async fn login(
     session: Session,
@@ -21,7 +18,7 @@ pub async fn login(
 
     let redirect_encoded = encode(&redirect);
     let html = page(html! {
-        p { "Enter admin password to accept member attendance:"}
+        p style="margin-top: 30px;" { "Enter admin password to accept member attendance:"}
         form action=(format!("/auth?redirect={redirect_encoded}")) method="POST" {
             input name="username" type="text" autocomplete="off" value="admin" style="display: none;" {}
             input name="password" id="password" type="password" autocomplete="current-password" autofocus {}

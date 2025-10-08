@@ -77,7 +77,7 @@ button {
   }
 }
 
-.centre-container {
+main {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -124,16 +124,15 @@ nav {
   .nav-link:hover:not(.active) {
     background-color: var(--champagne);
   }
+  article {
+    margin-top: 30px;
+  }
 }
 
 .nav-link.active {
   background-color: var(--celadon);
   color: var(--hunter-green);
   box-shadow: 0 4px 4px #00000025 inset;
-}
-
-nav + main {
-  margin-top: 30px;
 }
 
 .settings-button {
