@@ -3,6 +3,18 @@
   --name-tag-depth: 24px;
 }
 
+#header-bar {
+  display: flex;
+  flex-direction: column;
+  h1 {
+    color: var(--hunter-green);
+  }
+  span {
+    display: flex;
+    justify-content: space-evenly;
+  }
+}
+
 /* Table styling */
 .mahjong-table-display {
   background: var(--champagne);
@@ -171,15 +183,19 @@ h1 {
 }
 
 .icon-button {
-  width: 20px;
-  height: 20px;
-  font-size: 16px;
+  width: 60px;
+  height: 60px;
   align-self: center;
   margin: 0px;
-  padding: 0px;
+  padding: 10px;
   background: none;
-  border: none;
+  border: 4px solid var(--hunter-green);
+  border-radius: 60px;
+  box-shadow: 0 0 8px #00000050;
   cursor: pointer;
+  svg {
+    fill: var(--hunter-green);
+  }
 }
 
 .register-checkbox {
