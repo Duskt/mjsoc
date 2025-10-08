@@ -17,7 +17,7 @@ pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
                     a href="/log" class="nav-link" { "Log" }
                     button class="settings-button dropdown-button" style="display: none" { "" }
                 }
-                div class="centre-container" {
+                main class="centre-container" {
                     (inner)
                 }
             }

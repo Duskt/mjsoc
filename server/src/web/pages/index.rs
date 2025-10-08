@@ -7,7 +7,7 @@ pub async fn index() -> impl Responder {
     println!("Home page requested");
 
     let html = page(html! {
-        img src="/public/logo" class="logo" style="margin-top: 20px;";
+        span { img src="/public/logo" class="logo"; }
         p {
             "Only the Mahjong society committee should need to use this."
             br; br;

@@ -7,7 +7,7 @@
   --celadon: #ACFFD8;
   --hunter-green: #3c5233;
 
-  --global-background: white;
+  --global-background: var(--champagne);
   --legend-background: var(--almond);
   --tooltip-background: var(--beaver);
   --nav-link-hover-background: var(--beaver);
@@ -32,31 +32,6 @@
 
   --settings-text: black;
 }
-
-/*:root {
-  --global-background: #c5bcb5;
-  --legend-background: #c5bcb5;
-  --nav-link-hover-background: rgba(0,0,0,0.1);
-  --settings-background: darkgreen;
-  --error-background: #ffc0cba1;
-  --dropdown-background: gray;
-  --tooltip-background: rgb(177 169 163);
-
-  --winner-crown-shadow: black;
-
-  --table-edge: black;
-  --dropdown-edge: black;
-  --sidebar-edge: rgba(0, 0, 0, 0.2);
-  --info-grid-edge: black;
-  --legend-edge: black;
-  --nav-edge: rgba(0, 0, 0, 0.2);
-  --error-edge: red;
-  --tooltip-edge: #111111;
-  
-  --dropdown-selected: lightgray;
-  --pulse-color: #559241;
-  --off-pulse-color: #FFF;
-}*/
 
 body {
   background-color: var(--global-background);
@@ -109,35 +84,56 @@ button {
   flex-grow: 1;
 }
 
-.logo {
-  max-width: 150px;
-  max-width: 150px;
+span:has(.logo) {
   background-color: var(--celadon);
-  border-radius: 150px;
-  padding: 10px;
+  border-radius: 240px;
+  padding: 40px;
+  box-shadow: 0 4px 4px #00000025 inset;
+  .logo {
+    max-width: 240px;
+  }
 }
 
 nav {
   display: flex;
-  background-color: var(--champagne);
+  background-color: var(--coffee);
   border-radius: 0 0 12px 12px;
   border: none;
-  border-bottom: 2px solid var(--lion);
+  box-shadow: 0 4px 4px #00000025;
   * {
-    margin-left: 4px;
-    margin-right: 4px;
+    margin-inline: 8px;
+  }
+  a {
+    align-content: center;
+    .home-icon {
+	max-height: 50px;
+    }
   }
   .nav-link {
     padding: 8px;
     align-content: center;
+    background: var(--lion);
+    border-radius: 16px;
+    margin-block: 12px;
+    padding: 12px 24px 10px 24px;
+    color: var(--black-bean);
+    text-decoration: none;
+    box-shadow: 0 4px 4px #00000025;
+    font-size: 18px;
   }
-  .nav-link:hover {
-    background-color: white;
+  .nav-link:hover:not(.active) {
+    background-color: var(--champagne);
   }
 }
 
-.home-icon {
-  max-height: 40px;
+.nav-link.active {
+  background-color: var(--celadon);
+  color: var(--hunter-green);
+  box-shadow: 0 4px 4px #00000025 inset;
+}
+
+nav + main {
+  margin-top: 30px;
 }
 
 .settings-button {
