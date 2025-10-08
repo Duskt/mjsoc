@@ -1,12 +1,20 @@
-/server/target
 node_modules
-**/data
-public/*.js
-public/assets/*
-hmac.bin
+
+# any databases or other files in data
+**/data/*
 .sqlx
 
+# transpiled js output
+client/dist/*.js
+# compiled rust output
+server/target
+
+# assets files for images such as logo
+**/assets/*
+
+# sensitive
 secrets*
+hmac.bin
 .env
 
 # hosting configuration
