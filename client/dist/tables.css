@@ -174,10 +174,6 @@ article {
   margin-left: -12px;
 }
 
-#header-bar {
-  display: flex;
-}
-
 h1 {
   margin-inline: 20px;
 }
@@ -345,8 +341,9 @@ dialog button {
   width: 11em;
   font-size: 14px;
   z-index: 1;
-  background-color: var(--legend-background);
-  border: 1px solid var(--legend-edge);
+  background-color: var(--lion);
+  border-radius: 16px;
+  box-shadow: 2px 4px 8px #00000050;
 }
 
 .legend-panel ul {
