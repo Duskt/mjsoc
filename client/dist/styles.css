@@ -135,16 +135,14 @@ nav {
   box-shadow: 0 4px 4px #00000025 inset;
 }
 
-.settings-button {
+/* extra nav specificity is needed to override icon-button margin... */
+nav .settings-button {
   padding: 0px;
   font-size: 12px;
   text-align: center;
   margin: 0 12px 0 auto;
-  width: 30px;
-  height: 20px;
   align-self: center;
   background: none;
-  border: none;
   cursor: pointer;
 }
 

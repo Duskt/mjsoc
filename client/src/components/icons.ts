@@ -10,6 +10,7 @@ interface IconButtonParameters extends Params<"button"> {
     | "undo"
     | "settings"
     | "download";
+  activeColor?: string;
   disabled?: boolean;
   onclick?: (ev: MouseEvent) => void;
 }
@@ -24,11 +25,43 @@ export default class IconButton extends Component<"button"> {
       classList: ["icon-button"],
       ...params,
     });
+
+    // create the icon SVG
     let icon = params.icon;
     this.svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     this.path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     this.svg.appendChild(this.path);
     this.element.appendChild(this.svg);
+    this.makeIcon(icon);
+
+    if (params.disabled) {
+      this.svg.style.fill = "grey";
+      this.element.style.borderColor = "grey";
+      this.element.style.cursor = "auto";
+      return;
+    }
+
+    let activeColor = params.activeColor ?? "var(--celadon)";
+    this.element.onclick = (ev) => {
+      (params.onclick || (() => {}))(ev);
+      if (ev.defaultPrevented) return;
+      this.svg.style.fill = activeColor;
+      // this.element.style.borderColor = activeColor;
+      this.element.style.boxShadow = "none";
+      window.setTimeout(() => {
+        this.svg.style.transitionDuration = "0.3s";
+        this.element.style.transitionDuration = "0.3s";
+        this.svg.style.fill = "";
+        // this.element.style.borderColor = "";
+        this.element.style.boxShadow = "";
+      });
+      window.setTimeout(() => {
+        this.svg.style.transitionDuration = "0s";
+        this.element.style.transitionDuration = "0s";
+      }, 300);
+    };
+  }
+  makeIcon(icon: IconButtonParameters["icon"]) {
     if (icon == "fill") {
       this.svg.setAttribute("viewBox", "0 0 576 512");
       this.path.setAttribute(
@@ -82,22 +115,5 @@ export default class IconButton extends Component<"button"> {
       let _: never = icon;
       throw Error("not a valid icon");
     }
-    if (params.disabled) {
-      this.svg.style.fill = "grey";
-      this.element.style.cursor = "auto";
-      return;
-    }
-    this.element.onclick = (ev) => {
-      (params.onclick || (() => {}))(ev);
-      if (ev.defaultPrevented) return;
-      this.svg.style.fill = "green";
-      window.setTimeout(() => {
-        this.svg.style.transitionDuration = "0.3s";
-        this.svg.style.fill = "black";
-      });
-      window.setTimeout(() => {
-        this.svg.style.transitionDuration = "0s";
-      }, 300);
-    };
   }
 }
