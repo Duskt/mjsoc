@@ -110,7 +110,7 @@ function renderTables() {
         tag: "button",
         textContent: "+",
         parent: td,
-        classList: ["create-table"],
+        classList: ["icon-button", "create-table"],
         other: {
           onclick: async (ev) => {
             let r = await addTable(createTableButton.element);
