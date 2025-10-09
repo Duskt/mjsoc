@@ -86,7 +86,6 @@
     flex-grow: 1;
     background-color: var(--champagne);
     border-radius: 20px;
-    box-shadow: 0 0 4px #00000025 inset;
   }
   .name-tag.south,
   .name-tag.north {
