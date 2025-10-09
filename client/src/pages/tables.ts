@@ -277,6 +277,7 @@ class ButtonPanel extends Component<"div"> {
     this.table = params.table;
     this.saveButton = new IconButton({
       icon: "save",
+      classList: ["icon-button", "save-button"],
       parent: this.element,
       disabled: this.table.table_no < 0,
       onclick: (ev) => {

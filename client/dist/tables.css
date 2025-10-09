@@ -17,13 +17,11 @@
 
 /* Table styling */
 .mahjong-table-display {
-  background: var(--champagne);
-  border-radius: 6px;
-  padding: 20px;
-  position: relative;
-  color: var(--lion);
   font-size: 80px;
-  padding-inline-start: 46px;
+  position: relative;
+  border-radius: 6px;
+  color: var(--lion);
+  padding-inline-start: 40px;
 }
 
 .button-panel {
@@ -193,6 +191,10 @@ h1 {
     width: calc(var(--size) - 20px);
     fill: var(--hunter-green);
   }
+}
+
+button.save-button {
+  --size: 36px;
 }
 
 .register-checkbox {
