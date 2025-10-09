@@ -70,21 +70,23 @@
   float: left;
   justify-content: space-between;
   align-items: center;
-  border: 3px solid var(--coffee);
   border-radius: 16px;
+  background-color: var(--lion);
   margin: 2px;
   padding: 4px;
   height: var(--name-tag-depth); /* overriden for other orientations */
   width: var(--name-tag-length);
   .name-tag {
     font-weight: bold;
-    height: 120%;
-    background: inherit;
-    padding: 2px;
-    border: none;
+    padding-block: 4px;
+    padding-inline: 8px;
+    margin-inline: 1px;
     color: inherit;
+    border: none;
     flex-grow: 1;
-    margin-inline-end: 4px;
+    background-color: var(--champagne);
+    border-radius: 20px;
+    box-shadow: 0 0 4px #00000025 inset;
   }
   .name-tag.south,
   .name-tag.north {
@@ -92,15 +94,9 @@
   }
   .win-button {
     position: relative;
-    width: 28px;
-    height: 28px;
-    border: 2px solid var(--celadon);
-    background: var(--hunter-green);
-    border-radius: 40px;
-    color: var(--celadon);
-    padding-bottom: 2px;
-    padding-right: 1px;
-    font-size: 16px;
+    --size: 28px;
+    background-color: var(--celadon);
+    box-shadow: none;
     .win-button-popup {
       padding-top: 24px;
     }
@@ -186,13 +182,14 @@ h1 {
   justify-content: center;
   align-self: center;
   margin: 0px;
-  padding: calc(var(--size)/10);
+  padding: calc(var(--size) / 10);
   background: none;
-  border: calc(var(--size)/12) solid var(--hunter-green);
+  border: calc(var(--size) / 12) solid var(--hunter-green);
   color: var(--hunter-green);
   border-radius: var(--size);
   box-shadow: 0 0 8px #00000050;
   cursor: pointer;
+  font-size: calc(var(--size) / 2);
   svg {
     width: calc(var(--size) - 20px);
     fill: var(--hunter-green);

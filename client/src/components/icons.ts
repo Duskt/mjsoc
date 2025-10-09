@@ -1,6 +1,28 @@
 import Component, { Params } from ".";
 
-interface IconButtonParameters extends Params<"button"> {
+interface CircleButtonParameters extends Params<"button"> {
+  activeColor?: string;
+  disabled?: boolean;
+  onclick?: (ev: MouseEvent) => void;
+}
+
+export class CircleButton extends Component<"button"> {
+  constructor(params: CircleButtonParameters) {
+    super({
+      tag: "button",
+      classList: ["icon-button"],
+      ...params,
+    });
+    if (params.disabled) {
+      this.element.style.color = "grey";
+      this.element.style.borderColor = "grey";
+      this.element.style.cursor = "auto";
+      return;
+    }
+  }
+}
+
+interface IconButtonParameters extends CircleButtonParameters {
   icon:
     | "fill"
     | "shuffle"
@@ -10,9 +32,6 @@ interface IconButtonParameters extends Params<"button"> {
     | "undo"
     | "settings"
     | "download";
-  activeColor?: string;
-  disabled?: boolean;
-  onclick?: (ev: MouseEvent) => void;
 }
 
 // <!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
