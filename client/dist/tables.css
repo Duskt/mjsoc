@@ -21,7 +21,7 @@
   position: relative;
   border-radius: 6px;
   color: var(--lion);
-  padding-inline-start: 40px;
+  text-align: center;
 }
 
 .button-panel {
