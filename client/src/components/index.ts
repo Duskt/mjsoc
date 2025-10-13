@@ -9,7 +9,7 @@ export interface ComponentParameters<K extends keyof HTMLElementTagNameMap> {
     style?: Partial<CSSStyleDeclaration>;
     textContent?: string;
     classList?: string[];
-    value?: K extends "input" ? string : never;
+    value?: K extends 'input' ? string : never;
     id?: string;
     other?: HTMLElementMap<HTMLElementTagNameMap[K]>;
 }
@@ -21,9 +21,7 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
     element: HTMLElementTagNameMap[K];
     constructor(params: ComponentParameters<K>) {
         let tag = params.tag;
-        this.element = params.element
-            ? params.element
-            : document.createElement(tag);
+        this.element = params.element ? params.element : document.createElement(tag);
         // @ts-ignore (debug property)
         this.element._ParentComponent = this;
         let parent = params.parent;
@@ -39,8 +37,7 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
         }
 
         if (params.textContent) this.element.textContent = params.textContent;
-        if (params.value)
-            (this.element as HTMLInputElement).value = params.value;
+        if (params.value) (this.element as HTMLInputElement).value = params.value;
         if (params.id) this.element.id = params.id;
         let classList = params.classList || [];
         for (const c of classList) {
@@ -63,7 +60,4 @@ export default class Component<K extends keyof HTMLElementTagNameMap> {
     }
 }
 
-export type Params<K extends keyof HTMLElementTagNameMap> = Omit<
-    ComponentParameters<K>,
-    "tag"
->;
+export type Params<K extends keyof HTMLElementTagNameMap> = Omit<ComponentParameters<K>, 'tag'>;

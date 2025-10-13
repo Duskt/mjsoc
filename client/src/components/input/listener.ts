@@ -1,8 +1,8 @@
-import Component, { ComponentParameters } from "..";
+import Component, { ComponentParameters } from '..';
 
 export interface ListenerParameters<
     E extends keyof HTMLElementEventMap,
-    T extends keyof HTMLElementTagNameMap
+    T extends keyof HTMLElementTagNameMap,
 > extends ComponentParameters<T> {
     event: E;
     initListener?: boolean;
@@ -15,7 +15,7 @@ export interface ListenerParameters<
  */
 export default abstract class Listener<
     E extends keyof HTMLElementEventMap,
-    T extends keyof HTMLElementTagNameMap
+    T extends keyof HTMLElementTagNameMap,
 > extends Component<T> {
     event: E;
     protected lastListener?: EventListener;
@@ -41,29 +41,31 @@ export default abstract class Listener<
 }
 
 export interface ClickListenerParameters<T extends keyof HTMLElementTagNameMap>
-    extends Omit<ListenerParameters<"click", T>, "event"> {}
+    extends Omit<ListenerParameters<'click', T>, 'event'> {}
 
-export abstract class ClickListener<
-    T extends keyof HTMLElementTagNameMap
-> extends Listener<"click", T> {
+export abstract class ClickListener<T extends keyof HTMLElementTagNameMap> extends Listener<
+    'click',
+    T
+> {
     constructor(params: InputListenerParameters<T>) {
         super({
             ...params,
-            event: "click",
+            event: 'click',
         });
     }
 }
 
 export interface InputListenerParameters<T extends keyof HTMLElementTagNameMap>
-    extends Omit<ListenerParameters<"input", T>, "event"> {}
+    extends Omit<ListenerParameters<'input', T>, 'event'> {}
 
-export abstract class InputListener<
-    T extends keyof HTMLElementTagNameMap
-> extends Listener<"input", T> {
+export abstract class InputListener<T extends keyof HTMLElementTagNameMap> extends Listener<
+    'input',
+    T
+> {
     constructor(params: InputListenerParameters<T>) {
         super({
             ...params,
-            event: "input",
+            event: 'input',
         });
     }
 }

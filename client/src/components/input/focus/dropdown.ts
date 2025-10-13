@@ -1,9 +1,9 @@
-import { FocusButton, FocusButtonParameters } from "./focusNode";
-import Component, { Params } from "../..";
+import { FocusButton, FocusButtonParameters } from './focusNode';
+import Component, { Params } from '../..';
 
 export interface DropdownParameters<
     K extends keyof HTMLElementTagNameMap,
-    O extends keyof HTMLElementTagNameMap
+    O extends keyof HTMLElementTagNameMap,
 > extends Params<K> {
     tag: K;
     options: HTMLElementTagNameMap[O][];
@@ -11,13 +11,13 @@ export interface DropdownParameters<
 
 export default class Dropdown<
     K extends keyof HTMLElementTagNameMap,
-    O extends keyof HTMLElementTagNameMap
+    O extends keyof HTMLElementTagNameMap,
 > {
     element: HTMLElementTagNameMap[K];
     constructor({ tag, options = [] }: DropdownParameters<K, O>) {
         this.element = new Component({
             tag,
-            classList: ["dropdown"],
+            classList: ['dropdown'],
         }).element;
         this.options = options;
     }
@@ -32,7 +32,7 @@ export default class Dropdown<
 
 export interface DropdownButtonParameters<
     D extends keyof HTMLElementTagNameMap, // element kind for the dropdown popup
-    O extends keyof HTMLElementTagNameMap // element kind for all options
+    O extends keyof HTMLElementTagNameMap, // element kind for all options
 > extends FocusButtonParameters {
     dropdownTag: D;
     dropdown?: Dropdown<D, O>;
@@ -48,7 +48,7 @@ export interface DropdownButtonParameters<
  */
 export class DropdownButton<
     D extends keyof HTMLElementTagNameMap, // element kind for the dropdown popup
-    O extends keyof HTMLElementTagNameMap // element kind for all options
+    O extends keyof HTMLElementTagNameMap, // element kind for all options
 > extends FocusButton {
     dropdown: Dropdown<D, O>;
     dest: HTMLElement;
@@ -58,7 +58,7 @@ export class DropdownButton<
      * @param {HTMLElement[]} params.options Dropdown children (buttons recommended)
      */
     constructor({ dropdown, ...params }: DropdownButtonParameters<D, O>) {
-        let classList = params.classList || ["small-button", "dropdown-button"];
+        let classList = params.classList || ['small-button', 'dropdown-button'];
         let options = params.options || [];
         super({ ...params, classList });
         this.dropdown =
@@ -75,9 +75,7 @@ export class DropdownButton<
     }
     deactivate(): this {
         if (!this.dest.contains(this.dropdown.element))
-            throw new DOMException(
-                "DropdownButton attempted deactivation when inactive."
-            );
+            throw new DOMException('DropdownButton attempted deactivation when inactive.');
         this.dest.removeChild(this.dropdown.element);
         return super.deactivate();
     }

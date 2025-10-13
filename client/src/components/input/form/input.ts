@@ -1,18 +1,18 @@
-import Component, { Params } from "../..";
+import Component, { Params } from '../..';
 
-interface InputParams extends Params<"input"> {
+interface InputParams extends Params<'input'> {
     id: string;
     autocomplete: AutoFill;
 }
 
-export type LabelledInput<T extends Input> = Omit<T, "label"> & {
-    label: Component<"label">;
+export type LabelledInput<T extends Input> = Omit<T, 'label'> & {
+    label: Component<'label'>;
 };
 
-export class Input extends Component<"input"> {
+export class Input extends Component<'input'> {
     constructor({ id, ...params }: InputParams) {
         super({
-            tag: "input",
+            tag: 'input',
             id,
             ...params,
         });
@@ -21,19 +21,19 @@ export class Input extends Component<"input"> {
     label(text: string): LabelledInput<typeof this> {
         let obj = {
             label: new Component({
-                tag: "label",
+                tag: 'label',
                 textContent: text,
                 other: {
                     htmlFor: this.element.id,
                 },
             }),
         };
-        this.element.insertAdjacentElement("beforebegin", obj.label.element);
+        this.element.insertAdjacentElement('beforebegin', obj.label.element);
         return Object.setPrototypeOf(obj, this);
     }
 }
 
-interface SmartInputParams extends Omit<InputParams, "autocomplete"> {
+interface SmartInputParams extends Omit<InputParams, 'autocomplete'> {
     optionsValues: string[];
 }
 
@@ -43,7 +43,7 @@ interface SmartInputParams extends Omit<InputParams, "autocomplete"> {
  * @returns
  */
 function getMatchingSubstrings(...targets: string[]) {
-    let substring_match = "";
+    let substring_match = '';
     for (let i = 0; i < Math.min(...targets.map((t) => t.length)); i++) {
         let next_char = targets[0][i];
         if (targets.every((v) => v[i] === next_char)) {
@@ -59,25 +59,25 @@ function getMatchingSubstrings(...targets: string[]) {
  *
  */
 export class SmartInput extends Input {
-    datalist: Component<"datalist">;
+    datalist: Component<'datalist'>;
     repeatedAction: boolean = false;
     constructor({ id, parent, optionsValues, ...params }: SmartInputParams) {
         super({
             id,
             parent,
-            autocomplete: "off", // not relevant for this component - we know all possible values
+            autocomplete: 'off', // not relevant for this component - we know all possible values
             ...params,
         });
         let dlid = `${id}-datalist`;
         this.datalist = new Component({
-            tag: "datalist",
+            tag: 'datalist',
             parent,
             id: dlid,
         });
         // equivalent to using the setter
         this.renderOptions(optionsValues);
 
-        this.element.setAttribute("list", dlid);
+        this.element.setAttribute('list', dlid);
         this.element.onchange = (ev) => {
             this.element.focus(); // onchange only procs when the content has changed before a tab input, so tab can still switch element focus otherwise
             let match = this.match(this.element.value);
@@ -94,18 +94,16 @@ export class SmartInput extends Input {
         return Array.from(this.datalist.element.children).map((e) => {
             if (!(e instanceof HTMLOptionElement))
                 console.warn(
-                    "getOptions called on object (below) but a non-option child was detected: should I parse?",
-                    this
+                    'getOptions called on object (below) but a non-option child was detected: should I parse?',
+                    this,
                 );
-            return e.textContent || "";
+            return e.textContent || '';
         });
     }
     match(value: string) {
         value = value.trim().toLowerCase();
         // don't normalize matches immediately; we want to try and fix casing
-        let matches = this.getOptions().filter((o) =>
-            o.trim().toLowerCase().startsWith(value)
-        );
+        let matches = this.getOptions().filter((o) => o.trim().toLowerCase().startsWith(value));
         if (matches.length === 1) {
             return matches[0];
         } else if (matches.length === 0) {
@@ -113,19 +111,19 @@ export class SmartInput extends Input {
         } else {
             // don't change original casing, but now we normalize matches
             let matchedSubstr = getMatchingSubstrings(
-                ...matches.map((m) => m.trim().toLowerCase())
+                ...matches.map((m) => m.trim().toLowerCase()),
             );
             return value + matchedSubstr.slice(value.length);
         }
     }
     renderOptions(optionsValues: string[]) {
-        let newOptions: Component<"option">[] = [];
+        let newOptions: Component<'option'>[] = [];
         for (let o of optionsValues) {
             newOptions.push(
                 new Component({
-                    tag: "option",
+                    tag: 'option',
                     textContent: o,
-                })
+                }),
             );
         }
         this.datalist.clearChildNodes();

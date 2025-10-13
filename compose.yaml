@@ -1,35 +1,35 @@
 services:
-  dev:
-    # must explicitly select development mode
-    profiles: [dev] 
-    stdin_open: true
-    tty: true
+    dev:
+        # must explicitly select development mode
+        profiles: [dev]
+        stdin_open: true
+        tty: true
 
-    # build the image via ``docker build -f Dockerfile.dev .`` 
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
+        # build the image via ``docker build -f Dockerfile.dev .``
+        build:
+            context: .
+            dockerfile: Dockerfile.dev
 
-    env_file:
-      - path: ./.env 
-        required: false
-      - path: ./server/.env
-        required: false
-    ports: 
-        # map container's 5654 to host's 5654 
-      - "5654:5654"
+        env_file:
+            - path: ./.env
+              required: false
+            - path: ./server/.env
+              required: false
+        ports:
+            # map container's 5654 to host's 5654
+            - '5654:5654'
 
-    volumes:
-      - mjdata:/app/server/data
-      # use host's server source code 
-      - type: bind
-        source: server/src
-        target: /app/server/src
-        read_only: true
-      # use host's client source code
-      - type: bind
-        source: client/src
-        target: /app/client/src
-        read_only: true
+        volumes:
+            - mjdata:/app/server/data
+            # use host's server source code
+            - type: bind
+              source: server/src
+              target: /app/server/src
+              read_only: true
+            # use host's client source code
+            - type: bind
+              source: client/src
+              target: /app/client/src
+              read_only: true
 volumes:
-  mjdata:
+    mjdata:

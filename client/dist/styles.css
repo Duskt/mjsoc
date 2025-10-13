@@ -1,348 +1,361 @@
 :root {
-  --champagne: #FCE7CAff;
-  --lion: #C09F87ff;
-  --coffee: #835643ff;
-  --black-bean: #470E00ff;
+    --champagne: #fce7caff;
+    --lion: #c09f87ff;
+    --coffee: #835643ff;
+    --black-bean: #470e00ff;
 
-  --celadon: #ACFFD8;
-  --hunter-green: #3c5233;
+    --celadon: #acffd8;
+    --hunter-green: #3c5233;
 
-  --global-background: var(--champagne);
-  --legend-background: var(--almond);
-  --tooltip-background: var(--beaver);
-  --nav-link-hover-background: var(--beaver);
-  --settings-background: var(--celadon);
-  --error-background: var(--celadon);
-  --dropdown-background: var(--beaver);
+    --global-background: var(--champagne);
+    --legend-background: var(--almond);
+    --tooltip-background: var(--beaver);
+    --nav-link-hover-background: var(--beaver);
+    --settings-background: var(--celadon);
+    --error-background: var(--celadon);
+    --dropdown-background: var(--beaver);
 
-  --winner-crown-shadow: var(--black-bean);
+    --winner-crown-shadow: var(--black-bean);
 
-  --table-edge: var(--coffee);
-  --dropdown-edge: var(--black-bean);
-  --sidebar-edge: var(--coffee);
-  --info-grid-edge: var(--coffee);
-  --legend-edge: var(--coffee);
-  --nav-edge: var(--coffee);
-  --error-edge: var(--hunter-green);
-  --tooltip-edge: var(--black-bean);
-  
-  --dropdown-selected: var(--celadon);
-  --pulse-color: var(--hunter-green);
-  --off-pulse-color: var(--celadon);
+    --table-edge: var(--coffee);
+    --dropdown-edge: var(--black-bean);
+    --sidebar-edge: var(--coffee);
+    --info-grid-edge: var(--coffee);
+    --legend-edge: var(--coffee);
+    --nav-edge: var(--coffee);
+    --error-edge: var(--hunter-green);
+    --tooltip-edge: var(--black-bean);
 
-  --settings-text: black;
-  /* default icon button size */
-  --size: 40px;
+    --dropdown-selected: var(--celadon);
+    --pulse-color: var(--hunter-green);
+    --off-pulse-color: var(--celadon);
+
+    --settings-text: black;
+    /* default icon button size */
+    --size: 40px;
 }
 
 body {
-  background-color: var(--global-background);
-  font-family: 'Courier New', Courier, monospace;
-  margin: 0px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+    background-color: var(--global-background);
+    font-family: 'Courier New', Courier, monospace;
+    margin: 0px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 p {
-  text-wrap: pretty;
-  width: 90%;
-  text-align: center
+    text-wrap: pretty;
+    width: 90%;
+    text-align: center;
 }
 
 input {
-  margin: 15px;
-  padding: 4px;
-  width: 100%;
-  font-size: 36px;
+    margin: 15px;
+    padding: 4px;
+    width: 100%;
+    font-size: 36px;
 }
 
 button {
-  padding: 10px 20px;
-  margin-top: 20px;
-  font-size: 36px;
-  font-family: 'Courier New', Courier, monospace;
+    padding: 10px 20px;
+    margin-top: 20px;
+    font-size: 36px;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .edit-members-bar {
-  display: flex;
-  flex-direction: column;
-  width: 80%;
-  margin-inline: auto;
-  padding-block: 14px;
-  justify-content: space-around;
-  align-items: center;
-  > div {
     display: flex;
+    flex-direction: column;
+    width: 80%;
+    margin-inline: auto;
+    padding-block: 14px;
     justify-content: space-around;
-    width: 100%;
-    > button, > a {
-      width: 30px;
-      height: 30px;
-      margin: 0;
-      box-sizing: border-box;
+    align-items: center;
+    > div {
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+        > button,
+        > a {
+            width: 30px;
+            height: 30px;
+            margin: 0;
+            box-sizing: border-box;
+        }
     }
-  }
 }
 
 main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
 }
 
 span:has(.logo) {
-  background-color: var(--celadon);
-  border-radius: 240px;
-  padding: 40px;
-  box-shadow: 0 4px 4px #00000025 inset;
-  .logo {
-    max-width: 240px;
-  }
+    background-color: var(--celadon);
+    border-radius: 240px;
+    padding: 40px;
+    box-shadow: 0 4px 4px #00000025 inset;
+    .logo {
+        max-width: 240px;
+    }
 }
 
 nav {
-  display: flex;
-  background-color: var(--coffee);
-  border-radius: 0 0 12px 12px;
-  border: none;
-  box-shadow: 0 4px 4px #00000025;
-  * {
-    margin-inline: 8px;
-  }
-  a {
-    align-content: center;
-    .home-icon {
-	max-height: 50px;
-    }
-  }
-  .nav-link {
-    padding: 8px;
-    align-content: center;
-    background: var(--lion);
-    border-radius: 16px;
-    margin-block: 12px;
-    padding: 12px 24px 10px 24px;
-    color: var(--black-bean);
-    text-decoration: none;
+    display: flex;
+    background-color: var(--coffee);
+    border-radius: 0 0 12px 12px;
+    border: none;
     box-shadow: 0 4px 4px #00000025;
-    font-size: 18px;
-  }
-  .nav-link:hover:not(.active) {
-    background-color: var(--champagne);
-  }
-  article {
-    margin-top: 30px;
-  }
+    * {
+        margin-inline: 8px;
+    }
+    a {
+        align-content: center;
+        .home-icon {
+            max-height: 50px;
+        }
+    }
+    .nav-link {
+        padding: 8px;
+        align-content: center;
+        background: var(--lion);
+        border-radius: 16px;
+        margin-block: 12px;
+        padding: 12px 24px 10px 24px;
+        color: var(--black-bean);
+        text-decoration: none;
+        box-shadow: 0 4px 4px #00000025;
+        font-size: 18px;
+    }
+    .nav-link:hover:not(.active) {
+        background-color: var(--champagne);
+    }
+    article {
+        margin-top: 30px;
+    }
 }
 
 .nav-link.active {
-  background-color: var(--celadon);
-  color: var(--hunter-green);
-  box-shadow: 0 4px 4px #00000025 inset;
+    background-color: var(--celadon);
+    color: var(--hunter-green);
+    box-shadow: 0 4px 4px #00000025 inset;
 }
 
 /* extra nav specificity is needed to override icon-button margin... */
 nav .settings-button {
-  padding: 0px;
-  font-size: 12px;
-  text-align: center;
-  margin: 0 12px 0 auto;
-  align-self: center;
-  background: none;
-  cursor: pointer;
+    padding: 0px;
+    font-size: 12px;
+    text-align: center;
+    margin: 0 12px 0 auto;
+    align-self: center;
+    background: none;
+    cursor: pointer;
 }
 
 .settings-button form.dropdown {
-  width: 300px;
-  height: fit-content;
-  z-index: 2;
-  left: initial;
-  right: 24px;
-  background-color: var(--settings-background);
-  cursor: initial;
-  margin: 0px;
-  border-radius: 10px;
-  color: var(--settings-text);
+    width: 300px;
+    height: fit-content;
+    z-index: 2;
+    left: initial;
+    right: 24px;
+    background-color: var(--settings-background);
+    cursor: initial;
+    margin: 0px;
+    border-radius: 10px;
+    color: var(--settings-text);
 }
 
 .settings-button form.dropdown fieldset {
-  border: none;
-  font-size: 12px;
-  border-radius: 10px;
-  font-weight: bold;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-  box-sizing: border-box;
-  width: 100%;
+    border: none;
+    font-size: 12px;
+    border-radius: 10px;
+    font-weight: bold;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .settings-button form.dropdown fieldset input {
-  border: none;
-  border-radius: 8px;
-  width: 20%;
-  font-size: 14px;
-  margin-block: auto;
+    border: none;
+    border-radius: 8px;
+    width: 20%;
+    font-size: 14px;
+    margin-block: auto;
 }
 
 /* RequestIndicator and its states */
 .request-indicator {
-  transition: opacity 0.5s ease-in-out;
-  position: absolute;
-  right: 5%;
-  bottom: 3%;
+    transition: opacity 0.5s ease-in-out;
+    position: absolute;
+    right: 5%;
+    bottom: 3%;
 }
 
-.success, .failure span {
-  width: initial;
-  margin: 4px 2px 4px 4px;
-  font-size: 24px;
+.success,
+.failure span {
+    width: initial;
+    margin: 4px 2px 4px 4px;
+    font-size: 24px;
 }
 
 .failure {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  .error-panel {
-    display: block;
-    max-width: 300px;
-    background-color: var(--error-background);
-    border: 2px solid var(--error-edge);
-    border-radius: 8px;
-    margin: 0 2px 2px 0;
-    padding: 0 8px;
-    p {
-      margin: 4px 0;
-      padding: 0;
-      width: 100%;
-      font-size: 14px;
-      text-align: start;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    .error-panel {
+        display: block;
+        max-width: 300px;
+        background-color: var(--error-background);
+        border: 2px solid var(--error-edge);
+        border-radius: 8px;
+        margin: 0 2px 2px 0;
+        padding: 0 8px;
+        p {
+            margin: 4px 0;
+            padding: 0;
+            width: 100%;
+            font-size: 14px;
+            text-align: start;
+        }
+        .summary {
+            font-style: italic;
+            font-weight: bold;
+        }
     }
-    .summary {
-      font-style: italic;
-      font-weight: bold;
-    }
-  }
 }
 
 .loading {
-  --gap-length: 15px;
-  --loading-size: 8px;
-  width: var(--loading-size);
-  height: var(--loading-size);
-  margin: var(--gap-length);
-  border-radius: 50%; 
-  background: var(--off-pulse-color);
-  box-shadow: calc(0px - var(--gap-length)) 0 var(--off-pulse-color), var(--gap-length) 0 var(--off-pulse-color);
-  box-sizing: border-box;
-  animation: shadowPulse 2s linear infinite;
+    --gap-length: 15px;
+    --loading-size: 8px;
+    width: var(--loading-size);
+    height: var(--loading-size);
+    margin: var(--gap-length);
+    border-radius: 50%;
+    background: var(--off-pulse-color);
+    box-shadow:
+        calc(0px - var(--gap-length)) 0 var(--off-pulse-color),
+        var(--gap-length) 0 var(--off-pulse-color);
+    box-sizing: border-box;
+    animation: shadowPulse 2s linear infinite;
 }
 @keyframes shadowPulse {
-  33% {
-    background: var(--off-pulse-color);
-    box-shadow: calc(0px - var(--gap-length)) 0 var(--pulse-color), var(--gap-length) 0 var(--off-pulse-color);
-  }
-  66% {
-    background: var(--pulse-color);
-    box-shadow: calc(0px - var(--gap-length)) 0 var(--off-pulse-color), var(--gap-length) 0 var(--off-pulse-color);
-  }
-  100% {
-    background: var(--off-pulse-color);
-    box-shadow: calc(0px - var(--gap-length)) 0 var(--off-pulse-color), var(--gap-length) 0 var(--pulse-color);
-  }
+    33% {
+        background: var(--off-pulse-color);
+        box-shadow:
+            calc(0px - var(--gap-length)) 0 var(--pulse-color),
+            var(--gap-length) 0 var(--off-pulse-color);
+    }
+    66% {
+        background: var(--pulse-color);
+        box-shadow:
+            calc(0px - var(--gap-length)) 0 var(--off-pulse-color),
+            var(--gap-length) 0 var(--off-pulse-color);
+    }
+    100% {
+        background: var(--off-pulse-color);
+        box-shadow:
+            calc(0px - var(--gap-length)) 0 var(--off-pulse-color),
+            var(--gap-length) 0 var(--pulse-color);
+    }
 }
 
 /* uncat. */
-svg, path {
-  pointer-events: none;
+svg,
+path {
+    pointer-events: none;
 }
 
 .tooltip-parent {
-  position: relative;
-  border: 1px solid var(--tooltip-edge);
-  background-color: var(--tooltip-background);
-  border-radius: 100px;
-  width: 10px;
-  height: 10px;
-  font-size: 10px;
-  text-align: center;
-  padding: 1px;
-  color: var(--tooltip-edge);
+    position: relative;
+    border: 1px solid var(--tooltip-edge);
+    background-color: var(--tooltip-background);
+    border-radius: 100px;
+    width: 10px;
+    height: 10px;
+    font-size: 10px;
+    text-align: center;
+    padding: 1px;
+    color: var(--tooltip-edge);
 }
 
 .tooltip-parent:hover .tooltip {
-  visibility: visible;
-  opacity: 1;
+    visibility: visible;
+    opacity: 1;
 }
 
 .tooltip {
-  display: block;
-  visibility: hidden;
-  opacity: 0;
-  position: absolute;
-  top: 120%;
-  z-index: 3;
-  background-color: var(--tooltip-background);
-  font-size: 12px;
-  padding: 4px 6px;
-  border: 1px solid var(--tooltip-edge);
-  transition: visibility 0.1s, opacity 0.1s ease-in-out;
+    display: block;
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: 120%;
+    z-index: 3;
+    background-color: var(--tooltip-background);
+    font-size: 12px;
+    padding: 4px 6px;
+    border: 1px solid var(--tooltip-edge);
+    transition:
+        visibility 0.1s,
+        opacity 0.1s ease-in-out;
 }
 
 .tooltip p {
-  width: 100%;
-  margin: 0;
+    width: 100%;
+    margin: 0;
 }
 
 #show-all-checkbox-panel {
-  display: flex;
-  justify-content: center;
-  margin-block: 8px;
+    display: flex;
+    justify-content: center;
+    margin-block: 8px;
 }
 
 #filter-form {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #member-table {
-  margin-top: 20px;
-  max-width: 80%;
-  .header.registered {
-    width: 10%;
-    font-size: 14px;
-    text-align: start;
-  }
-  .registered:not(.header) {
-    display: flex;
-    border: none;
-    padding: 0;
-    justify-content: start;
-    input {
-      width: 30px;
-      height: 30px
+    margin-top: 20px;
+    max-width: 80%;
+    .header.registered {
+        width: 10%;
+        font-size: 14px;
+        text-align: start;
     }
-  }
+    .registered:not(.header) {
+        display: flex;
+        border: none;
+        padding: 0;
+        justify-content: start;
+        input {
+            width: 30px;
+            height: 30px;
+        }
+    }
 }
 
 #new-member-form {
-  label {
-    display: block;
-  }
-  button {
-    display: block;
-    margin-left: auto;
-    font-size: 16px;
-    padding: 2px;
-  }
+    label {
+        display: block;
+    }
+    button {
+        display: block;
+        margin-left: auto;
+        font-size: 16px;
+        padding: 2px;
+    }
 }
 
 /* https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/Heading_Elements#specifying_a_uniform_font_size_for_h1 */
 :where(h1) {
-  margin-block: 0.67em;
-  font-size: 2em;
+    margin-block: 0.67em;
+    font-size: 2em;
 }

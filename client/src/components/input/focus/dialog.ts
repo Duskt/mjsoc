@@ -1,8 +1,7 @@
-import Component from "../..";
-import FocusNode, { FocusNodeParameters } from "./focusNode";
+import Component from '../..';
+import FocusNode, { FocusNodeParameters } from './focusNode';
 
-export interface DialogParameters
-    extends Omit<FocusNodeParameters<"dialog">, "tag"> {
+export interface DialogParameters extends Omit<FocusNodeParameters<'dialog'>, 'tag'> {
     activator: Component<any>;
 }
 
@@ -16,27 +15,27 @@ export interface DialogParameters
  * The shadow is cast over the activator, so clicking the activator again will deactivate
  * the dialog via the shadow.
  */
-export default class Dialog extends FocusNode<"dialog"> {
+export default class Dialog extends FocusNode<'dialog'> {
     activator: Component<any>;
     excludeSelf: boolean = false;
     constructor({ activator, ...params }: DialogParameters) {
         super({
-            tag: "dialog",
+            tag: 'dialog',
             ...params,
         });
         if (activator.element === params.parent) {
             console.warn(
-                `Setting the activator as a parent of the ${this} dialog will mean that whenever it is clicked it is reactivated. To bypass this warning, manually add the child node.`
+                `Setting the activator as a parent of the ${this} dialog will mean that whenever it is clicked it is reactivated. To bypass this warning, manually add the child node.`,
             );
         }
         this.activator = activator;
         let dialog = this;
-        this.activator.element.addEventListener("click", (ev: MouseEvent) => {
+        this.activator.element.addEventListener('click', (ev: MouseEvent) => {
             this.activate();
         });
         this.exclude.push(this.activator.element);
         // register event in children unless clicking backdrop
-        this.element.style["padding"] = "0";
+        this.element.style['padding'] = '0';
     }
 
     activate(): this {
@@ -61,55 +60,54 @@ interface ConfirmationDialogParameters extends DialogParameters {
  * ev.preventDefault will prevent this.
  */
 export class ConfirmationDialog extends Dialog {
-    div: Component<"div">;
-    p: Component<"p">;
-    buttonsDiv: Component<"div">;
-    confirm: Component<"button">;
-    cancel: Component<"button">;
+    div: Component<'div'>;
+    p: Component<'p'>;
+    buttonsDiv: Component<'div'>;
+    confirm: Component<'button'>;
+    cancel: Component<'button'>;
     onconfirm: (ev: MouseEvent) => void;
     oncancel: (ev: MouseEvent) => void;
     constructor(params: ConfirmationDialogParameters) {
         super(params);
-        this.element.style.maxWidth = "50%";
+        this.element.style.maxWidth = '50%';
         this.div = new Component({
-            tag: "div",
+            tag: 'div',
             parent: this.element,
         });
-        this.div.element.style.width = "100%";
-        this.div.element.style.height = "100%";
+        this.div.element.style.width = '100%';
+        this.div.element.style.height = '100%';
         this.p = new Component({
-            tag: "p",
+            tag: 'p',
             parent: this.div.element,
             other: {
-                innerHTML: params.message.replace("\n", "<br/>"),
+                innerHTML: params.message.replace('\n', '<br/>'),
             },
         });
-        this.p.element.style.width = "100%";
+        this.p.element.style.width = '100%';
         this.buttonsDiv = new Component({
-            tag: "div",
+            tag: 'div',
             parent: this.div.element,
         });
-        this.buttonsDiv.element.style.display = "flex";
-        this.buttonsDiv.element.style.justifyContent = "center";
+        this.buttonsDiv.element.style.display = 'flex';
+        this.buttonsDiv.element.style.justifyContent = 'center';
         this.confirm = new Component({
-            tag: "button",
-            textContent: "Yes",
+            tag: 'button',
+            textContent: 'Yes',
             parent: this.buttonsDiv.element,
         });
         this.cancel = new Component({
-            tag: "button",
-            textContent: "Cancel",
+            tag: 'button',
+            textContent: 'Cancel',
             parent: this.buttonsDiv.element,
         });
-        this.confirm.element.style.fontSize = "16px";
-        this.cancel.element.style.fontSize = "16px";
-        this.confirm.element.style.margin = "0 1em 1em 1em";
-        this.cancel.element.style.margin = "0 1em 1em 1em";
-        this.confirm.element.style.padding = "4px";
-        this.cancel.element.style.padding = "4px";
+        this.confirm.element.style.fontSize = '16px';
+        this.cancel.element.style.fontSize = '16px';
+        this.confirm.element.style.margin = '0 1em 1em 1em';
+        this.cancel.element.style.margin = '0 1em 1em 1em';
+        this.confirm.element.style.padding = '4px';
+        this.cancel.element.style.padding = '4px';
         this.onconfirm = params.onconfirm;
-        this.oncancel =
-            params.oncancel === undefined ? () => {} : params.oncancel;
+        this.oncancel = params.oncancel === undefined ? () => {} : params.oncancel;
         this.updateButtons();
     }
     updateButtons() {

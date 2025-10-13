@@ -1,11 +1,11 @@
-declare module "canvas-confetti";
+declare module 'canvas-confetti';
 
-type Wind = "east" | "south" | "west" | "north";
+type Wind = 'east' | 'south' | 'west' | 'north';
 type RoundWind = Wind;
 type SeatWind = Wind;
-type PlayerWinds = { [key in SeatWind]: Member["id"] | 0 };
+type PlayerWinds = { [key in SeatWind]: Member['id'] | 0 };
 
-type TableNo = number & { __brand: "tableNo" };
+type TableNo = number & { __brand: 'tableNo' };
 
 interface TableData extends PlayerWinds {
     table_no: TableNo;
@@ -14,11 +14,11 @@ interface TableData extends PlayerWinds {
 
 // for requests
 interface TableEdit {
-    tableNo: TableNo,
-    newTable: TableData
+    tableNo: TableNo;
+    newTable: TableData;
 }
 
-type MemberId = number & { __brand: "memberId" };
+type MemberId = number & { __brand: 'memberId' };
 
 interface TournamentData {
     total_points: number;
@@ -33,7 +33,7 @@ interface Member {
     council: boolean;
 }
 
-type WinKind = "zimo" | "dachut" | "baozimo";
+type WinKind = 'zimo' | 'dachut' | 'baozimo';
 
 interface Log {
     id: number;
@@ -52,7 +52,7 @@ interface Log {
 
 type Settings = {
     matchmakingCoefficient: number;
-}
+};
 
 interface MahjongData {
     week: {};

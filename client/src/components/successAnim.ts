@@ -1,11 +1,11 @@
-import Component from ".";
-import confetti from "canvas-confetti";
+import Component from '.';
+import confetti from 'canvas-confetti';
 
 const mahjongConfetti = {
-    shapes: [confetti.shapeFromText({ text: "🀄", scalar: 4 })],
+    shapes: [confetti.shapeFromText({ text: '🀄', scalar: 4 })],
     scalar: 3,
 };
-const goldConfetti = { colors: ["#ffd700"], scalar: 1 };
+const goldConfetti = { colors: ['#ffd700'], scalar: 1 };
 
 export function triggerCelebration() {
     var end = Date.now() + 1 * 1000;
@@ -66,42 +66,39 @@ export function pointBounce<K extends keyof HTMLElementTagNameMap>(
     points: number,
     {
         autoPosition = true,
-        wind = "east",
+        wind = 'east',
         heightOffset = 110,
         msDuration = 1000,
-    }: PointBounceOptions
+    }: PointBounceOptions,
 ) {
     let orientation;
     switch (wind) {
-        case "east":
+        case 'east':
             orientation = 0;
             break;
-        case "south":
+        case 'south':
             orientation = -90;
             break;
-        case "west":
+        case 'west':
             orientation = 180;
             break;
-        case "north":
+        case 'north':
             orientation = 90;
             break;
     }
-    let elem =
-        elem_or_comp instanceof HTMLElement
-            ? elem_or_comp
-            : elem_or_comp.element;
+    let elem = elem_or_comp instanceof HTMLElement ? elem_or_comp : elem_or_comp.element;
 
     // animation is positioned relative to nearest parent with `position: relative;`
     let oldPosition = elem.style.position;
-    if (autoPosition) elem.style.position = "relative";
+    if (autoPosition) elem.style.position = 'relative';
 
     let pointPopup = new Component({
-        tag: "p",
+        tag: 'p',
         textContent: points.toString(),
         parent: elem,
-        classList: ["points"],
+        classList: ['points'],
     });
-    pointPopup.element.style.color = points > 0 ? "green" : "red";
+    pointPopup.element.style.color = points > 0 ? 'green' : 'red';
 
     // this part is pretty horrible, and will break easily.
     pointPopup.element.style.rotate = `${orientation}deg`;
@@ -112,16 +109,12 @@ export function pointBounce<K extends keyof HTMLElementTagNameMap>(
         pointPopup.element.style.top = `${Math.floor(elem.clientHeight / 4)}px`;
     } else if (orientation === -90) {
         pointPopup.element.style.left = `-${heightOffset}%`;
-        pointPopup.element.style.bottom = `${Math.floor(
-            elem.clientHeight / 4
-        )}px`;
+        pointPopup.element.style.bottom = `${Math.floor(elem.clientHeight / 4)}px`;
     } else {
         pointPopup.element.style.top = `${heightOffset}%`;
     }
 
-    pointPopup.element.style.animation = `bounce ${
-        msDuration / 1000
-    }s ease-in-out 1 forwards`;
+    pointPopup.element.style.animation = `bounce ${msDuration / 1000}s ease-in-out 1 forwards`;
     // after the animation, reset
     window.setTimeout(() => {
         pointPopup.element.remove();

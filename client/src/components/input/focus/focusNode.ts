@@ -1,4 +1,4 @@
-import { ClickListener, InputListenerParameters } from "../listener";
+import { ClickListener, InputListenerParameters } from '../listener';
 
 type AnyElement = HTMLElement | SVGElement;
 
@@ -16,13 +16,13 @@ export interface FocusNodeParameters<T extends keyof HTMLElementTagNameMap>
  *  @param {HTMLElement[]} [exclude=[]] Other elements to exclude from 'elsewhere'.
  */
 export default abstract class FocusNode<
-    T extends keyof HTMLElementTagNameMap
+    T extends keyof HTMLElementTagNameMap,
 > extends ClickListener<T> {
     exclude: AnyElement[];
     excludeSelf: boolean;
     excludeChildren: boolean;
     active: boolean;
-    deactivation: keyof DocumentEventMap = "click";
+    deactivation: keyof DocumentEventMap = 'click';
     constructor(params: FocusNodeParameters<T>) {
         super({
             ...params,
@@ -38,11 +38,14 @@ export default abstract class FocusNode<
     generateListener(): EventListener {
         return (evt: Event) => {
             let target = evt.target;
-            if (!((target instanceof HTMLElement) || (target instanceof SVGElement))) {
+            if (!(target instanceof HTMLElement || target instanceof SVGElement)) {
                 if (target !== null) {
-                    console.warn("Target was not null but also wasn't a HTMLElement or SVGElement. (see focusNode.ts/FocusNode", target)
+                    console.warn(
+                        "Target was not null but also wasn't a HTMLElement or SVGElement. (see focusNode.ts/FocusNode",
+                        target,
+                    );
                 }
-                return
+                return;
             }
             // check if excluding self
             if (this.excludeSelf && target.isSameNode(this.element)) return;
@@ -82,15 +85,15 @@ export default abstract class FocusNode<
     }
 }
 
-export type FocusButtonParameters = Omit<FocusNodeParameters<"button">, "tag">;
+export type FocusButtonParameters = Omit<FocusNodeParameters<'button'>, 'tag'>;
 /** FocusNode given sensible defaults for acting as a button. onclick implicitly set.
  *
  */
-export class FocusButton extends FocusNode<"button"> {
-    deactivation: "click" = "click";
+export class FocusButton extends FocusNode<'button'> {
+    deactivation: 'click' = 'click';
     constructor(params: FocusButtonParameters = {}) {
         super({
-            tag: "button",
+            tag: 'button',
             ...params,
         });
         this.element.onclick = (ev: MouseEvent) => {
@@ -106,13 +109,13 @@ export class FocusButton extends FocusNode<"button"> {
         };
     }
 
-    temporarilyDisable(message = "Loading...") {
+    temporarilyDisable(message = 'Loading...') {
         this.element.disabled = true;
         let oldContent = this.element.textContent;
         this.element.textContent = message;
         return () => {
             this.element.disabled = false;
             this.element.textContent = oldContent;
-        }
+        };
     }
 }

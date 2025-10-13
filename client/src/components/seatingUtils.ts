@@ -1,11 +1,6 @@
-import {
-    getMember,
-    getTable,
-    isMember,
-    MahjongUnknownTableError,
-} from "../data";
-import { addTable, editTable } from "../request";
-import quantile from "@stdlib/stats-base-dists-normal-quantile";
+import { getMember, getTable, isMember, MahjongUnknownTableError } from '../data';
+import { addTable, editTable } from '../request';
+import quantile from '@stdlib/stats-base-dists-normal-quantile';
 
 // todo: refactor into a 'seating hashmap'
 export function isSat(mem: Member) {
@@ -28,14 +23,12 @@ export function isSat(mem: Member) {
 async function seatMemberLast(
     member: Member,
     inPlaceOfCouncil = true,
-    eventTarget: HTMLElement | Document = document
+    eventTarget: HTMLElement | Document = document,
 ) {
     let councilIds = inPlaceOfCouncil
         ? window.MJDATA.members.filter((m) => m.council).map((m) => m.id)
         : [];
-    for (let t of window.MJDATA.tables.sort(
-        (a, b) => a.table_no - b.table_no
-    )) {
+    for (let t of window.MJDATA.tables.sort((a, b) => a.table_no - b.table_no)) {
         if (t.east === 0 || councilIds.includes(t.east)) {
             t.east = member.id;
         } else if (t.south === 0 || councilIds.includes(t.south)) {
@@ -55,7 +48,7 @@ async function seatMemberLast(
                     newTable: t,
                 },
             ],
-            eventTarget
+            eventTarget,
         );
     }
 }
@@ -69,11 +62,11 @@ async function seatMemberLast(
 export async function allocateSeats(
     seatAbsent = false,
     seatCouncilLast = true,
-    eventTarget: HTMLElement | Document = document
+    eventTarget: HTMLElement | Document = document,
 ): Promise<boolean> {
     // first, create the minimum amount of tables that can seat everyone
     let nTables = Math.floor(
-        window.MJDATA.members.filter((m) => m.tournament.registered).length / 4
+        window.MJDATA.members.filter((m) => m.tournament.registered).length / 4,
     );
     // todo: relate to .env
     let maxNewTables = 10;
@@ -90,17 +83,14 @@ export async function allocateSeats(
         }
         // if unseated and registered (if necessary), then seat them last
         if (!isSat(mem) && (seatAbsent || mem.tournament.registered)) {
-            if (
-                (await seatMemberLast(mem, seatCouncilLast, eventTarget)) ===
-                undefined
-            ) {
-                console.log("ended early");
+            if ((await seatMemberLast(mem, seatCouncilLast, eventTarget)) === undefined) {
+                console.log('ended early');
                 // return early because tables must be full
                 return false;
             }
         }
     }
-    console.log("seating council");
+    console.log('seating council');
     // isSat would need to be refreshed here accounting for replaced council members
     shuffleArray(council);
     for (let cMem of council) {
@@ -171,16 +161,11 @@ class OrderableElement<Item, Order> {
 function weightedNormalShuffle<X>(
     array: Array<X>,
     sigma = 1,
-    key: (item: X, index: number, array: Array<X>) => number = (_, index) =>
-        index
+    key: (item: X, index: number, array: Array<X>) => number = (_, index) => index,
 ) {
     let stdev = sigma * array.length;
     let elements = array.map(
-        (item, index) =>
-            new OrderableElement(
-                item,
-                gaussianRandom(key(item, index, array), stdev)
-            )
+        (item, index) => new OrderableElement(item, gaussianRandom(key(item, index, array), stdev)),
     );
     elements = elements.sort((a, b) => a.order - b.order);
     return elements.map((elem) => elem.item);
@@ -226,15 +211,12 @@ function randomizeSeats(array: (MemberId | 0)[]) {
         let memberB = getMember(b);
         // check if either seat is empty, if so just say they're equal?
         if (!(isMember(memberA) && isMember(memberB))) return 0;
-        let pts = (m: Member) =>
-            m.tournament.session_points + m.tournament.total_points;
+        let pts = (m: Member) => m.tournament.session_points + m.tournament.total_points;
         // B - A reverses it
         return pts(memberB) - pts(memberA);
     });
     // partially randomise the seats
-    let sigma = matchmakingCoefficientToStdev(
-        window.MJDATA.settings.matchmakingCoefficient
-    );
+    let sigma = matchmakingCoefficientToStdev(window.MJDATA.settings.matchmakingCoefficient);
     return weightedNormalShuffle(array, sigma);
 }
 
@@ -261,10 +243,8 @@ function getRandomCouncilMap() {
  * @param eventTarget the node to dispatch update table events from
  * @returns
  */
-export async function shuffleSeats(
-    eventTarget: HTMLElement | Document = document
-) {
-    window.sessionStorage.setItem("undoButton", "");
+export async function shuffleSeats(eventTarget: HTMLElement | Document = document) {
+    window.sessionStorage.setItem('undoButton', '');
     let councilMap = getRandomCouncilMap();
     // most of the work is keeping the shuffle function abstract, so it takes any array
     // load tables as [x-east, x-south, x-west, x-north, y-east...]
@@ -299,7 +279,7 @@ export async function shuffleSeats(
         if (oldTable instanceof MahjongUnknownTableError) {
             console.error(oldTable);
             alert(
-                "Something went wrong while shuffling the tables - please refresh and try again."
+                'Something went wrong while shuffling the tables - please refresh and try again.',
             );
             return;
         }
@@ -349,7 +329,7 @@ function testFunction(f: (array: Array<any>) => Array<any>, N = 10000, l = 20) {
         });
         results.sort((a, b) => a[0] - b[0]);
         results.forEach(([a, b]) => {
-            console.log(a, "|".repeat(b));
+            console.log(a, '|'.repeat(b));
         });
     });
 }

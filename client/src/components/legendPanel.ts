@@ -1,18 +1,18 @@
-import Component, { Params } from ".";
-import { getSessionWind } from "../data";
-import { DropdownButton } from "./input/focus/dropdown";
+import Component, { Params } from '.';
+import { getSessionWind } from '../data';
+import { DropdownButton } from './input/focus/dropdown';
 
-interface LegendParams extends Params<"div"> {}
+interface LegendParams extends Params<'div'> {}
 
-export default class Legend extends Component<"div"> {
+export default class Legend extends Component<'div'> {
     roundWind: RoundWind;
-    keyUl: Component<"ul">;
-    keyLis: Component<"li">[];
+    keyUl: Component<'ul'>;
+    keyLis: Component<'li'>[];
     constructor(params: LegendParams) {
         if (params.classList === undefined) params.classList = [];
-        params.classList = params.classList.concat(["legend-panel"]);
+        params.classList = params.classList.concat(['legend-panel']);
         super({
-            tag: "div",
+            tag: 'div',
             ...params,
         });
         this.roundWind = new RoundWind({
@@ -20,24 +20,24 @@ export default class Legend extends Component<"div"> {
             parent: this.element,
         });
         this.keyUl = new Component({
-            tag: "ul",
+            tag: 'ul',
             parent: this.element,
         });
         this.keyLis = [
             new Component({
-                tag: "li",
+                tag: 'li',
                 parent: this.keyUl.element,
-                textContent: "食: Win",
+                textContent: '食: Win',
             }),
             new Component({
-                tag: "li",
+                tag: 'li',
                 parent: this.keyUl.element,
-                textContent: "自摸: Self-draw",
+                textContent: '自摸: Self-draw',
             }),
             new Component({
-                tag: "li",
+                tag: 'li',
                 parent: this.keyUl.element,
-                textContent: "打出: Direct hit",
+                textContent: '打出: Direct hit',
             }),
         ];
         makeDraggable(this.element);
@@ -45,83 +45,83 @@ export default class Legend extends Component<"div"> {
 }
 
 const WindCharacters: Map<Wind, string> = new Map();
-WindCharacters.set("east", "東");
-WindCharacters.set("south", "南");
-WindCharacters.set("west", "西");
-WindCharacters.set("north", "北");
+WindCharacters.set('east', '東');
+WindCharacters.set('south', '南');
+WindCharacters.set('west', '西');
+WindCharacters.set('north', '北');
 
-interface RoundWindParams extends Params<"p"> {
+interface RoundWindParams extends Params<'p'> {
     wind: Wind;
 }
 
-class RoundWind extends Component<"p"> {
+class RoundWind extends Component<'p'> {
     wind: Wind;
-    ddb: DropdownButton<"div", "button">;
-    ddbSpan: Component<"span">;
+    ddb: DropdownButton<'div', 'button'>;
+    ddbSpan: Component<'span'>;
     br: HTMLBRElement;
     lock: boolean;
-    windCaption: Component<"span">;
-    constructor({ wind = "east", ...params }: RoundWindParams) {
+    windCaption: Component<'span'>;
+    constructor({ wind = 'east', ...params }: RoundWindParams) {
         super({
-            tag: "p",
+            tag: 'p',
             ...params,
         });
         this.lock = false;
         this.wind = wind;
         this.ddb = new DropdownButton({
-            dropdownTag: "div",
+            dropdownTag: 'div',
             parent: this.element,
-            options: (["east", "south", "west", "north"] as Wind[]).map(
+            options: (['east', 'south', 'west', 'north'] as Wind[]).map(
                 (w) =>
-                    new Component<"button">({
-                        tag: "button",
-                        textContent: WindCharacters.get(w) || "ERR",
+                    new Component<'button'>({
+                        tag: 'button',
+                        textContent: WindCharacters.get(w) || 'ERR',
                         other: {
                             onclick: (ev) => {
                                 this.setWind(w);
                                 this.ddb.deactivate();
                             },
                         },
-                    }).element
+                    }).element,
             ),
         });
         this.ddbSpan = new Component({
-            tag: "span",
+            tag: 'span',
             textContent: WindCharacters.get(wind),
             parent: this.ddb.element,
-            classList: ["round-wind-span"],
+            classList: ['round-wind-span'],
             other: {
                 onclick: (ev) => this.ddb.activate(),
             },
         });
-        this.br = document.createElement("br");
+        this.br = document.createElement('br');
         this.element.appendChild(this.br);
         this.windCaption = new Component({
-            tag: "span",
+            tag: 'span',
             textContent: `(${wind})`,
             parent: this.element,
         });
     }
     setWind(wind: Wind) {
         this.wind = wind;
-        window.sessionStorage.setItem("round", wind);
-        this.ddbSpan.element.textContent = WindCharacters.get(wind) || "ERR";
+        window.sessionStorage.setItem('round', wind);
+        this.ddbSpan.element.textContent = WindCharacters.get(wind) || 'ERR';
         this.windCaption.element.textContent = `(${wind})`;
     }
     updateWind() {
         if (this.lock === true) return;
         switch (this.wind) {
-            case "east":
-                this.setWind("south");
+            case 'east':
+                this.setWind('south');
                 return;
-            case "south":
-                this.setWind("west");
+            case 'south':
+                this.setWind('west');
                 return;
-            case "west":
-                this.setWind("north");
+            case 'west':
+                this.setWind('north');
                 return;
-            case "north":
-                this.setWind("east");
+            case 'north':
+                this.setWind('east');
                 return;
         }
     }
@@ -153,8 +153,8 @@ function makeDraggable(elmnt: HTMLElement) {
         pos3 = e.clientX;
         pos4 = e.clientY;
         // set the element's new position:
-        elmnt.style.top = elmnt.offsetTop - pos2 + "px";
-        elmnt.style.left = elmnt.offsetLeft - pos1 + "px";
+        elmnt.style.top = elmnt.offsetTop - pos2 + 'px';
+        elmnt.style.left = elmnt.offsetLeft - pos1 + 'px';
     }
 
     function closeDragElement() {

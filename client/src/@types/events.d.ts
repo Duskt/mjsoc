@@ -8,14 +8,16 @@ type EditMemberEvent = CustomEvent<{
     id: MemberId;
     new_member: Member | {};
 }>;
-type UndoLogEvent = CustomEvent<Log["id"]>;
+type UndoLogEvent = CustomEvent<Log['id']>;
 type EditLogEvent = CustomEvent<{
-    id: Log["id"];
+    id: Log['id'];
     newLog: Log;
 }>;
-type EditTableEvent = CustomEvent<{
-    tableNo: TableNo;
-    newTable: TableData;
-}[]>;
+type EditTableEvent = CustomEvent<
+    {
+        tableNo: TableNo;
+        newTable: TableData;
+    }[]
+>;
 
-type SettingsUpdateEvent = CustomEvent<{}>
+type SettingsUpdateEvent = CustomEvent<{}>;

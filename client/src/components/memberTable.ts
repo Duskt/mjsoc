@@ -1,52 +1,50 @@
-import Component, { Params } from ".";
-import { AppError } from "../errors";
-import { editMember, manualRegister } from "../request";
-import FocusNode from "./input/focus/focusNode";
-import { isSat } from "./seatingUtils";
+import Component, { Params } from '.';
+import { AppError } from '../errors';
+import { editMember, manualRegister } from '../request';
+import FocusNode from './input/focus/focusNode';
+import { isSat } from './seatingUtils';
 
-export default class MemberGrid extends Component<"table"> {
+export default class MemberGrid extends Component<'table'> {
     memberElems: {
-        [id: Member["id"]]: [Component<"tr">, NameTd]; // parent row, name, crown
+        [id: Member['id']]: [Component<'tr'>, NameTd]; // parent row, name, crown
     } = {};
     showAbsent: boolean;
-    crowns: Component<"span">[] = [];
-    constructor(params: Params<"table">) {
+    crowns: Component<'span'>[] = [];
+    constructor(params: Params<'table'>) {
         super({
-            tag: "table",
-            id: "member-table",
+            tag: 'table',
+            id: 'member-table',
             ...params,
         });
         this.updateMembers();
         this.showAbsent = false;
-        document.addEventListener("mjPointTransfer", (ev) => {
+        document.addEventListener('mjPointTransfer', (ev) => {
             this.updateMembers();
         });
-        document.addEventListener("mjEditTable", (ev) => {
+        document.addEventListener('mjEditTable', (ev) => {
             this.updateSatMembers();
         });
     }
     renderNewHeaders() {
-        this.element.innerHTML = "";
+        this.element.innerHTML = '';
         let headerRow = new Component({
-            tag: "tr",
+            tag: 'tr',
             parent: this.element,
         });
         let name = new Component({
-            tag: "th",
-            textContent: "Name",
+            tag: 'th',
+            textContent: 'Name',
             parent: headerRow.element,
         });
         let points = new Component({
-            tag: "th",
-            textContent: this.showAbsent ? "Total" : "Pts.",
+            tag: 'th',
+            textContent: this.showAbsent ? 'Total' : 'Pts.',
             parent: headerRow.element,
         });
-        let regCount = window.MJDATA.members.filter(
-            (m) => m.tournament.registered
-        ).length;
+        let regCount = window.MJDATA.members.filter((m) => m.tournament.registered).length;
         let present = new Component({
-            tag: "th",
-            classList: ["header", "registered"],
+            tag: 'th',
+            classList: ['header', 'registered'],
             textContent: `Here? (${regCount})`,
             parent: headerRow.element,
         });
@@ -59,14 +57,10 @@ export default class MemberGrid extends Component<"table"> {
                     return (
                         b.tournament.total_points +
                         b.tournament.session_points -
-                        (a.tournament.total_points +
-                            a.tournament.session_points)
+                        (a.tournament.total_points + a.tournament.session_points)
                     );
                 } else {
-                    return (
-                        b.tournament.session_points -
-                        a.tournament.session_points
-                    );
+                    return b.tournament.session_points - a.tournament.session_points;
                 }
             })
             .forEach((m) => this.renderMember(m));
@@ -79,18 +73,18 @@ export default class MemberGrid extends Component<"table"> {
             td = this.memberElems[mId][1];
             if (td.member.tournament.registered) {
                 if (!isSat(td.member)) {
-                    td.element.style.color = "red";
-                    td.element.style.fontWeight = "bold";
+                    td.element.style.color = 'red';
+                    td.element.style.fontWeight = 'bold';
                 } else if (this.showAbsent) {
-                    td.element.style.color = "";
-                    td.element.style.fontWeight = "bold";
+                    td.element.style.color = '';
+                    td.element.style.fontWeight = 'bold';
                 } else {
-                    td.element.style.color = "";
-                    td.element.style.fontWeight = "";
+                    td.element.style.color = '';
+                    td.element.style.fontWeight = '';
                 }
             } else {
-                td.element.style.color = "";
-                td.element.style.fontWeight = "";
+                td.element.style.color = '';
+                td.element.style.fontWeight = '';
             }
         }
     }
@@ -99,30 +93,25 @@ export default class MemberGrid extends Component<"table"> {
         this.crowns = [];
         let maxPts = Math.max(
             ...window.MJDATA.members.map(
-                (m) => m.tournament.session_points + m.tournament.total_points
-            )
+                (m) => m.tournament.session_points + m.tournament.total_points,
+            ),
         );
         let winners = window.MJDATA.members.filter(
-            (m) =>
-                m.tournament.session_points + m.tournament.total_points ===
-                maxPts
+            (m) => m.tournament.session_points + m.tournament.total_points === maxPts,
         );
         let wMember: Member;
         for (wMember of winners) {
-            let wRow = (this.memberElems[wMember.id] || [
-                undefined,
-                undefined,
-            ])[0];
+            let wRow = (this.memberElems[wMember.id] || [undefined, undefined])[0];
             if (wRow === undefined) continue;
             this.renderCrown(wRow);
         }
     }
-    renderCrown(row: Component<"tr">) {
-        row.element.style.position = "relative";
+    renderCrown(row: Component<'tr'>) {
+        row.element.style.position = 'relative';
         let crown = new Component({
-            tag: "span",
-            textContent: "👑",
-            classList: ["winner-crown"],
+            tag: 'span',
+            textContent: '👑',
+            classList: ['winner-crown'],
             parent: row.element,
         });
         this.crowns.push(crown);
@@ -130,7 +119,7 @@ export default class MemberGrid extends Component<"table"> {
     renderMember(member: Member) {
         if (!member.tournament.registered && !this.showAbsent) return;
         let row = new Component({
-            tag: "tr",
+            tag: 'tr',
             parent: this.element,
         });
         let name = new NameTd(member, {
@@ -138,39 +127,38 @@ export default class MemberGrid extends Component<"table"> {
         });
         if (member.tournament.registered) {
             if (!isSat(member)) {
-                name.element.style.color = "red";
-                name.element.style.fontWeight = "bold";
+                name.element.style.color = 'red';
+                name.element.style.fontWeight = 'bold';
             } else if (this.showAbsent) {
-                name.element.style.fontWeight = "bold";
+                name.element.style.fontWeight = 'bold';
             }
         }
         let pointsTd = new PointsTd({
             points: this.showAbsent
-                ? member.tournament.total_points +
-                  member.tournament.session_points
+                ? member.tournament.total_points + member.tournament.session_points
                 : member.tournament.session_points,
             parent: row.element,
         });
         let presentTd = new Component({
-            tag: "td",
-            classList: ["registered"],
+            tag: 'td',
+            classList: ['registered'],
             parent: row.element,
         });
         let checkbox = new Component({
-            tag: "input",
-            classList: ["present-checkbox"],
+            tag: 'input',
+            classList: ['present-checkbox'],
             parent: presentTd.element,
             other: {
-                type: "checkbox",
+                type: 'checkbox',
                 checked: member.tournament.registered,
                 onchange: async () => {
                     let r = await manualRegister(
                         { memberId: member.id },
                         true, // leaveTables
-                        checkbox.element
+                        checkbox.element,
                     );
                     if (!r) {
-                        alert("Please try again.");
+                        alert('Please try again.');
                         window.location.reload();
                     }
                 },
@@ -180,49 +168,45 @@ export default class MemberGrid extends Component<"table"> {
     }
 }
 
-interface PointsTdParams extends Params<"td"> {
+interface PointsTdParams extends Params<'td'> {
     points: number;
 }
 
-class PointsTd extends Component<"td"> {
+class PointsTd extends Component<'td'> {
     constructor(params: PointsTdParams) {
         super({
-            tag: "td",
+            tag: 'td',
             textContent: params.points.toString(),
             ...params,
         });
-        this.element.style["backgroundColor"] =
-            params.points > 0
-                ? "green"
-                : params.points === 0
-                ? "yellow"
-                : "red";
+        this.element.style['backgroundColor'] =
+            params.points > 0 ? 'green' : params.points === 0 ? 'yellow' : 'red';
     }
 }
 
-class NameTd extends FocusNode<"td"> {
+class NameTd extends FocusNode<'td'> {
     member: Member;
-    input: Component<"input">;
+    input: Component<'input'>;
     keyListener: (ev: KeyboardEvent) => void;
     dblclickListener: (ev: MouseEvent) => void;
-    constructor(member: Member, params: Params<"td">) {
+    constructor(member: Member, params: Params<'td'>) {
         super({
-            tag: "td",
+            tag: 'td',
             textContent: member.name,
             ...params,
         });
         this.member = member;
         this.input = new Component({
-            tag: "input",
+            tag: 'input',
             other: {
                 value: member.name,
             },
         });
-        this.input.element.style.fontSize = "16px";
-        this.input.element.style.margin = "0";
-        this.input.element.style.width = "90%";
+        this.input.element.style.fontSize = '16px';
+        this.input.element.style.margin = '0';
+        this.input.element.style.width = '90%';
         this.keyListener = async (ev) => {
-            if (ev.key === "Enter") {
+            if (ev.key === 'Enter') {
                 let r = await editMember({
                     id: member.id,
                     newMember: {
@@ -234,29 +218,29 @@ class NameTd extends FocusNode<"td"> {
                 });
                 if (r instanceof AppError) return;
             }
-            if (ev.key === "Escape" || ev.key === "Enter") {
+            if (ev.key === 'Escape' || ev.key === 'Enter') {
                 this.deactivate();
             }
         };
         this.dblclickListener = (ev) => {
             this.activate();
         };
-        this.element.addEventListener("dblclick", this.dblclickListener);
+        this.element.addEventListener('dblclick', this.dblclickListener);
     }
     activate(): this {
         super.activate();
-        this.element.style.padding = "0";
-        this.element.innerHTML = "";
+        this.element.style.padding = '0';
+        this.element.innerHTML = '';
         this.element.appendChild(this.input.element);
-        this.input.element.addEventListener("keydown", this.keyListener);
+        this.input.element.addEventListener('keydown', this.keyListener);
         this.input.element.focus();
         return this;
     }
     deactivate(): this {
         super.deactivate();
-        this.input.element.removeEventListener("keydown", this.keyListener);
-        this.element.innerHTML = "";
-        this.element.style.padding = "";
+        this.input.element.removeEventListener('keydown', this.keyListener);
+        this.element.innerHTML = '';
+        this.element.style.padding = '';
         this.element.textContent = this.member.name;
         return this;
     }

@@ -1,5 +1,5 @@
 let
-  pkgs = import <nixpkgs> {};
+  pkgs = import <nixpkgs> { };
   # nixpkgs = fetchTarball "https://github.com/NixOS/nixpkgs/tarball/nixos-25.05";
   # pkgs = import nixpkgs { config = {}; overlays = []; };
 in
@@ -13,6 +13,7 @@ pkgs.mkShellNoCC {
 
     # client (node)
     nodejs_24 # other deps installed locally via npm
+    prettier
 
     # setup utils (creating password hash for .env)
     libargon2

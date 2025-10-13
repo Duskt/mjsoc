@@ -1,16 +1,13 @@
-import Component, { ComponentParameters } from "..";
+import Component, { ComponentParameters } from '..';
 
-export interface ToggleComponentParameters<
-    K extends keyof HTMLElementTagNameMap
-> extends ComponentParameters<K> {
-    mode: "block";
+export interface ToggleComponentParameters<K extends keyof HTMLElementTagNameMap>
+    extends ComponentParameters<K> {
+    mode: 'block';
 }
 
-export default class ToggleComponent<
-    K extends keyof HTMLElementTagNameMap
-> extends Component<K> {
+export default class ToggleComponent<K extends keyof HTMLElementTagNameMap> extends Component<K> {
     hidden: boolean;
-    mode: ToggleComponentParameters<K>["mode"];
+    mode: ToggleComponentParameters<K>['mode'];
     children: HTMLCollection;
     constructor(params: ToggleComponentParameters<K>) {
         super(params);
@@ -24,7 +21,7 @@ export default class ToggleComponent<
         for (let item of Array.from(this.children)) {
             this.element.appendChild(item);
         }
-        this.element.style["display"] = this.mode;
+        this.element.style['display'] = this.mode;
     }
 
     hide() {
@@ -33,7 +30,7 @@ export default class ToggleComponent<
         while (this.element.lastChild) {
             this.element.removeChild(this.element.lastChild);
         }
-        this.element.style["display"] = "none";
+        this.element.style['display'] = 'none';
     }
 
     toggle() {

@@ -7,13 +7,8 @@ export function UsesMember<TBase extends Class>(target: TBase) {
         abstract memberId: MemberId;
         abstract updateMember(memberId: MemberId): void;
         public get member() {
-            let member = window.MJDATA.members.find(
-                (member) => member.id === this.memberId
-            );
-            if (!member)
-                throw Error(
-                    `Failure to index member from memberId ${this.memberId}`
-                );
+            let member = window.MJDATA.members.find((member) => member.id === this.memberId);
+            if (!member) throw Error(`Failure to index member from memberId ${this.memberId}`);
             return member;
         }
     }
@@ -31,16 +26,16 @@ export function UsesSeat<TBase extends Class>(target: TBase) {
 export class MahjongUnknownTableError extends Error {
     constructor(tableNo: number) {
         super(`Couldn't find table ${tableNo}`);
-        this.name = "MahjongUnknownTableError";
+        this.name = 'MahjongUnknownTableError';
     }
 }
 
 export function getTable(tableNo: TableNo) {
     let table = window.MJDATA.tables.find((t) => t.table_no === tableNo);
     if (table === undefined) {
-        table = JSON.parse(
-            window.sessionStorage.getItem("savedTables") || "[]"
-        ).find((t: TableData) => t.table_no === tableNo);
+        table = JSON.parse(window.sessionStorage.getItem('savedTables') || '[]').find(
+            (t: TableData) => t.table_no === tableNo,
+        );
     }
     if (table === undefined) {
         return new MahjongUnknownTableError(tableNo);
@@ -52,17 +47,15 @@ export function getTable(tableNo: TableNo) {
 export class MahjongUnknownMemberError extends Error {
     constructor(memberId: number) {
         let msg =
-            memberId === 0
-                ? "Attempted to get empty member"
-                : `Couldn't find member ${memberId}`;
+            memberId === 0 ? 'Attempted to get empty member' : `Couldn't find member ${memberId}`;
         super(msg);
-        this.name = "MahjongUnknownMemberError";
+        this.name = 'MahjongUnknownMemberError';
     }
 }
 
 interface EmptyMember {
     id: 0;
-    name: "EMPTY";
+    name: 'EMPTY';
     tournament: {
         total_points: 0;
         session_points: 0;
@@ -71,7 +64,7 @@ interface EmptyMember {
 }
 const emptyMember: EmptyMember = {
     id: 0,
-    name: "EMPTY",
+    name: 'EMPTY',
     tournament: {
         total_points: 0,
         session_points: 0,
@@ -81,7 +74,7 @@ const emptyMember: EmptyMember = {
 
 interface ErrorMember {
     id: number;
-    name: "ERROR";
+    name: 'ERROR';
     tournament: {
         total_points: 0;
         session_points: 0;
@@ -91,25 +84,21 @@ interface ErrorMember {
 const errorMember = (id: number) =>
     ({
         id,
-        name: "ERROR",
+        name: 'ERROR',
         tournament: {
             total_points: 0,
             session_points: 0,
             registered: false,
         },
-    } as ErrorMember);
+    }) as ErrorMember;
 
 export type OptionMember = Member | ErrorMember | EmptyMember;
 
-export function isMember(
-    member: Member | EmptyMember | ErrorMember
-): member is Member {
+export function isMember(member: Member | EmptyMember | ErrorMember): member is Member {
     return member.id > 0;
 }
 
-export function getMember(
-    memberId: MemberId | 0
-): Member | EmptyMember | ErrorMember {
+export function getMember(memberId: MemberId | 0): Member | EmptyMember | ErrorMember {
     if (memberId === 0) {
         return emptyMember;
     }
@@ -121,12 +110,9 @@ export function getMember(
     }
 }
 
-export function getOtherPlayersOnTable(
-    memberId: MemberId,
-    table: TableData
-) {
-    let otherSeats = (["east", "south", "west", "north"] as SeatWind[]).filter(
-        (seat) => table[seat] != memberId
+export function getOtherPlayersOnTable(memberId: MemberId, table: TableData) {
+    let otherSeats = (['east', 'south', 'west', 'north'] as SeatWind[]).filter(
+        (seat) => table[seat] != memberId,
     );
     return otherSeats.map((seat) => {
         let mId = table[seat];
@@ -149,25 +135,22 @@ POINTS.set(13, 384);
 POINTS.set(-10, -128);
 
 export function isWind(s: string | null): s is Wind {
-    if (s && ["east", "south", "west", "north"].includes(s)) {
+    if (s && ['east', 'south', 'west', 'north'].includes(s)) {
         return true;
     }
     return false;
 }
 
 export function getSessionWind(): Wind {
-    let maybeWind = window.sessionStorage.getItem("round");
+    let maybeWind = window.sessionStorage.getItem('round');
     if (isWind(maybeWind)) {
         return maybeWind;
     } else {
-        return "east";
+        return 'east';
     }
 }
 
-export function updateMembers(
-    affectedMembers: Member[],
-    key: keyof Member = "id"
-) {
+export function updateMembers(affectedMembers: Member[], key: keyof Member = 'id') {
     let newMember: Member | undefined;
     window.MJDATA.members = window.MJDATA.members.map((oldMember) => {
         newMember = affectedMembers.find((m) => m[key] === oldMember[key]);
