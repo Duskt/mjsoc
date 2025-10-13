@@ -5,6 +5,7 @@ pub fn page(inner: PreEscaped<String>) -> PreEscaped<String> {
         (DOCTYPE)
         html lang="en" {
             head {
+                meta charset="UTF-8" {}
                 title { "Mahjong Bath" }
                 link rel="stylesheet" href="/public/styles.css";
                 link rel="stylesheet" href="/public/tables.css";

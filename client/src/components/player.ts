@@ -222,7 +222,7 @@ class WinButton extends UsesMember(FocusButton) {
       tag: "button",
       textContent: "食",
       parent,
-      classList: ["win-button", "icon-button"],
+      classList: ["win-button", "icon-button", "disabled"],
       other: {
         disabled: true,
       },

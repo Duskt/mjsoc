@@ -1,6 +1,6 @@
 import Component, { Params } from "../components";
 import DeleteButton from "../components/deleteButton";
-import IconButton from "../components/icons";
+import IconButton, { CircleButton } from "../components/icons";
 import {
   InputListener,
   InputListenerParameters,
@@ -106,8 +106,7 @@ function renderTables() {
       index = 0;
     }
     if (i === undefined) {
-      let createTableButton = new Component({
-        tag: "button",
+      let createTableButton = new CircleButton({
         textContent: "+",
         parent: td,
         classList: ["icon-button", "create-table"],

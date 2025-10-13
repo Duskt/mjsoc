@@ -31,6 +31,8 @@
   --off-pulse-color: var(--celadon);
 
   --settings-text: black;
+  /* default icon button size */
+  --size: 40px;
 }
 
 body {
@@ -64,16 +66,22 @@ button {
 
 .edit-members-bar {
   display: flex;
+  flex-direction: column;
   width: 80%;
   margin-inline: auto;
-  padding-top: 14px;
-  justify-content: space-evenly;
+  padding-block: 14px;
+  justify-content: space-around;
   align-items: center;
-  > button, > a {
-    width: 20px;
-    height: auto;
-    margin: 0;
-    padding: 0;
+  > div {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    > button, > a {
+      width: 30px;
+      height: 30px;
+      margin: 0;
+      box-sizing: border-box;
+    }
   }
 }
 
@@ -292,6 +300,7 @@ svg, path {
 #show-all-checkbox-panel {
   display: flex;
   justify-content: center;
+  margin-block: 8px;
 }
 
 #filter-form {
