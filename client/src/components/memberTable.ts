@@ -73,7 +73,7 @@ export default class MemberGrid extends Component<'table'> {
             td = this.memberElems[mId][1];
             if (td.member.tournament.registered) {
                 if (!isSat(td.member)) {
-                    td.element.style.color = 'red';
+                    td.element.style.color = 'var(--error-red)';
                     td.element.style.fontWeight = 'bold';
                 } else if (this.showAbsent) {
                     td.element.style.color = '';
@@ -127,7 +127,7 @@ export default class MemberGrid extends Component<'table'> {
         });
         if (member.tournament.registered) {
             if (!isSat(member)) {
-                name.element.style.color = 'red';
+                name.element.style.color = 'var(--error-red)';
                 name.element.style.fontWeight = 'bold';
             } else if (this.showAbsent) {
                 name.element.style.fontWeight = 'bold';
@@ -173,14 +173,28 @@ interface PointsTdParams extends Params<'td'> {
 }
 
 class PointsTd extends Component<'td'> {
+    background: Component<'div'>; // grid td background colors are buggy in firefox, appearing over the top and left borders.
     constructor(params: PointsTdParams) {
         super({
             tag: 'td',
             textContent: params.points.toString(),
             ...params,
         });
-        this.element.style['backgroundColor'] =
-            params.points > 0 ? 'green' : params.points === 0 ? 'yellow' : 'red';
+        this.element.style['position'] = 'relative';
+        this.background = new Component({
+            tag: 'div',
+            parent: this.element,
+            style: {
+                backgroundColor:
+                    params.points > 0 ? 'green' : params.points === 0 ? 'yellow' : 'red',
+                position: 'absolute',
+                top: '0',
+                left: '0',
+                height: '100%',
+                width: '100%',
+                zIndex: '-100',
+            },
+        });
     }
 }
 

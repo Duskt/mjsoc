@@ -21,7 +21,7 @@ export default class NameTag extends InputListener<'select'> {
         } else {
             this.renderPlaceholder();
             this.element.style.fontWeight = 'bold';
-            this.element.style.color = 'red';
+            this.element.style.color = 'var(--error-red)';
         }
 
         // render other options
@@ -52,7 +52,7 @@ export default class NameTag extends InputListener<'select'> {
         let optElem = document.createElement('option');
         optElem.textContent = 'EMPTY';
         optElem.style.fontWeight = 'bold';
-        optElem.style.color = 'red';
+        optElem.style.color = 'var(--error-red)';
         this.empty = optElem;
         this.element.appendChild(optElem);
         return optElem;

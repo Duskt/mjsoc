@@ -6,11 +6,17 @@ import { DropdownButton, DropdownButtonParameters } from './input/focus/dropdown
 import { LabelledInput, SmartInput } from './input/form/input';
 
 class RemoveMemberButton extends DropdownButton<'div', 'button'> {
+    icon: Component<'span'>;
     constructor(params: DropdownButtonParameters<'div', 'button'>) {
         super({
-            textContent: '-',
             classList: ['icon-button'],
             ...params,
+        });
+        this.icon = new Component({
+            tag: 'span',
+            parent: this.element,
+            textContent: '-',
+            style: { marginTop: '-1px', pointerEvents: 'none' },
         });
         this.update();
     }
@@ -33,6 +39,7 @@ interface AddMemberButtonParams extends Params<'button'> {
 }
 
 class AddMemberButton extends Component<'button'> {
+    icon: Component<'span'>;
     dialog: Dialog;
     form: Component<'form'>;
     label: Component<'label'>;
@@ -42,11 +49,16 @@ class AddMemberButton extends Component<'button'> {
         super({
             tag: 'button',
             classList: ['icon-button'],
-            textContent: '+',
             other: {
                 id: 'add-member',
             },
             ...params,
+        });
+        this.icon = new Component({
+            tag: 'span',
+            textContent: '+',
+            style: { marginTop: '-1px', pointerEvents: 'none' },
+            parent: this.element,
         });
         this.dialog = new Dialog({
             activator: this,

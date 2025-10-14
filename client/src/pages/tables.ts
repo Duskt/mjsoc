@@ -167,7 +167,7 @@ class GameTable extends InputListener<'table'> {
         this.innerTableDisplay = new Component({
             tag: 'td',
             classList: ['mahjong-table-display'],
-            textContent: this.tableNo >= 0 ? this.tableNo.toString() : 'Saved',
+            textContent: this.tableNo >= 0 ? this.tableNo.toString() : 'S',
             parent: innerRows[1],
         });
         this.buttonPanel = new ButtonPanel({

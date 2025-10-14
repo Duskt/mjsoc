@@ -100,10 +100,12 @@ class WinButton extends UsesMember(FocusButton) {
 
     activate() {
         this.element.appendChild(this.popup.element);
+        this.element.classList.add('active');
         return super.activate();
     }
     deactivate() {
         this.element.removeChild(this.popup.element);
+        this.element.classList.remove('active');
         return super.deactivate();
     }
 
@@ -416,7 +418,6 @@ export default class PlayerTag extends UsesSeat(InputListener<'td'>) {
                 memberId: this.memberId,
                 textContent: '食',
                 parent: this.element,
-                classList: ['win-button', 'small-button'],
             });
         }
     }

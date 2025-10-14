@@ -1,19 +1,22 @@
 :root {
-    --champagne: #fce7caff;
-    --lion: #c09f87ff;
-    --coffee: #835643ff;
+    /* old colors: champagne: #fce7ca; lion: #c09f87 celadon: #acffd8; hunter-green: #3c5233; */
+    --champagne: #ddd1c1;
+    --lion: #ac8b74;
+    --coffee: #513e35;
     --black-bean: #470e00ff;
 
-    --celadon: #acffd8;
-    --hunter-green: #3c5233;
+    --celadon: #b2d9b6;
+    --hunter-green: #384a3a;
+
+    --error-red: #b83a2d;
 
     --global-background: var(--champagne);
     --legend-background: var(--almond);
-    --tooltip-background: var(--beaver);
-    --nav-link-hover-background: var(--beaver);
+    --tooltip-background: var(--lion);
+    --nav-link-hover-background: var(--lion);
     --settings-background: var(--celadon);
     --error-background: var(--celadon);
-    --dropdown-background: var(--beaver);
+    --dropdown-background: var(--lion);
 
     --winner-crown-shadow: var(--black-bean);
 
@@ -281,7 +284,7 @@ path {
     font-size: 10px;
     text-align: center;
     padding: 1px;
-    color: var(--tooltip-edge);
+    font-weight: bold;
 }
 
 .tooltip-parent:hover .tooltip {
@@ -291,6 +294,7 @@ path {
 
 .tooltip {
     display: block;
+    font-weight: normal;
     visibility: hidden;
     opacity: 0;
     position: absolute;

@@ -37,9 +37,9 @@
 }
 
 .small-button {
-    padding: 0px;
+    padding: 2px;
     margin: 0px;
-    font-size: 12px;
+    font-size: 18px;
     text-align: center;
 }
 
@@ -55,7 +55,7 @@
 }
 
 .win-button-popup > .dropdown-button > .dropdown {
-    left: 22px;
+    left: 24px;
 }
 
 button.delete-button {
@@ -122,10 +122,10 @@ button.delete-button {
     flex-direction: row-reverse;
 }
 
-.player .win-button:hover:not(.disabled) {
-    border: 2px solid var(--hunter-green);
-    background: var(--celadon);
-    color: var(--hunter-green);
+.win-button:hover:not(.disabled), .win-button.active {
+    border-color: var(--celadon);
+    background: var(--hunter-green);
+    color: var(--celadon);
 }
 
 /* dropdown container */
