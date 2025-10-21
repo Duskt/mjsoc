@@ -114,15 +114,13 @@ pub async fn put_log(
     };
     let mut affected_members: Vec<MemberId> = Vec::new();
     // if log was enabled (i.e. undoing it), pay back the points; otherwise redo
-    let payback = if !log.disabled {
-        log.points
-    } else {
-        -log.points
-    };
-    for mid in log.from {
+    for mid in log.from.clone() {
         if let Err(e) = data
             .mahjong_data
-            .mut_member(mid, MemberMutation::AddPoints(payback))
+            .mut_member(
+                mid,
+                MemberMutation::AddPoints(log.get_points().expect("No win kind on log")),
+            )
             .await
         {
             return e.handle();
@@ -131,7 +129,10 @@ pub async fn put_log(
     }
     if let Err(e) = data
         .mahjong_data
-        .mut_member(log.to, MemberMutation::AddPoints(-payback))
+        .mut_member(
+            log.to,
+            MemberMutation::AddPoints(-(log.get_points_won().expect("no win kind on log"))),
+        )
         .await
     {
         return e.handle();

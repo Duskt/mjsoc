@@ -46,7 +46,7 @@ pub async fn create_table(
     if let Some(login_redir) = authenticate(&session, &data.authenticated_keys, req) {
         return login_redir;
     };
-    match data.mahjong_data.new_table().await {
+    match data.mahjong_data.new_table(None).await {
         Ok(td) => HttpResponse::Created().json(td),
         Err(e) => e.handle(),
     }
@@ -89,6 +89,9 @@ pub async fn update_table(
         return login_redir;
     };
     for EditTable { table_no, table } in body.iter() {
+        if data.mahjong_data.get_table(*table_no).await.is_err() {
+            data.mahjong_data.new_table(Some(*table_no)).await.unwrap();
+        }
         if let Err(e) = data
             .mahjong_data
             .mut_table(TableMutation::Replace {

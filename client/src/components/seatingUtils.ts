@@ -1,6 +1,86 @@
 import { getMember, getTable, isMember, MahjongUnknownTableError } from '../data';
-import { addTable, editTable } from '../request';
+import { editTable } from '../request';
 import quantile from '@stdlib/stats-base-dists-normal-quantile';
+
+class BatchTableEdit {
+    data: {
+        tableNo: TableNo;
+        newTable: Partial<TableData>;
+    }[];
+    constructor() {
+        this.data = [];
+    }
+    queueChange(tableNo: TableNo, tableOverride: Partial<TableData>) {
+        let tableIndex = this.data.findIndex((v) => v.tableNo === tableNo);
+        if (tableIndex === -1) {
+            this.data.push({
+                tableNo,
+                newTable: tableOverride,
+            });
+            return;
+        }
+        let oldTable = this.data[tableIndex].newTable;
+        this.data[tableIndex] = {
+            tableNo,
+            newTable: { ...oldTable, ...tableOverride },
+        };
+    }
+    createNewTables(n = 1) {
+        console.log('creating', n, 'new tables');
+        let maxTableNo = Math.max(...window.MJDATA.tables.map((v) => v.table_no));
+        for (let x = 0; x < n; x++) {
+            let newTableNo = (maxTableNo + 1 + x) as TableNo;
+            this.queueChange(newTableNo, { table_no: newTableNo });
+        }
+        console.log(this.data);
+    }
+    /** Seats a member in the first empty(/council) seat found,
+     * (putting them last in the array).
+     * @param member
+     * @param inPlaceOfCouncil [true] whether to replace council members
+     * @param eventTarget [document] the node to dispatch the table update event from
+     * @returns true if a seat was found, false otherwise
+     */
+    seatMemberLast(member: Member, inPlaceOfCouncil = true) {
+        let councilIds = inPlaceOfCouncil
+            ? window.MJDATA.members.filter((m) => m.council).map((m) => m.id)
+            : [];
+        let newTable: Partial<TableData> = {};
+        for (let t of window.MJDATA.tables.sort((a, b) => a.table_no - b.table_no)) {
+            for (let wind of ['east', 'south', 'west', 'north'] as Wind[]) {
+                let mid = t[wind] as MemberId;
+                let canSitHere = mid === 0 || councilIds.includes(mid);
+                let notOverridden =
+                    this.data.find(
+                        (override) =>
+                            override.tableNo === t.table_no &&
+                            override.newTable[wind] !== undefined,
+                    ) === undefined;
+                if (canSitHere && notOverridden) {
+                    newTable.table_no = t.table_no;
+                    newTable[wind] = member.id;
+                    this.queueChange(t.table_no, newTable);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    async send(target?: Document | HTMLElement) {
+        let payload: TableEdit[] = this.data.map((change) => {
+            let currentTable = window.MJDATA.tables.find((v) => v.table_no === change.tableNo);
+            if (currentTable === undefined) {
+                console.error("Failed to send batch table edit: couldn't find current table");
+                throw new Error('BatchTableEdit error');
+            }
+            return {
+                tableNo: change.tableNo,
+                newTable: { ...currentTable, ...change.newTable },
+            };
+        });
+        return await editTable(payload, target);
+    }
+}
 
 // todo: refactor into a 'seating hashmap'
 export function isSat(mem: Member) {
@@ -11,46 +91,6 @@ export function isSat(mem: Member) {
         if (mem.id == t.north) return true;
     }
     return false;
-}
-
-/** Seats a member in the first empty(/council) seat found,
- * (putting them last in the array).
- * @param member
- * @param inPlaceOfCouncil [true] whether to replace council members
- * @param eventTarget [document] the node to dispatch the table update event from
- * @returns the response if successful, otherwise undefined
- */
-async function seatMemberLast(
-    member: Member,
-    inPlaceOfCouncil = true,
-    eventTarget: HTMLElement | Document = document,
-) {
-    let councilIds = inPlaceOfCouncil
-        ? window.MJDATA.members.filter((m) => m.council).map((m) => m.id)
-        : [];
-    for (let t of window.MJDATA.tables.sort((a, b) => a.table_no - b.table_no)) {
-        if (t.east === 0 || councilIds.includes(t.east)) {
-            t.east = member.id;
-        } else if (t.south === 0 || councilIds.includes(t.south)) {
-            t.south = member.id;
-        } else if (t.west === 0 || councilIds.includes(t.west)) {
-            t.west = member.id;
-        } else if (t.north === 0 || councilIds.includes(t.north)) {
-            t.north = member.id;
-        } else {
-            // none of them were empty so skip request
-            continue;
-        }
-        return await editTable(
-            [
-                {
-                    tableNo: t.table_no,
-                    newTable: t,
-                },
-            ],
-            eventTarget,
-        );
-    }
 }
 
 /** Tries to create enough tables for all registered members, then seats them all.
@@ -64,16 +104,12 @@ export async function allocateSeats(
     seatCouncilLast = true,
     eventTarget: HTMLElement | Document = document,
 ): Promise<boolean> {
+    let batch = new BatchTableEdit();
     // first, create the minimum amount of tables that can seat everyone
     let nTables = Math.floor(
         window.MJDATA.members.filter((m) => m.tournament.registered).length / 4,
     );
-    // todo: relate to .env
-    let maxNewTables = 10;
-    while (window.MJDATA.tables.length < nTables && maxNewTables > 0) {
-        await addTable(eventTarget);
-        maxNewTables--;
-    }
+    batch.createNewTables(Math.max(nTables - window.MJDATA.tables.length, 0));
     // next, seat all the players
     let council: Member[] = [];
     for (let mem of window.MJDATA.members) {
@@ -83,7 +119,7 @@ export async function allocateSeats(
         }
         // if unseated and registered (if necessary), then seat them last
         if (!isSat(mem) && (seatAbsent || mem.tournament.registered)) {
-            if ((await seatMemberLast(mem, seatCouncilLast, eventTarget)) === undefined) {
+            if (batch.seatMemberLast(mem, seatCouncilLast) === undefined) {
                 console.log('ended early');
                 // return early because tables must be full
                 return false;
@@ -96,9 +132,10 @@ export async function allocateSeats(
     for (let cMem of council) {
         if (!isSat(cMem) && (seatAbsent || cMem.tournament.registered)) {
             // don't return unsuccessful if council can't be seated
-            await seatMemberLast(cMem, false, eventTarget); // IMPORTANT: if true, only last council would be sat
+            batch.seatMemberLast(cMem, false); // IMPORTANT: if true, only last council would be sat
         }
     }
+    await batch.send(eventTarget);
     return true;
 }
 
@@ -138,6 +175,10 @@ function matchmakingCoefficientToStdev(mc: number) {
     let inv_sigma = Math.SQRT2 * quantile(arg, 0, 1);
     console.log(mc, 1 / inv_sigma);
     return 1 / inv_sigma;
+}
+
+function getMatchmakingCoefficient() {
+    return 0.1; // TODO: replace with settings value
 }
 
 // a named tuple. there's probably an existing shorthand for this
@@ -216,7 +257,7 @@ function randomizeSeats(array: (MemberId | 0)[]) {
         return pts(memberB) - pts(memberA);
     });
     // partially randomise the seats
-    let sigma = matchmakingCoefficientToStdev(window.MJDATA.settings.matchmakingCoefficient);
+    let sigma = matchmakingCoefficientToStdev(getMatchmakingCoefficient());
     return weightedNormalShuffle(array, sigma);
 }
 

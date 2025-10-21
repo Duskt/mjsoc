@@ -9,13 +9,14 @@
     --hunter-green: #384a3a;
 
     --error-red: #b83a2d;
+    --error-red-light: #efb4ad;
 
     --global-background: var(--champagne);
     --legend-background: var(--almond);
     --tooltip-background: var(--lion);
     --nav-link-hover-background: var(--lion);
     --settings-background: var(--celadon);
-    --error-background: var(--celadon);
+    --error-background: var(--error-red-light);
     --dropdown-background: var(--lion);
 
     --winner-crown-shadow: var(--black-bean);
@@ -26,7 +27,7 @@
     --info-grid-edge: var(--coffee);
     --legend-edge: var(--coffee);
     --nav-edge: var(--coffee);
-    --error-edge: var(--hunter-green);
+    --error-edge: var(--error-red);
     --tooltip-edge: var(--black-bean);
 
     --dropdown-selected: var(--celadon);

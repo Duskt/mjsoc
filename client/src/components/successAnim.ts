@@ -10,7 +10,7 @@ const goldConfetti = { colors: ['#ffd700'], scalar: 1 };
 export function triggerCelebration() {
     var end = Date.now() + 1 * 1000;
     let defaultSettings = {
-        particleCount: 3,
+        particleCount: 1.5,
         spread: 100,
         startVelocity: 90,
     };

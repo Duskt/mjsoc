@@ -96,7 +96,11 @@ impl MahjongDataSqlite3 {
         // resolve the path
         let path: PathBuf = path.into();
         let dest = path.file_name().expect("Path must refer to a file.");
-        let parent = path.parent().unwrap().canonicalize().unwrap_or_else(|_| panic!("Couldn't find {}", path.display()));
+        let parent = path
+            .parent()
+            .unwrap()
+            .canonicalize()
+            .unwrap_or_else(|_| panic!("Couldn't find {}", path.display()));
         let resolved_path = parent.join(dest);
         MahjongDataSqlite3 {
             pool: MahjongDataSqlite3::get_pool(&resolved_path).await,
@@ -252,7 +256,10 @@ pub mod tables {
             &self,
             table_nos: Option<Vec<TableNo>>,
         ) -> Result<Vec<TableData>, MahjongDataError>;
-        async fn new_table(&self) -> Result<TableData, MahjongDataError>;
+        async fn new_table(
+            &self,
+            new_table_no: Option<TableNo>,
+        ) -> Result<TableData, MahjongDataError>;
         async fn mut_table(&self, mutation: TableMutation) -> Result<(), MahjongDataError>;
         async fn del_table(&self, entry_id: TableNo) -> Result<(), MahjongDataError>;
     }
@@ -280,13 +287,15 @@ pub mod tables {
     impl super::MahjongDataSqlite3 {
         // Upon deletion, table numbers are shifted to fill the gap. This means new tables
         // don't have to check for gaps.
-        async fn _get_new_table_no(
-            &self
-        ) -> Result<TableNo, MahjongDataError> {
-            let table_numbers: Vec<TableNo> = match sqlx::query_as("SELECT table_no FROM mahjong_tables;").fetch_all(&self.pool).await {
-                Ok(r) => r.into_iter().map(|x: (TableNo,)| x.0).collect(),
-                Err(e) => return Err(MahjongDataError::Unknown(e))
-            };
+        async fn _get_new_table_no(&self) -> Result<TableNo, MahjongDataError> {
+            let table_numbers: Vec<TableNo> =
+                match sqlx::query_as("SELECT table_no FROM mahjong_tables;")
+                    .fetch_all(&self.pool)
+                    .await
+                {
+                    Ok(r) => r.into_iter().map(|x: (TableNo,)| x.0).collect(),
+                    Err(e) => return Err(MahjongDataError::Unknown(e)),
+                };
             Ok(table_numbers.into_iter().max().unwrap_or(0) + 1)
         }
 
@@ -362,8 +371,17 @@ pub mod tables {
             Ok(result)
         }
 
-        async fn new_table(&self) -> Result<TableData, MahjongDataError> {
-            let table_no = self._get_new_table_no().await?;
+        async fn new_table(
+            &self,
+            new_table_no: Option<TableNo>,
+        ) -> Result<TableData, MahjongDataError> {
+            let table_no_result: Result<TableNo, MahjongDataError> = match new_table_no {
+                Some(tn) => Ok(tn),
+                // might be unnecessary closure
+                None => (|| self._get_new_table_no())().await,
+            };
+            // TODO: check not alr existing table_no
+            let table_no = table_no_result?;
             if let Err(e) = sqlx::query("INSERT INTO mahjong_tables (table_no) VALUES (?)")
                 .bind(table_no)
                 .execute(&self.pool)
@@ -376,7 +394,7 @@ pub mod tables {
                 east: 0,
                 south: 0,
                 west: 0,
-                north: 0
+                north: 0,
             })
         }
 
@@ -696,17 +714,19 @@ pub mod members {
 
     // helpers for MembersMutator
     impl super::MahjongDataSqlite3 {
-        async fn _get_new_member_id(
-            &self
-        ) -> Result<MemberId, MahjongDataError> {
-            let table_numbers: Vec<MemberId> = match sqlx::query_as("SELECT member_id FROM members;").fetch_all(&self.pool).await {
-                Ok(r) => r.into_iter().map(|x: (MemberId,)| x.0).collect(),
-                Err(e) => return Err(MahjongDataError::Unknown(e))
-            };
+        async fn _get_new_member_id(&self) -> Result<MemberId, MahjongDataError> {
+            let table_numbers: Vec<MemberId> =
+                match sqlx::query_as("SELECT member_id FROM members;")
+                    .fetch_all(&self.pool)
+                    .await
+                {
+                    Ok(r) => r.into_iter().map(|x: (MemberId,)| x.0).collect(),
+                    Err(e) => return Err(MahjongDataError::Unknown(e)),
+                };
             let new_index = table_numbers.iter().max().unwrap_or(&0) + 1;
             for i in 1..new_index {
                 if !table_numbers.contains(&i) {
-                    return Ok(i)
+                    return Ok(i);
                 }
             }
             Ok(new_index)

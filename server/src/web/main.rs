@@ -1,8 +1,8 @@
-mod config;
 mod auth;
 mod components;
-mod errors;
+mod config;
 mod data;
+mod errors;
 mod notification;
 mod pages;
 mod rate_limit;
@@ -10,7 +10,10 @@ mod rate_limit;
 use actix_files::Files;
 use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
-    cookie::{self, time::Duration}, middleware::DefaultHeaders, web::{self, delete, get, post, put}, App, HttpServer
+    cookie::{self, time::Duration},
+    middleware::DefaultHeaders,
+    web::{self, delete, get, post, put},
+    App, HttpServer,
 };
 
 use reqwest::header::CONTENT_LANGUAGE;
@@ -21,19 +24,26 @@ use pages::{
     index::index,
     login::login,
     mahjong::{
+        players::{create_member, delete_member, update_member},
         tables::{create_table, delete_table, get_tables, update_table},
-        players::{create_member, delete_member, update_member}
     },
     // qr::page::{download_qr, generate_qr},
     //register_attendance::page::{manual_register_attendance, register_qr_attendance},
 };
 use rate_limit::rate_limit_handler::RateLimit;
 
-use crate::{config::{get_quota, AppState}, pages::{
-    logo::logo,
-    mahjong::{data::get_data, log::{get_log_page, put_log, transfer_points}}, register_attendance::page::{manual_register_attendance, register_qr_attendance},
-}};
-
+use crate::{
+    config::{get_quota, AppState},
+    pages::{
+        logo::logo,
+        mahjong::{
+            data::get_data,
+            log::{get_log_page, put_log, transfer_points},
+        },
+        register_attendance::page::{manual_register_attendance, register_qr_attendance},
+        session_week::reset_session,
+    },
+};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -42,7 +52,15 @@ async fn main() -> std::io::Result<()> {
     let state = web::Data::<AppState>::new(config::init_state(config.clone()).await);
     let quotas_mtx = Arc::new(RwLock::new(get_quota()));
 
-    println!("Listening at http://{}:{} ...", if config.addrs.0 == "0.0.0.0" { "localhost" } else { &config.addrs.0 }, config.addrs.1);
+    println!(
+        "Listening at http://{}:{} ...",
+        if config.addrs.0 == "0.0.0.0" {
+            "localhost"
+        } else {
+            &config.addrs.0
+        },
+        config.addrs.1
+    );
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
@@ -90,11 +108,12 @@ async fn main() -> std::io::Result<()> {
                     .route(get().to(get_log_page))
                     .route(put().to(put_log)),
             )
+            .route("/week", delete().to(reset_session))
             //.route("/settings", put().to(update_settings))
             .route("/data.json", get().to(get_data))
             .route("/public/logo", get().to(logo))
             // If the mount path is set as the root path /, services registered after this one will be inaccessible. Register more specific handlers and services first.
-            .service(Files::new("/public", &config.public_path)) 
+            .service(Files::new("/public", &config.public_path))
     })
     .bind(config.addrs)?
     .run()

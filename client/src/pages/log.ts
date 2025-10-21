@@ -335,20 +335,20 @@ class LogRow extends Component<'tr'> {
             tag: 'td',
             parent: this.element,
         });
-        this.disableTd.element.style.paddingBottom = '0';
+        this.disableTd.element.style.paddingBlock = '2px';
         this.disableTd.element.style.border = 'none';
         this.disableButton = new IconButton({
             icon: 'trash',
             parent: this.disableTd.element,
-            onclick: this.disable,
+            onclick: () => this.disable(),
         });
-        this.disableButton.element.style.width = '16px';
-        this.disableButton.element.style.paddingBottom = '26px';
+        this.disableButton.element.classList.add('disable-log-button');
     }
     async disable() {
+        let id = this.log.id;
         let r = await undoLog(
             {
-                id: this.log.id,
+                id,
             },
             this.element,
         );

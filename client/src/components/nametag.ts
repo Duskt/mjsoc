@@ -41,7 +41,6 @@ export default class NameTag extends InputListener<'select'> {
     renderOption(member: Member) {
         let optElem = document.createElement('option');
         optElem.textContent = member.name;
-        optElem.style.fontWeight = 'normal';
         optElem.style.color = 'black';
         this.nameOptions[member.id] = optElem;
         this.element.appendChild(optElem);
@@ -62,7 +61,6 @@ export default class NameTag extends InputListener<'select'> {
         // removes EMPTY from options
         return () => {
             this.empty?.remove();
-            this.element.style.fontWeight = 'normal';
             this.element.style.color = 'black';
             this.listener = undefined;
         };

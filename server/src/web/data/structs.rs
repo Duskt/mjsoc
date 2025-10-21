@@ -6,14 +6,14 @@ use sqlx::prelude::FromRow;
 pub enum EntryKind {
     Member,
     Table,
-    Log
+    Log,
 }
 
 #[derive(Debug)]
 pub enum EntryId {
     Member(MemberId),
     Table(TableNo),
-    Log(LogId)
+    Log(LogId),
 }
 
 impl EntryId {
@@ -21,7 +21,7 @@ impl EntryId {
         match self {
             EntryId::Member(_) => EntryKind::Member,
             EntryId::Log(_) => EntryKind::Log,
-            EntryId::Table(_) => EntryKind::Table
+            EntryId::Table(_) => EntryKind::Table,
         }
     }
     // todo: refactor, this is sqlite3 specific
@@ -29,7 +29,7 @@ impl EntryId {
         match self {
             EntryId::Member(mid) => ("members", "member_id", *mid),
             EntryId::Table(tno) => ("mahjong_tables", "table_no", *tno),
-            EntryId::Log(lid) => ("logs", "id", *lid)
+            EntryId::Log(lid) => ("logs", "id", *lid),
         }
     }
 }
@@ -81,7 +81,7 @@ impl Wind {
             Self::East => "east",
             Self::South => "south",
             Self::West => "west",
-            Self::North => "north"
+            Self::North => "north",
         }
     }
     pub fn all() -> Vec<Self> {
@@ -103,7 +103,7 @@ impl WinKind {
         match self {
             Self::Zimo => "zimo",
             Self::Baozimo => "baozimo",
-            Self::Dachut => "dachut"
+            Self::Dachut => "dachut",
         }
     }
 }
@@ -135,7 +135,7 @@ impl Log {
         // zimo: for each loser, base points from loser to winner
         let points = match &self.faan {
             Some(faan) => faan.get_base_points(),
-            None => Some(self.points)
+            None => Some(self.points),
         }?;
         match self.win_kind {
             Some(WinKind::Zimo) => Some(points),
@@ -143,6 +143,15 @@ impl Log {
             Some(WinKind::Baozimo) => Some(points * 3),
             None => None,
         }
+    }
+    pub fn get_points_won(&self) -> Option<i32> {
+        let points_lost = self.get_points()?;
+        let mult: i32 = self
+            .from
+            .len()
+            .try_into()
+            .expect("Length of log losers exceeded i32???");
+        Some(points_lost * mult)
     }
 }
 

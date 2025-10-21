@@ -86,12 +86,12 @@ export class RequestIndicator extends Component<'div'> {
         this.reset();
         this.appear();
         this.transitionTimer = setTimeout(() => {
-            this.element.classList = 'loading request-indicator';
+            this.element.classList.value = 'loading request-indicator';
         }, this.minSkipLoadingDelay);
     }
     fail(err: AppError) {
         this.reset();
-        this.element.classList = 'failure request-indicator';
+        this.element.classList.value = 'failure request-indicator';
         this.errorPanel = new ErrorPanel(err).attach(this.element);
         this.transitionTimer = setTimeout(() => {
             this.element.style.opacity = '0';
@@ -99,7 +99,7 @@ export class RequestIndicator extends Component<'div'> {
     }
     success() {
         this.reset();
-        this.element.classList = 'success request-indicator';
+        this.element.classList.value = 'success request-indicator';
         this.element.textContent = '✅';
         this.transitionTimer = setTimeout(() => {
             this.element.style.opacity = '0';
@@ -140,7 +140,7 @@ var RequestController = {
         path: string,
         payload: any,
         method: RequestMethod = 'POST',
-        rate_exemption: boolean = false,
+        rate_exemption: boolean = true, // TODO: change back to false
     ): Promise<SuccessfulResponse | AppError> {
         // update regardless, only warn if not exempt
         if (this.update() && !rate_exemption) {
@@ -496,9 +496,9 @@ export async function deleteTable(
     } else
         window.MJDATA.tables = window.MJDATA.tables.filter((v) => v.table_no !== payload.table_no);
     // decrement table numbers higher than
-    window.MJDATA.tables = window.MJDATA.tables.map((i) =>
-        i.table_no > payload.table_no ? { ...i, table_no: (i.table_no - 1) as TableNo } : i,
-    );
+    //window.MJDATA.tables = window.MJDATA.tables.map((i) =>
+    //    i.table_no > payload.table_no ? { ...i, table_no: (i.table_no - 1) as TableNo } : i,
+    // );
     return r;
 }
 

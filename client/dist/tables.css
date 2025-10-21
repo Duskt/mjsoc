@@ -88,6 +88,7 @@ button.delete-button {
         flex-grow: 1;
         background-color: var(--champagne);
         border-radius: 20px;
+	max-inline-size: 75%;
     }
     .name-tag.south,
     .name-tag.north {
@@ -310,6 +311,12 @@ dialog button {
     outline: 1px solid var(--info-grid-edge);
     outline-offset: -4px;
     border-radius: 20px;
+}
+
+.disable-log-button {
+    border: none;
+    box-shadow: none;
+    padding: 0;
 }
 
 #log-table {
