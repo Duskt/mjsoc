@@ -378,7 +378,7 @@ pub mod tables {
             let table_no_result: Result<TableNo, MahjongDataError> = match new_table_no {
                 Some(tn) => Ok(tn),
                 // might be unnecessary closure
-                None => (|| self._get_new_table_no())().await,
+                None => self._get_new_table_no().await,
             };
             // TODO: check not alr existing table_no
             let table_no = table_no_result?;
