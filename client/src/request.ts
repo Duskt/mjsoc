@@ -499,6 +499,11 @@ export async function deleteTable(
     //window.MJDATA.tables = window.MJDATA.tables.map((i) =>
     //    i.table_no > payload.table_no ? { ...i, table_no: (i.table_no - 1) as TableNo } : i,
     // );
+    let event: EditTableEvent = new CustomEvent('mjEditTable', {
+        detail: [{ tableNo: payload.table_no, newTable: null }],
+        bubbles: true,
+    });
+    target.dispatchEvent(event);
     return r;
 }
 
