@@ -9,7 +9,6 @@ type TableNo = number & { __brand: 'tableNo' };
 
 interface TableData extends PlayerWinds {
     table_no: TableNo;
-    round_wind: RoundWind;
 }
 
 // for requests

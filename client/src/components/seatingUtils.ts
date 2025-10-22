@@ -26,13 +26,18 @@ class BatchTableEdit {
         };
     }
     createNewTables(n = 1) {
-        console.log('creating', n, 'new tables');
         let maxTableNo = Math.max(...window.MJDATA.tables.map((v) => v.table_no));
         for (let x = 0; x < n; x++) {
             let newTableNo = (maxTableNo + 1 + x) as TableNo;
             this.queueChange(newTableNo, { table_no: newTableNo });
+            window.MJDATA.tables.push({
+                table_no: newTableNo,
+                east: 0,
+                south: 0,
+                west: 0,
+                north: 0,
+            });
         }
-        console.log(this.data);
     }
     /** Seats a member in the first empty(/council) seat found,
      * (putting them last in the array).
@@ -68,10 +73,11 @@ class BatchTableEdit {
     }
     async send(target?: Document | HTMLElement) {
         let payload: TableEdit[] = this.data.map((change) => {
-            let currentTable = window.MJDATA.tables.find((v) => v.table_no === change.tableNo);
+            let currentTable: TableData | undefined = window.MJDATA.tables.find(
+                (v) => v.table_no === change.tableNo,
+            );
             if (currentTable === undefined) {
-                console.error("Failed to send batch table edit: couldn't find current table");
-                throw new Error('BatchTableEdit error');
+                currentTable = { table_no: change.tableNo, east: 0, south: 0, west: 0, north: 0 };
             }
             return {
                 tableNo: change.tableNo,
