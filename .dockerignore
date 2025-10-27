@@ -3,7 +3,7 @@ server/target
 server/public
 client/dist/index.js
 node_modules
-*/data
+*/.data
 .sqlx
 hmac.*
 .env
