@@ -3,7 +3,7 @@ tournament (seating players, recording scores, etc.).
 
 <br/>
 <p align="center">
-<img src="./docs/tables.png" width="760px" height="500px">
+<img src="./docs/tables.png" width="760px" height="542px">
 </p>
 <br/>
 
