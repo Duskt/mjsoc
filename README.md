@@ -1,4 +1,5 @@
-A webserver for hosting scored Mahjong games. Used for a society Mahjong tournament (seating players, recording scores, etc.).
+A webserver for hosting scored Mahjong games. Used for a society Mahjong
+tournament (seating players, recording scores, etc.).
 
 - interactive client frontend (`client`)
 - sqlite3 persistent storage
@@ -8,8 +9,8 @@ A webserver for hosting scored Mahjong games. Used for a society Mahjong tournam
 
 # Setup
 
-See SETUP.md
+See [./docs/SETUP.md]
 
 # Development
 
-See DEVELOPMENT.md
+See [./docs/DEVELOPMENT.md]
