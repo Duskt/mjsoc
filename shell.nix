@@ -17,5 +17,7 @@ pkgs.mkShellNoCC {
 
     # setup utils (creating password hash for .env)
     libargon2
+    # deployment
+    google-cloud-sdk
   ];
 }
